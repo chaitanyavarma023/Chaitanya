@@ -1,0 +1,145 @@
+TO manually configure cloudfiles through CLI  ---> 
+To see wireless ssid parameters in CLI --->  cat /etc/config/wireless
+Connect to AP through CLI ----> ssh-qntm-ap IP address
+
+Using ndsctl
+openNDS includes ndsctl, a separate utility application. Some command line options:
+
+To print to stdout the status of the openNDS daemon:--->/usr/bin/ndsctl status
+
+To print to stdout the list of clients and trusted devices in json format:--->/usr/bin/ndsctl json
+
+To print to stdout the details of a particular client in json format (This is particularly useful if called from a FAS or Binauth script.):--->/usr/bin/ndsctl json [mac|ip|token|hid]
+
+Note: clients that are not in the preauthenticated state (ie CPD has not triggered redirection) will not be authenticated unless the configuration option “allow_preemptive_authentication” is enabled.
+
+To authenticate client given their IP or MAC address:--->/usr/bin/ndsctl auth IP|MAC
+
+To deauthenticate a currently authenticated client given their IP or MAC address:--->/usr/bin/ndsctl deauth IP|MAC
+
+To b64encode a plain text string: --->/usr/bin/ndsctl b64encode "character string"
+
+To b64decode a b64encoded string:--->/usr/bin/ndsctl b64decode "b64encodedstring"
+
+To set the verbosity of logged messages to n:--->/usr/bin/ndsctl debuglevel n
+
+Display Wireless Interface Information: ---> iw dev
+
+Show detailed information about a specific wireless interface : ---> iw dev <interface> info
+
+Reload Wireless Configuration without restarting the whole system : ---> wifi
+
+Restart Wireless Interfaces: ---> wifi reload
+
+Disable Wireless Interfaces: ---> wifi down
+
+Enable Wireless Interfaces: ---> wifi up
+
+View System Logs: ---> logread
+
+Display Latest Logs: ---> logread -f
+
+On OpenWrt, to list the full configuration, at the command line type: ---> uci show opennds
+
+To display the Gateway Name, type: ---> uci get opennds.@opennds[0].gatewayname
+
+To set the Gateway Name to a new value, type:---> uci set opennds.@opennds[0].gatewayname='my new gateway'
+
+To add a new firewall rule allowing access to another service running on port 8888 on the router, type: 
+---> uci add_list opennds.@opennds[0].users_to_router='allow
+tcp port 8888'
+
+Finally you must tell UCI to commit your changes to the configuration file: ---> uci commit opennds
+
+Default Dynamic Click to Continue
+#option login_option_enabled '1'
+
+Pre-Installed dynamic User/email Login page sequence
+#option login_option_enabled '2'
+
+Custom Dynamic ThemeSpec Pages
+#option login_option_enabled '3'
+
+Enable openNDS
+Set to 0 to disable opennds
+#option enabled 1
+
+Enable debug output (0-3)
+Default: 1
+
+Level0
+Silent (only initial startup, LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
+
+Level 1
+LOG_ERR, LOG_EMERG, LOG_WARNING and LOG_NOTICE (this is the default level).
+
+Level 2
+debuglevel 1 + LOG_INFO
+
+Level 3
+debuglevel 2 + LOG_DEBUG
+#option debuglevel '1'
+
+Firewall Restart hook
+Specific to OpenWrt only, Firewall 4 (FW4) informs openNDS when it is restarting.
+
+If enabled (Set to 1), openNDS reinserts any nftables it may need in the FW4 ruleset.
+
+Default: 1
+#option fwhook_enabled '1'
+
+OpenNds  --->  https://opennds.readthedocs.io/en/stable/config.html
+
+Wireless ---> https://openwrt.org/docs/guide-user/network/wifi/basic
+
+source code path 
+
+harshal@harshal:~/bob-the-builder/upstream/qn-i-280/qsdk$ grep -inr ""
+
+firmware upgrad (CV)
+root@QN_FD:14:E9:/tmp# sysupgrade -n -v QN-O-240.HW2-qca-wifi-80\+80-.sysupgrade 
+
+
+* Building firmware from docker *
+
+ssh -o HostKeyAlgorithms=+ssh-dss harshal@192.168.7.100
+PASS - aIVl1AAIV98ho$8h!#%3
+fakir@123
+docker exec -it bob-the-builder bash
+
+harshal@8f9bac2755d9:~/workdir/qntm-upstream/qsdk-6.2.1$
+make menuconfig to open and select package using / then see the no to select filesystem and then compile
+harshal@8f9bac2755d9:~/workdir/qntm-upstream/qsdk-6.2.1$ bash -x autobuild.sh i270 "backup_270" 
+
+
+bash -x autobuild.sh i210"pbx_voice_210" 
+
+compile only single IPK
+make package/network/services/igmpproxy/compile -j1 V=sc
+
+
+220 - 6.2.1
+270 - 11.4
+
+
+
+https://www.ieee802.org/11/Reports/tgax_update.htm#nov2016
+
+to capture packets on ap to file
+tcpdump -i any -w file.pcap 
+
+To know connected clients : cat /tmp/connected_client/*
+
+ethtool eth0 
+
+manual retrieve cloud configurations
+
+ lsof -i:2232
+COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+ssh     10596 root    3u  inet  21168      0t0  TCP 10.1.1.70:42976->192-46-209-149.ip.linodeusercontent.com:2232 (ESTABLISHED)
+root@QN_01:D9:49:~# echo 0> /etc/RevisionNo 
+
+root@QN_01:D9:49:~# lua /usr/lib/lua/luci/ap
+ap/           application/
+root@QN_01:D9:49:~# lua /usr/lib/lua/luci/ap/Ask_Config.lua 
+

@@ -1,0 +1,455 @@
+sh +x /usr/lib/lua/luci/ap/module_manager.sh load ebtables
+
+470
+
+root@QN_01:D9:49:~# opkg list | grep ebtables
+ebtables - 2.0.10-4-5
+ebtables-utils - 2.0.10-4-5
+kmod-ebtables - 4.4.60-1
+kmod-ebtables-ipv4 - 4.4.60-1
+kmod-ebtables-watchers - 4.4.60-1
+root@QN_01:D9:49:~# 
+
+
+210 +
+
+root@QN_FC:BA:69:~# opkg list | grep ebtables
+ebtables-legacy - 2018-06-27-48cff25d-1
+ebtables-legacy-utils - 2018-06-27-48cff25d-1
+kmod-ebtables - 5.15.150-1
+kmod-ebtables-ipv4 - 5.15.150-1
+kmod-ebtables-ipv6 - 5.15.150-1
+kmod-ebtables-watchers - 5.15.150-1
+root@QN_FC:BA:69:~# 
+
+
+
+
+ebtables -t broute -A BROUTING -i ath10 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 58:61:63:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -t broute -A BROUTING -i ath00 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 58:61:63:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -t broute -A BROUTING -i ath10 -s 58:61:63:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -t broute -A BROUTING -i ath00 -s 58:61:63:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+
+
+ebtables -t broute -A BROUTING -i ath10 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -t broute -A BROUTING -i ath00 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+
+
+ebtables -D FORWARD -i ath10 -s 04:ea:56:23:74:72 -d 04:ea:56:23:74:70 -j DROP
+ebtables -D FORWARD -i ath10 -s 04:ea:56:23:74:70 -d 04:ea:56:23:74:72 -j DROP
+
+ebtables -t broute -A BROUTING -i ath10 
+ebtables -t broute -A BROUTING -i ath10 
+ebtables -t broute -A BROUTING -i ath00 
+ebtables -t broute -A BROUTING -i ath00 
+
+wlp1s0
+ebtables -t broute -A BROUTING -i wlp1s0 -s 04:ea:56:23:74:72 -d 04:ea:56:23:74:70 -j DROP
+ebtables -t broute -A BROUTING -i wlp1s0 -s 04:ea:56:23:74:70 -d 04:ea:56:23:74:72 -j DROP
+ebtables -t broute -A BROUTING -i wlp1s0 -s 04:ea:56:23:74:72 -d 04:ea:56:23:74:70 -j DROP
+ebtables -t broute -A BROUTING -i wlp1s0 -s 04:ea:56:23:74:70 -d 04:ea:56:23:74:72 -j DROP
+
+br-wan
+ebtables -t broute -A BROUTING -i br-wan -s 04:ea:56:23:74:72 -d 04:ea:56:23:74:70 -j DROP
+ebtables -t broute -A BROUTING -i br-wan -s 04:ea:56:23:74:70 -d 04:ea:56:23:74:72 -j DROP
+ebtables -t broute -A BROUTING -i br-wan -s 04:ea:56:23:74:72 -d 04:ea:56:23:74:70 -j DROP
+ebtables -t broute -A BROUTING -i br-wan -s 04:ea:56:23:74:70 -d 04:ea:56:23:74:72 -j DROP
+
+
+ebtables -t broute -A BROUTING -i ath10 -s ac:c0:48:ca:c3:91 -d 58:61:63:01:D9:49 -j DROP
+ebtables -t broute -A BROUTING -i ath10 -s 58:61:63:01:D9:49  -d ac:c0:48:ca:c3:91 -j DROP
+
+2c:be:eb:97:45:45
+ebtables -t broute -A BROUTING -i ath10 -s 2c:be:eb:97:45:45 -d 58:61:63:01:D9:49 -j DROP
+ebtables -t broute -A BROUTING -i ath10 -s 58:61:63:01:D9:49  -d 2c:be:eb:97:45:45 -j DROP
+
+ebtables -A FORWARD -i ath10 -s 04:ea:56:23:74:70 -d 04:ea:56:23:74:72 -p IPv4 --ip-proto icmp -j DROP
+ebtables -A FORWARD -i ath10 -s 04:ea:56:23:74:72 -d 04:ea:56:23:74:70 -p IPv4 --ip-proto icmp -j DROP
+
+
+
+
+ebtables -A FORWARD -p IPv4 --ip-proto icmp -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -p IPv4 --ip-proto icmp -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+--------------------------------------------------------------------------------------------------------
+
+
+ebtables -D FORWARD -i wlan1 -p IPv4 --ip-proto icmp -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -D FORWARD -i wlan1 -p IPv4 --ip-proto icmp -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+ebtables -D FORWARD -i wlan0 -p IPv4 --ip-proto icmp -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -D FORWARD -i wlan0 -p IPv4 --ip-proto icmp -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+-----------------------------------------------------------------------------------------------
+
+ebtables -A FORWARD -i wlan1 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i wlan1 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+ebtables -A FORWARD -i wlan0 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i wlan0 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+
+
+
+ebtables -A FORWARD -i wlan1 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -A FORWARD -i wlan1 -s 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -A FORWARD -i wlan0 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -A FORWARD -i wlan0 -s 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+
+
+While change of DROP to ACCEPT you should add
+
+ebtables -A FORWARD -i wlan1 -j DROP
+
+
+
+
+--------------------------------------------------------------------------------------------------------
+
+ebtables -A FORWARD -i wlan1 -p IPv4 --ip-proto icmp -s 4c:1d:96:27:1a:4b -d ac:c0:48:ca:c3:91 -j DROP
+ebtables -A FORWARD -i wlan1 -p IPv4 --ip-proto icmp -s ac:c0:48:ca:c3:91 -d 4c:1d:96:27:1a:4b -j DROP
+
+ebtables -A INPUT -i ath10 -s 04:ea:56:23:74:70  -j DROP
+ebtables -A INPUT -i ath10 -s 2c:be:eb:97:45:45  -j DROP
+
+iptables -A FORWARD -p icmp -s 10.1.1.111 -d 10.1.1.94 -j DROP
+iptables -A FORWARD -p icmp -s 10.1.1.111 -d 10.1.1.94 -j DROP
+
+-t broute -A BROUTING
+
+ebtables -t broute -A BROUTING -i ath10 -s 04:ea:56:23:74:70  -j DROP
+ebtables -t broute -A BROUTING -i ath10 -s 2c:be:eb:97:45:45  -j DROP
+
+ebtables -t broute -A BROUTING -i wlan1 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -t broute -A BROUTING -i wlan1 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+----------------------------------------------------------------------------------------------------
+# Block outgoing traffic from A to B on TCP port 80
+iptables -A FORWARD -p tcp --sport 80 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+# Block incoming traffic from B to A on TCP port 80
+iptables -A FORWARD -p tcp --dport 80 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+
+iptables -A FORWARD -p tcp --sport 80 -s 10.1.1.94 -d 10.1.1.106 -j DROP
+iptables -A FORWARD -p tcp --sport 80 -s 10.1.1.106 -d 10.1.1.94 -j DROP
+
+-----------------------------------------------------------------------------------------------------
+
+
+
+-----------------------------------------------------------------------------------------------------
+# Block incoming traffic from B to A on UDP ports 1000-2000
+iptables -A FORWARD -p udp --dport 1000:2000 -s ac:c0:48:ca:c3:91 -d 4c:1d:96:27:1a:4b -j DROP
+# Block outgoing traffic from A to B on UDP ports 1000-2000
+iptables -A FORWARD -p udp --sport 1000:2000 -s 4c:1d:96:27:1a:4b -d ac:c0:48:ca:c3:91 -j DROP
+------------------------------------------------------------------------------------------------------
+block all traffic
+---------------------------------------------------------------------------------
+# Block traffic from A to B
+ebtables -A FORWARD -s 4c:1d:96:27:1a:4b -d ac:c0:48:ca:c3:91 -j DROP
+
+# Block traffic from B to A
+ebtables -A FORWARD -s ac:c0:48:ca:c3:91 -d 4c:1d:96:27:1a:4b -j DROP
+----------------------------------------------------------------------------------
+
+
+block tcp traffic
+---------------------------------------------------------------------------------------
+# Block TCP traffic from A to B
+ebtables -A FORWARD -p IPv4 --ip-proto tcp -s 04:ea:56:23:74:70 -d 	2c:be:eb:97:45:45 -j DROP
+
+# Block TCP traffic from B to A
+ebtables -A FORWARD -p IPv4 --ip-proto tcp -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+-----------------------------------------------------------------------------------------------
+
+block udp traffic
+------------------------------------------------------------------------------------------------
+# Block UDP traffic from A to B
+ebtables -A FORWARD -p IPv4 --ip-proto udp -s 04:ea:56:23:74:70 -d 	2c:be:eb:97:45:45 -j DROP
+
+# Block UDP traffic from B to A
+ebtables -A FORWARD -p IPv4 --ip-proto udp -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+--------------------------------------------------------------------------------------------------
+
+
+
+
+
+-----------------------------------------------------------------------------------------------
+#filter on single SSID on both interface(ex:ssid aztest)
+ebtables -A FORWARD -i wlan1 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i wlan1 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+ebtables -A FORWARD -i wlan0 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i wlan0 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+ebtables -D FORWARD -i wlan1 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -D FORWARD -i wlan1 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+ebtables -D FORWARD -i wlan0 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -D FORWARD -i wlan0 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+
+
+ebtables -A FORWARD -i wlan1 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j ACCEPT
+ebtables -A FORWARD -i wlan1 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j ACCEPT
+ebtables -A FORWARD -i wlan0 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j ACCEPT
+ebtables -A FORWARD -i wlan0 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j ACCEPT
+
+ebtables -D FORWARD -i wlan1 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j ACCEPT
+ebtables -D FORWARD -i wlan1 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j ACCEPT
+ebtables -D FORWARD -i wlan0 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j ACCEPT
+ebtables -D FORWARD -i wlan0 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j ACCEPT
+
+
+#filter on single SSID on both interface(ex:ssid macacl)
+ebtables -A FORWARD -i wlan1-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j DROP
+ebtables -A FORWARD -i wlan1-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -A FORWARD -i wlan0-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j DROP
+ebtables -A FORWARD -i wlan0-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j DROP
+
+ebtables -D FORWARD -i wlan1-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j DROP
+ebtables -D FORWARD -i wlan1-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -D FORWARD -i wlan0-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j DROP
+ebtables -D FORWARD -i wlan0-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j DROP
+
+ebtables -A FORWARD -i wlan1-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j ACCEPT
+ebtables -A FORWARD -i wlan1-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -A FORWARD -i wlan0-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j ACCEPT
+ebtables -A FORWARD -i wlan0-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+
+ebtables -D FORWARD -i wlan1-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j ACCEPT
+ebtables -D FORWARD -i wlan1-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -D FORWARD -i wlan0-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j ACCEPT
+ebtables -D FORWARD -i wlan0-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+
+
+
+
+
+
+
+
+
+ebtables -D FORWARD -s 04:ea:56:23:74:70 -d e4:0d:36:85:7d:25 -j DROP
+ebtables -D FORWARD -s e4:0d:36:85:7d:25 -d 04:ea:56:23:74:70 -j DROP
+ebtables -D FORWARD -s 04:ea:56:23:74:70 -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -D FORWARD -s f8:b1:dd:4e:87:c5 -d 04:ea:56:23:74:70 -j DROP
+ebtables -D FORWARD -s 2c:be:eb:97:45:45 -d e4:0d:36:85:7d:25 -j DROP
+ebtables -D FORWARD -s e4:0d:36:85:7d:25 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -D FORWARD -s 2c:be:eb:97:45:45 -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -D FORWARD -s f8:b1:dd:4e:87:c5 -d 2c:be:eb:97:45:45 -j DROP
+
+
+
+
+ebtables -A FORWARD -i wlan1 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -A FORWARD -i wlan1 -s 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -A FORWARD -i wlan0 -s 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -d 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -j DROP
+ebtables -A FORWARD -i wlan0 -s 2c:be:eb:00:00:00/FF:FF:FF:00:00:00 -d 04:ea:56:00:00:00/FF:FF:FF:00:00:00 -j DROP
+
+
+While change of DROP to ACCEPT you should add
+
+ebtables -A FORWARD -i wlan1-1 -j DROP
+ebtables -A FORWARD -i wlan0-1 -j DROP
+ebtables -A FORWARD -i wlan1 -j ACCEPT
+ebtables -A FORWARD -i wlan0 -j ACCEPT
+
+ebtables -D FORWARD -i wlan1-1 -j DROP
+ebtables -D FORWARD -i wlan0-1 -j DROP
+ebtables -D FORWARD -i wlan1 -j ACCEPT
+ebtables -D FORWARD -i wlan0 -j ACCEPT
+
+
+
+
+
+
+04:ea:56:23:74:70
+10.1.1.94 (DHCP)
+f8:b1:dd:4e:87:c5
+10.1.1.135 (DHCP)
+2c:be:eb:97:45:45
+10.1.1.106 (DHCP)
+e4:0d:36:85:7d:25
+10.1.1.32 (DHCP)
+
+
+--------------------------------------------------------------------------------------------------------
+
+
+ebtables -A FORWARD -i wlan1-1 -j DROP
+ebtables -A FORWARD -i wlan0-1 -j DROP
+ebtables -A FORWARD -i wlan1 -j ACCEPT
+ebtables -A FORWARD -i wlan0 -j ACCEPT
+ebtables -A FORWARD -i wlan1 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i wlan1 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+ebtables -A FORWARD -i wlan0 -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i wlan0 -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
+ebtables -A FORWARD -i wlan1-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j ACCEPT
+ebtables -A FORWARD -i wlan1-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -A FORWARD -i wlan0-1 -s f8:b1:dd:4e:87:c5 -d e4:0d:36:85:7d:25 -j ACCEPT
+ebtables -A FORWARD -i wlan0-1 -s e4:0d:36:85:7d:25 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+
+--------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+470
+------------------------------------------------------------------------------------------------------------
+aztest
+4c:1d:96:26:39:0f
+2c:be:eb:97:45:45
+
+macacl
+f8:b1:dd:4e:87:c5
+78:d6:dc:77:e8:bd
+
+ebtables -t broute -L
+
+# block communication between clients connected to two diff ssid on single working on 470.
+ebtables -t broute -A BROUTING -s 4c:1d:96:26:39:0f -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -t broute -A BROUTING -s f8:b1:dd:4e:87:c5 -d 4c:1d:96:26:39:0f -j DROP
+ebtables -t broute -A BROUTING -s 4c:1d:96:26:39:0f -d 78:d6:dc:77:e8:bd -j DROP
+ebtables -t broute -A BROUTING -s 78:d6:dc:77:e8:bd -d 4c:1d:96:26:39:0f -j DROP
+ebtables -t broute -A BROUTING -s 2c:be:eb:97:45:45 -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -t broute -A BROUTING -s f8:b1:dd:4e:87:c5 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -t broute -A BROUTING -s 2c:be:eb:97:45:45 -d 78:d6:dc:77:e8:bd -j DROP
+ebtables -t broute -A BROUTING -s 78:d6:dc:77:e8:bd -d 2c:be:eb:97:45:45 -j DROP
+
+ebtables -t broute -D BROUTING -s 4c:1d:96:26:39:0f -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -t broute -D BROUTING -s f8:b1:dd:4e:87:c5 -d 4c:1d:96:26:39:0f -j DROP
+ebtables -t broute -D BROUTING -s 4c:1d:96:26:39:0f -d 78:d6:dc:77:e8:bd -j DROP
+ebtables -t broute -D BROUTING -s 78:d6:dc:77:e8:bd -d 4c:1d:96:26:39:0f -j DROP
+ebtables -t broute -D BROUTING -s 2c:be:eb:97:45:45 -d f8:b1:dd:4e:87:c5 -j DROP
+ebtables -t broute -D BROUTING -s f8:b1:dd:4e:87:c5 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -t broute -D BROUTING -s 2c:be:eb:97:45:45 -d 78:d6:dc:77:e8:bd -j DROP
+ebtables -t broute -D BROUTING -s 78:d6:dc:77:e8:bd -d 2c:be:eb:97:45:45 -j DROP
+
+ACCEPT
+
+ebtables -t broute -A BROUTING -s 4c:1d:96:26:39:0f -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -t broute -A BROUTING -s f8:b1:dd:4e:87:c5 -d 4c:1d:96:26:39:0f -j ACCEPT
+ebtables -t broute -A BROUTING -s 4c:1d:96:26:39:0f -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -t broute -A BROUTING -s 78:d6:dc:77:e8:bd -d 4c:1d:96:26:39:0f -j ACCEPT
+ebtables -t broute -A BROUTING -s 2c:be:eb:97:45:45 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -t broute -A BROUTING -s f8:b1:dd:4e:87:c5 -d 2c:be:eb:97:45:45 -j ACCEPT
+ebtables -t broute -A BROUTING -s 2c:be:eb:97:45:45 -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -t broute -A BROUTING -s 78:d6:dc:77:e8:bd -d 2c:be:eb:97:45:45 -j ACCEPT
+
+ebtables -t broute -D BROUTING -s 4c:1d:96:26:39:0f -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -t broute -D BROUTING -s f8:b1:dd:4e:87:c5 -d 4c:1d:96:26:39:0f -j ACCEPT
+ebtables -t broute -D BROUTING -s 4c:1d:96:26:39:0f -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -t broute -D BROUTING -s 78:d6:dc:77:e8:bd -d 4c:1d:96:26:39:0f -j ACCEPT
+ebtables -t broute -D BROUTING -s 2c:be:eb:97:45:45 -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -t broute -D BROUTING -s f8:b1:dd:4e:87:c5 -d 2c:be:eb:97:45:45 -j ACCEPT
+ebtables -t broute -D BROUTING -s 2c:be:eb:97:45:45 -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -t broute -D BROUTING -s 78:d6:dc:77:e8:bd -d 2c:be:eb:97:45:45 -j ACCEPT
+
+
+ebtables -t broute -D BROUTING --among-src 4c:1d:96:26:39:0f -j DROP
+
+ebtables -A FORWARD --among-src 4c:1d:96:26:39:0f -j DROP
+
+ebtables -A FORWARD -i ath00 -s 4c:1d:96:26:39:0f -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i ath00 -s 2c:be:eb:97:45:45 -d 4c:1d:96:26:39:0f -j DROP
+ebtables -A FORWARD -i ath10 -s 4c:1d:96:26:39:0f -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i ath10 -s 2c:be:eb:97:45:45 -d 4c:1d:96:26:39:0f -j DROP
+
+
+ebtables -A FORWARD -i ath01 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -A FORWARD -i ath01 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -A FORWARD -i ath11 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -A FORWARD -i ath11 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -j ACCEPT
+
+Delete 
+
+ebtables -D FORWARD -i ath00 -s 4c:1d:96:26:39:0f -d 2c:be:eb:97:45:45 -j DROP
+ebtables -D FORWARD -i ath00 -s 2c:be:eb:97:45:45 -d 4c:1d:96:26:39:0f -j DROP
+ebtables -D FORWARD -i ath10 -s 4c:1d:96:26:39:0f -d 2c:be:eb:97:45:45 -j DROP
+ebtables -D FORWARD -i ath10 -s 2c:be:eb:97:45:45 -d 4c:1d:96:26:39:0f -j DROP
+
+
+ebtables -D FORWARD -i ath01 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -D FORWARD -i ath01 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -D FORWARD -i ath11 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -j ACCEPT
+ebtables -D FORWARD -i ath11 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -j ACCEPT
+
+
+ebtables -t broute -D BROUTING -i ath00 --among-src 4c:1d:96:26:39:0f --among-dst 2c:be:eb:97:45:45 -j DROP
+ebtables -t broute -D BROUTING -i ath00 --among-src 2c:be:eb:97:45:45 --among-dst 4c:1d:96:26:39:0f -j DROP
+ebtables -t broute -D BROUTING -i ath10 --among-src 4c:1d:96:26:39:0f --among-dst 2c:be:eb:97:45:45 -j DROP
+ebtables -t broute -D BROUTING -i ath10 --among-src 2c:be:eb:97:45:45 --among-dst 4c:1d:96:26:39:0f -j DROP
+
+
+ebtables -t broute -A BROUTING  -among-src 4c:1d:96:26:39:0f  -j DROP
+ebtables -t broute -A BROUTING  -among-src 2c:be:eb:97:45:45  -j DROP
+ebtables -t broute -A BROUTING  -among-src 4c:1d:96:26:39:0f  -j DROP
+ebtables -t broute -A BROUTING  -among-src 2c:be:eb:97:45:45  -j DROP
+
+working 
+ebtables -A FORWARD -i ath01 -j DROP
+ebtables -A FORWARD -i ath11 -j DROP
+
+ebtables -D FORWARD -i ath01 -j DROP
+ebtables -D FORWARD -i ath11 -j DROP
+---------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------
+oct 21
+-----------------------------------------------------------------------------------------------------------------
+ebtables -t broute -A BROUTING -p IPv4 -i ath01 -j ACCEPT
+ebtables -t broute -A BROUTING -p IPv4 -i ath11 -j ACCEPT
+
+ebtables -t broute -D BROUTING -p IPv4 -i ath01 -s f8:b1:dd:4e:87:c5 -j ACCEPT
+ebtables -t broute -D BROUTING -p IPv4 -i ath11 -s 78:d6:dc:77:e8:bd -j ACCEPT
+
+
+
+
+ebtables -A FORWARD -i ath01 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -p IPv4 -j DROP
+ebtables -A FORWARD -i ath01 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -p IPv4 -j DROP
+ebtables -A FORWARD -i ath11 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -p IPv4 -j DROP
+ebtables -A FORWARD -i ath11 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -p IPv4 -j DROP
+
+ebtables -D FORWARD -i ath01 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -p IPv4 -j DROP
+ebtables -D FORWARD -i ath01 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -p IPv4 -j DROP
+ebtables -D FORWARD -i ath11 -s f8:b1:dd:4e:87:c5 -d 78:d6:dc:77:e8:bd -p IPv4 -j DROP
+ebtables -D FORWARD -i ath11 -s 78:d6:dc:77:e8:bd -d f8:b1:dd:4e:87:c5 -p IPv4 -j DROP
+
+
+##############################################################################################
+################################################################################################
+
+#ebtables -t broute -N WLAN2945_ISOLATE # Intra Vlan Disabled WLAN2945
+#ebtables -t broute -P WLAN2945_ISOLATE  RETURN # Intra Vlan Disabled WLAN2945#
+#ebtables -t broute -A CLIENT_ISOLATION -i wlan0-1 -j WLAN2945_ISOLATE # Intra V#lan Disabled WLAN2945
+#ebtables -t broute -A CLIENT_ISOLATION -i wlan1-1 -j WLAN2945_ISOLATE # Intra Vlan Disabled WLAN2945
+#ebtables -t broute -I WLAN2945_ISOLATE -p IPv4 --ip-dst ! 10.1.1.1/24 -j RETURN # Intra Vlan Disabled WLAN2945
+#ebtables -t broute -A WLAN2945_ISOLATE -j ISOLATE # Intra Vlan Disabled WLAN2945
+#ebtables -t broute -I ISOLATE -p IPv4 --ip-dst 172.16.1.111 -j RETURN # wan
+#ebtables -t broute -I ISOLATE -p IPv4 --ip-dst 10.1.1.154 -j RETURN # wan
+#ebtables -t broute -I ISOLATE -p IPv4 --ip-dst 10.1.1.1 -j RETURN # wan
+-------------------------------------------------------------------------------------------------------------
+# Create and configure the chain for multicast and broadcast blocking
+ebtables -t broute -N WLAN2945_MULTICAST_BROADCAST
+ebtables -t broute -P WLAN2945_MULTICAST_BROADCAST RETURN
+
+# Redirect traffic from specific interfaces to this new chain
+ebtables -t broute -A CLIENT_ISOLATION -i wlan0-1 -j WLAN2945_MULTICAST_BROADCAST
+ebtables -t broute -A CLIENT_ISOLATION -i wlan1-1 -j WLAN2945_MULTICAST_BROADCAST
+
+# Add rules to drop multicast and broadcast traffic in the new chain
+# Drop multicast traffic (01:00:5E:xx:xx:xx)
+ebtables -t broute -A PREROUTING -d 01:00:5E:00:00:00/FF:FF:FF:80:00:00 -j DROP
+ebtables -t broute -I WLAN2945_MULTICAST_BROADCAST -p IPv4 --ip-dst 172.16.1.111 -j RETURN # wan
+ebtables -t broute -I WLAN2945_MULTICAST_BROADCAST -p IPv4 --ip-dst 10.1.1.121 -j RETURN # wan
+#ebtables -t broute -I WLAN2945_MULTICAST_BROADCAST -p IPv4 --ip-dst 10.1.1.1 -j RETURN # wan
+
+# Drop broadcast traffic (ff:ff:ff:ff:ff:ff)
+#ebtables -t broute -A WLAN2945_MULTICAST_BROADCAST -d ff:ff:ff:ff:ff:ff -j DROP
+ebtables -t broute -I WLAN2945_MULTICAST_BROADCAST -p IPv4 --ip-dst 10.1.1.0/24 -j RETURN # Inter Vlan Disabled WLAN2945
+#ebtables -t broute -I WLAN2945_MULTICAST_BROADCAST -p IPv4 --ip-src 10.1.1.0/24 -j RETURN # Inter Vlan Disabled WLAN2945
+ebtables -t broute -I WLAN2945_MULTICAST_BROADCAST -p IPv4 --ip-dst 10.1.1.0/24 -j DROP
+
+
+
+
+
+
+

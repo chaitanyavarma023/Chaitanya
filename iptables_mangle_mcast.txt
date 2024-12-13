@@ -1,0 +1,187 @@
+ebtables -t broute -A BROUTING -i ath10 -d ff:ff:ff:ff:ff:ff -j DROP
+ebtables -t broute -A BROUTING -i ath10 -d ff:ff:ff:ff:ff:ff -j DROP
+ebtables -t broute -I BROUTING -i ath10 -d ff:ff:ff:ff:ff:ff -j DROP
+
+ebtables -t broute -A BROUTING --in-interface ath10 -d ff:ff:ff:ff:ff:ff -j DROP
+
+
+ebtables -t broute -A BROUTING -i ath10 -d 01:00:5E:00:00:01 -j DROP
+ebtables -t broute -A BROUTING -i ath10 -d 01:00:5E:00:00:01 -j DROP
+ebtables -t broute -A BROUTING -i ath10 -d 01:00:5E:00:00:01 -j DROP
+
+
+
+arptables -A INPUT -i ath10 -j DROP
+############################################################################################
+
+tcpdump -i br-wan  host 224.1.0.1
+sudo hping3 -I wlp1s0 -2 -S 224.1.0.1
+
+ebtables -t broute -A BROUTING --in-interface ath10 -d 01:00:5E:00:00:00/FF:FF:FF:80:00:00 -j DROP
+
+#############################################################################
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p ARP -j DROP
+
+
+
+
+####################################################################################
+
+tcpdump -i br-wan -n igmp
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv4 --ip-proto igmp -j DROP
+###############################################################################################
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv4 --ip-proto udp --ip-dport 67 -j DROP
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv4 --ip-proto udp --ip-sport 68 -j DROP
+
+
+tcpdump -i br-wan udp port 67 or udp port 68
+
+sudo hping3 --udp -s 68 -p 67 -c 1 10.1.1.211
+
+
+
+
+
+
+
+
+
+
+#############################################################################
+2405:201:2002:5053:5a61:63ff:fe00:46af
+
+33:33:00:00:00:00/FF:FF:00:00:00:00
+
+ebtables -t broute -D BROUTING --in-interface ath10 -d 33:33:00:00:00:00/FF:FF:00:00:00:00 -j DROP
+ebtables -t broute -D BROUTING --in-interface ath00 -d 33:33:00:00:00:00/FF:FF:00:00:00:00 -j DROP
+
+
+ebtables -t broute -I BROUTING --in-interface ath10 -d 33:33:00:00:00:00/FF:FF:00:00:00:00 -j DROP
+ebtables -t broute -I BROUTING --in-interface ath00 -d 33:33:00:00:00:00/FF:FF:00:00:00:00 -j DROP
+
+ping -6 ff02::1%wlp1s0
+
+tcpdump -i br-wan dst ff02::1
+#################################################################################
+
+
+ebtables -A INPUT --in-interface ath10 -p IPv6 --ip6-dst ff::/8 -j DROP
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 --ip6-dst ff::/8 -j DROP
+
+ebtables -A INPUT --in-interface ath10 -p IPv6 -d Multicast -j DROP
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 -d Multicast -j DROP
+
+ebtables -A INPUT --in-interface ath10 -p IPv6 --pkttype-type Multicast -j DROP
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 --pkttype-type Multicast -j DROP
+
+--pkttype-type
+
+
+ebtables -D FORWARD -p IPv6 --ip6-proto udp --ip6-dport 547 -j DROP
+ebtables -D FORWARD -p IPv6 --ip6-proto udp --ip6-sport 546 -j DROP
+ebtables -A FORWARD -p IPv6 --in-interface ath10 --ip6-proto udp --ip6-dport 547 -j DROP
+ebtables -A FORWARD -p IPv6 --in-interface ath10 --ip6-proto udp --ip6-sport 546 -j DROP
+
+###############################################################################################
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 --ip-proto udp --ip-dport 547 -j DROP
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 --ip-proto udp --ip-sport 546 -j DROP
+ebtables -t broute -A BROUTING --in-interface ath00 -p IPv6 --ip-proto udp --ip-dport 547 -j DROP
+ebtables -t broute -A BROUTING --in-interface ath00 -p IPv6 --ip-proto udp --ip-sport 546 -j DROP
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 --ip6-protocol udp --ip6-dport 547 -j DROP
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 --ip6-protocol udp --ip6-dport 546 -j DROP
+
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv4 --ip-protocol udp --ip-dport 547 -j DROP
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv4 --ip-protocol udp --ip-dport 546 -j DROP
+
+iperf3 -s -6 -p 547
+
+iperf3 -c 2405:201:2002:5053:5a61:63ff:fe00:46af -6 -u -p 547 -b 1M -t 30
+
+
+
+
+##############################################################################################
+
+
+
+ebtables -A FORWARD --in-interface ath10 -p IPv6 --ip6-proto 58 -j DROP
+ebtables -A FORWARD --in-interface ath00 -p IPv6 --ip6-proto 58 -j DROP
+
+ebtables -t broute -A BROUTING --in-interface ath10 -p IPv6 --ip6-proto 58 -j DROP
+ebtables -t broute -A BROUTING --in-interface ath00 -p IPv6 --ip6-proto 58 -j DROP
+
+ebtables -A INPUT --in-interface ath10 -p IPv6 --ip6-proto 58 -j DROP
+ebtables -A INPUT --in-interface ath00 -p IPv6 --ip6-proto 58 -j DROP
+
+ebtables -A OUTPUT --out-interface ath10 -p IPv6 --ip6-proto 58 -j DROP
+ebtables -A OUTPUT --out-interface ath00 -p IPv6 --ip6-proto 58 -j DROP
+
+
+
+
+
+############################################################################################################
+
+
+ebtables -A INPUT -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+ebtables -A INPUT -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+
+ebtables -A FORWARD -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+ebtables -A FORWARD -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+ebtables -A FORWARD -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+ebtables -A FORWARD -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+
+ebtables -A OUTPUT -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+ebtables -A OUTPUT -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-solicitation -j DROP
+
+
+
+ebtables -A INPUT -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+ebtables -A INPUT -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+
+ebtables -A FORWARD -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+ebtables -A FORWARD -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+ebtables -A FORWARD -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+ebtables -A FORWARD -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+
+ebtables -A OUTPUT -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+ebtables -A OUTPUT -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type neighbor-advertisement -j DROP
+
+
+
+
+#################################################################################################
+
+
+
+ebtables -A INPUT -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+ebtables -A INPUT -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+
+ebtables -A FORWARD -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+ebtables -A FORWARD -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+ebtables -A FORWARD -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+ebtables -A FORWARD -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+
+ebtables -A OUTPUT -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+ebtables -A OUTPUT -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-solicitation -j DROP
+
+
+
+ebtables -A INPUT -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+ebtables -A INPUT -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+
+ebtables -A FORWARD -i ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+ebtables -A FORWARD -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+ebtables -A FORWARD -i ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+ebtables -A FORWARD -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+
+ebtables -A OUTPUT -o ath10 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+ebtables -A OUTPUT -o ath00 -p IPv6 --ip6-proto ipv6-icmp --ip6-icmp-type router-advertisement -j DROP
+

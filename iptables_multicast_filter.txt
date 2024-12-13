@@ -1,0 +1,31 @@
+iptables -t raw -I PREROUTING -i ath00 -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING -i ath10 -m addrtype --dst-type MULTICAST -j DROP
+ip6tables -t raw -I PREROUTING -i ath00 -d ff00::/8 -j DROP
+ip6tables -t raw -I PREROUTING -i ath10 -d ff00::/8 -j DROP
+
+
+iptables -t raw -A PREROUTING -i ath00 -p arp -j DROP
+iptables -t raw -A PREROUTING -i ath10 -p arp -j DROP
+
+iptables -t raw -A PREROUTING -i ath00 -p udp --dport 67:68 -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p udp --dport 67:68 -j ACCEPT
+
+ip6tables -t raw -A PREROUTING -i ath00 -p udp --dport 546:547 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p udp --dport 546:547 -j ACCEPT
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+
+iptables -t raw -A PREROUTING -i ath00 -p igmp -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p igmp -j ACCEPT
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 131 -j ACCEPT

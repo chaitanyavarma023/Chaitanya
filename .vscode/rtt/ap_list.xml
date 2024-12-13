@@ -1,0 +1,107 @@
+<body>
+<ranging>
+<ap>
+<band>1</band>                                                
+<rttType>3</rttType>                  
+<numFrames>5</numFrames>                           
+<burstduration>15</burstduration>      
+<preamble>2</preamble>
+<lci>1</lci>
+<civic>1</civic>
+<center_freq1>5755</center_freq1>                  
+<center_freq2>0</center_freq2>                     
+<bw>1</bw>                                                  
+<ch>149</ch>                                                
+<mac>58:61:63:01:D9:49</mac>                                        
+</ap>                                              
+</ranging>                                        
+</body> 
+
+
+
+
+
+
+
+
+<ftmrr>
+<element>
+<!-- BSSID of remote target -->
+<bssid>xx:xx:xx:xx:xx:xx</bssid>
+<!-- BSSID info in hex bytes format.
+Refer to Specification 802.11 mc (D5.2) Section 9.4.2.37 -->
+<info_bssid>xxxxxxxx</info_bssid>
+<!-- Channel -->
+<ch>xxx</ch>
+<!-- Channel center 1 (optional) -->
+<center_ch1>xxx</center_ch1>
+<!-- Channel center 2 (optional) -->
+<center_ch2>xxxx</center_ch2>
+<!-- Operating channel width (optional)
+0 = 20 MHz
+1 = 40 MHz
+2 = 80 MHz
+3 = 160 MHz
+4 = 80+80 MHz
+-->
+<width_ch>xx</width_ch>
+<!-- Operating Class indicates the channel set of the AP
+indicated by this BSSID. Valid Operating classes are listed in
+Specification 802.11 mc (D5.2) Annex E -->
+
+
+
+<ftmrr>
+<element>
+<bssid>58:61:63:01:80:CA</bssid>
+<ch>149</ch>
+<center_ch1>5755</center_ch1>
+<width_ch>1</width_ch> 
+<op_class>128</op_class>
+<phy_type>9</phy_type>
+</element>
+
+
+
+
+<body>
+<interface>wifi0</interface>
+<lcr_info>
+<country_code>IN</country_code>
+<civic_address>AHMEDABAD001</civic_address> <!-- Example civic address -->
+</lcr_info>
+<lci_info>
+<latitude>23.0225</latitude> <!-- Latitude for Ahmedabad -->
+<longitude>72.5714</longitude> <!-- Longitude for Ahmedabad -->
+<altitude>50</altitude> <!-- Average altitude in meters -->
+<latitude_unc>5</latitude_unc> <!-- Uncertainty for latitude -->
+<longitude_unc>5</longitude_unc> <!-- Uncertainty for longitude -->
+<altitude_unc>10</altitude_unc> <!-- Uncertainty for altitude -->
+<motion_pattern>0</motion_pattern> <!-- Motion pattern (0 for stationary) -->
+<floor>3</floor> <!-- Actual floor of the AP -->
+<height_above_floor>2</height_above_floor> <!-- Height above the floor in meters -->
+<height_unc>1</height_unc> <!-- Height uncertainty in meters -->
+</lci_info>
+</body>
+
+
+
+<body>
+<interface>wifi0</interface>
+<lcr_info>
+<country_code>IN</country_code>
+<civic_address>AHMEDABAD001</civic_address> <!-- Example address -->
+</lcr_info>
+<lci_info>
+<latitude>23.0225</latitude> <!-- Latitude for Ahmedabad -->
+<longitude>72.5714</longitude> <!-- Longitude for Ahmedabad -->
+<altitude>50</altitude> <!-- Average altitude, adjust as needed -->
+<latitude_unc>5</latitude_unc> <!-- Uncertainty for latitude -->
+<longitude_unc>5</longitude_unc> <!-- Uncertainty for longitude -->
+<altitude_unc>10</altitude_unc> <!-- Uncertainty for altitude -->
+<motion_pattern>0</motion_pattern> <!-- Adjust if needed -->
+<floor>3</floor> <!-- Adjust based on your actual floor -->
+<height_above_floor>2</height_above_floor> <!-- Height above the floor -->
+<height_unc>1</height_unc> <!-- Height uncertainty -->
+</lci_info>
+</body>

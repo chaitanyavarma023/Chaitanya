@@ -1,0 +1,352 @@
+Allow ARP Requests:
+
+iptables -t raw -A PREROUTING -i ath00 -p arp -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p arp -j ACCEPT
+
+
+
+
+iptables -A INPUT -p arp -j ACCEPT
+iptables -A FORWARD -p arp -j ACCEPT
+
+Allow ARP Requests on SSID Interface:
+
+iptables -A INPUT -i wlan0.1 -p arp -j ACCEPT
+iptables -A FORWARD -i wlan0.1 -p arp -j ACCEPT
+
+
+----------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------
+
+Allow DHCPv4 (UDP Port 67 for Server, 68 for Client):
+
+iptables -t raw -A PREROUTING -i ath00 -p udp --dport 67:68 -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p udp --dport 67:68 -j ACCEPT
+
+
+
+
+iptables -A INPUT -p udp --dport 67:68 -j ACCEPT
+iptables -A FORWARD -p udp --dport 67:68 -j ACCEPT
+
+
+iptables -A INPUT -i wlan0.1 -p udp --dport 67:68 -j ACCEPT
+iptables -A FORWARD -i wlan0.1 -p udp --dport 67:68 -j ACCEPT
+
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+Allow DHCPv6 (UDP Port 546 for Client, 547 for Server):
+
+ip6tables -t raw -A PREROUTING -i ath00 -p udp --dport 546:547 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p udp --dport 546:547 -j ACCEPT
+
+
+ip6tables -A INPUT -p udp --dport 546:547 -j ACCEPT
+ip6tables -A FORWARD -p udp --dport 546:547 -j ACCEPT
+
+ip6tables -A INPUT -i wlan0.1 -p udp --dport 546:547 -j ACCEPT
+ip6tables -A FORWARD -i wlan0.1 -p udp --dport 546:547 -j ACCEPT
+
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+Allow IPv6 Neighbor Solicitation (ICMPv6 Type 135) and Neighbor Advertisement (ICMPv6 Type 136):
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+
+ip6tables -A INPUT -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -A INPUT -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -A FORWARD -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -A FORWARD -p icmpv6 --icmpv6-type 136 -j ACCEPT
+
+
+ip6tables -A INPUT -i wlan0.1 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -A INPUT -i wlan0.1 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -A FORWARD -i wlan0.1 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -A FORWARD -i wlan0.1 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+
+
+
+--------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------
+
+Allow IPv6 Router Solicitation (ICMPv6 Type 133):
+
+ip6tables-t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables-t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+
+ip6tables -A INPUT -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables -A FORWARD -p icmpv6 --icmpv6-type 133 -j ACCEPT
+
+
+ip6tables -A INPUT -i wlan0.1 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables -A FORWARD -i wlan0.1 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+
+
+---------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+
+Allow IGMP (Used for IPv4 Multicast Management):
+
+iptables -t raw -A PREROUTING -i ath00 -p igmp -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p igmp -j ACCEPT
+
+iptables -A INPUT -p igmp -j ACCEPT
+iptables -A FORWARD -p igmp -j ACCEPT
+
+
+iptables -A INPUT -i wlan0.1 -p igmp -j ACCEPT
+iptables -A FORWARD -i wlan0.1 -p igmp -j ACCEPT
+
+
+-----------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------
+
+Allow MLD (Multicast Listener Discovery for IPv6, ICMPv6 Type 130 and 131):
+
+
+# Allow ICMPv6 type 130 on ath00 (MLD Listener Query)
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+
+# Allow ICMPv6 type 130 on ath10 (MLD Listener Query)
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+
+
+ip6tables -A INPUT -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -A INPUT -p icmpv6 --icmpv6-type 131 -j ACCEPT
+ip6tables -A FORWARD -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -A FORWARD -p icmpv6 --icmpv6-type 131 -j ACCEPT
+
+
+ip6tables -A INPUT -i ath00 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -A INPUT -i ath10 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+ip6tables -A FORWARD -i ath00 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -A FORWARD -i ath10 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+
+
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+
+Drop All Other Multicast/Broadcast Traffic on SSID Interface:
+iptables -t raw -L -v
+
+
+iptables -t raw -I PREROUTING -i ath00 -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING -i ath10 -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING -i ath00 -m addrtype --dst-type BROADCAST -j DROP
+iptables -t raw -I PREROUTING -i ath10 -m addrtype --dst-type BROADCAST -j DROP
+
+
+
+# IPv4 Multicast/Broadcast on SSID Interface
+iptables -A INPUT -i ath00 -m addrtype --dst-type MULTICAST -j DROP
+iptables -A FORWARD -i ath00 -m addrtype --dst-type MULTICAST -j DROP
+iptables -A INPUT -i ath10 -m addrtype --dst-type MULTICAST -j DROP
+iptables -A FORWARD -i ath10 -m addrtype --dst-type MULTICAST -j DROP
+
+iptables -A INPUT -i ath00 -m addrtype --dst-type BROADCAST -j DROP
+iptables -A FORWARD -i ath00 -m addrtype --dst-type BROADCAST -j DROP
+iptables -A INPUT -i ath10 -m addrtype --dst-type BROADCAST -j DROP
+iptables -A FORWARD -i ath10 -m addrtype --dst-type BROADCAST -j DROP
+
+# IPv6 Multicast on SSID Interface
+ip6tables -A INPUT -i ath00 -d ff00::/8 -j DROP
+ip6tables -A FORWARD -i ath00 -d ff00::/8 -j DROP
+ip6tables -A INPUT -i ath10 -d ff00::/8 -j DROP
+ip6tables -A FORWARD -i ath10 -d ff00::/8 -j DROP
+
+
+tcpdump -i ath00 'broadcast or multicast'
+tcpdump -i ath10 'broadcast or multicast'
+
+#####################################################################################################################
+
+Raw tables 
+
+iptables -t raw -I PREROUTING -i ath00 -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING -i ath10 -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING -i ath00 -m addrtype --dst-type BROADCAST -j DROP
+iptables -t raw -I PREROUTING -i ath10 -m addrtype --dst-type BROADCAST -j DROP
+
+
+Allow ARP Requests:
+
+iptables -t raw -A PREROUTING -i ath00 -p arp -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p arp -j ACCEPT
+
+Allow DHCPv4 (UDP Port 67 for Server, 68 for Client):
+
+iptables -t raw -A PREROUTING -i ath00 -p udp --dport 67:68 -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p udp --dport 67:68 -j ACCEPT
+
+Allow DHCPv6 (UDP Port 546 for Client, 547 for Server):
+
+ip6tables -t raw -A PREROUTING -i ath00 -p udp --dport 546:547 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p udp --dport 546:547 -j ACCEPT
+
+Allow IPv6 Neighbor Solicitation (ICMPv6 Type 135) and Neighbor Advertisement (ICMPv6 Type 136):
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+
+Allow IPv6 Router Solicitation (ICMPv6 Type 133):
+
+ip6tables-t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables-t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+
+Allow IGMP (Used for IPv4 Multicast Management):
+
+iptables -t raw -A PREROUTING -i ath00 -p igmp -j ACCEPT
+iptables -t raw -A PREROUTING -i ath10 -p igmp -j ACCEPT
+
+# Allow ICMPv6 type 130 on ath00 (MLD Listener Query)
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+
+# Allow ICMPv6 type 130 on ath10 (MLD Listener Query)
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+
+
+iptables -t mangle -A INPUT -i ath10 -p udp --dport 67:68 -j ACCEPT
+iptables -t mangle -A FORWARD -i ath00 -p udp --dport 67:68 -j ACCEPT
+
+iptables -t raw -I PREROUTING  -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING  -m addrtype --dst-type MULTICAST -j DROP
+
+
+ip6tables -t mangle -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -t mangle -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -t mangle -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -t mangle -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+
+
+ip6tables -t mangle -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables -t mangle -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+
+
+ip6tables -t mangle -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t mangle -A PREROUTING -i ath00 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+ip6tables -t mangle -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -t mangle -A PREROUTING -i ath10 -p icmpv6 --icmpv6-type 131 -j 
+
+iptables  -A FORWARD -i ath10 -p udp --dport 67:68 -j ACCEPT
+iptables  -A FORWARD -i ath00 -p udp --dport 67:68 -j ACCEPT
+
+
+iptables -I OUTPUT -o ath10 -p udp --dport 67:68 --sport 67:68 -j ACCEPT
+iptables -I OUTPUT -o ath00 -p udp --dport 67:68 --sport 67:68 -j ACCEPT
+ip6tables -t raw -A PREROUTING -i ath00 -p udp --dport 546:547 -j ACCEPT
+
+###############################################################################################
+
+iptables-save | grep URL_whitelist_ | grep PREROUTING | sed 's/-A /iptables -w -t nat -D /g' | while read rule ; do ${rule} ; done                             
+        iptables -w -D FORWARD -m physdev --physdev-is-bridged --physdev-out ath+ -j RETURN 2&>/dev/null                                                               
+        iptables -w -D FORWARD -m physdev --physdev-in ath+ -j RETURN 2&>/dev/null
+
+This module matches on the bridge port input and output devices enslaved to a bridge device. This module is a part of the infrastructure that enables a transparent bridging IP firewall and is only useful for kernel versions above version 2.5.44.
+
+[!] −−physdev−in name
+
+Name of a bridge port via which a packet is received (only for packets entering the INPUT, FORWARD and PREROUTING chains). If the interface name ends in a "+", then any interface which begins with this name will match. If the packet didn’t arrive through a bridge device, this packet won’t match this option, unless ’!’ is used.
+
+[!] −−physdev−out name
+
+Name of a bridge port via which a packet is going to be sent (for bridged packets entering the FORWARD and POSTROUTING chains). If the interface name ends in a "+", then any interface which begins with this name will match.
+
+[!] −−physdev−is−in
+
+Matches if the packet has entered through a bridge interface.
+
+[!] −−physdev−is−out
+
+Matches if the packet will leave through a bridge interface.
+
+[!] −−physdev−is−bridged
+
+Matches if the packet is being bridged and therefore is not being routed. This is only useful in the FORWARD and POSTROUTING chains.
+
+
+
+
+iptables -I FORWARD -m physdev --physdev-in ath00 -p udp --dport 67:68 -j ACCEPT
+iptables -I FORWARD -m physdev --physdev-in ath10 -p udp --dport 67:68 -j ACCEPT
+iptables -A FORWARD -m physdev --physdev-in ath00 -p igmp -j ACCEPT
+iptables -A FORWARD -m physdev --physdev-in ath10 -p igmp -j ACCEPT
+
+iptables -A FORWARD -m pkttype --pkt-type broadcast -j DROP
+iptables -A FORWARD -m pkttype --pkt-type multicast -j DROP
+
+
+
+
+
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath00 -p udp --dport 546:547 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath10 -p udp --dport 546:547 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath00 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath10 -p icmpv6 --icmpv6-type 135 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath00 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath10 -p icmpv6 --icmpv6-type 136 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath00 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath10 -p icmpv6 --icmpv6-type 133 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath00 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath10 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath10 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+ip6tables -w -I PREROUTING -t mangle -m physdev --physdev-in ath00 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+
+fe80::/10 
+fc00::/6
+
+ip6tables -A INPUT -m physdev --physdev-in ath00 -d ff00::/8 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath10 -d ff00::/8 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath00 -d ff00::/8 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath10 -d ff00::/8 -j DROP
+
+ip6tables -A INPUT -m physdev --physdev-in ath00 -d fe80::/10 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath10 -d fe80::/10 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath00 -d fe80::/10 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath10 -d fe80::/10 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath00 -d fc00::/6 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath10 -d fc00::/6 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath00 -d fc00::/6 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath10 -d fc00::/6 -j DROP
+
+
+ip6tables -A INPUT -m physdev --physdev-in ath00 -d ff02::1 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath00 -d ff02::2 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath00 -d ff02::1 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath00 -d ff02::2 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath10 -d ff02::1 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath10 -d ff02::2 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath10 -d ff02::1 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath10 -d ff02::2 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath00 -d ff02::16 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath00 -d ff02::16 -j DROP
+ip6tables -A INPUT -m physdev --physdev-in ath10 -d ff02::16 -j DROP
+ip6tables -A FORWARD -m physdev --physdev-in ath10 -d ff02::16 -j DROP
+
+
+
+
+ip6tables -A OUTPUT -m physdev --physdev-in ath00 -d ff00::/8 -j DROP
+ip6tables -A OUTPUT -m physdev --physdev-in ath10 -d ff00::/8 -j DROP
+ip6tables -A OUTPUT -m physdev --physdev-in ath00 -d ff02::1 -j DROP
+ip6tables -A OUTPUT -m physdev --physdev-in ath10 -d ff02::2 -j DROP
+
+
+iptables -t raw -I PREROUTING -m physdev --physdev-in ath00 -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING -m physdev --physdev-in ath10 -m addrtype --dst-type MULTICAST -j DROP
+iptables -t raw -I PREROUTING -m physdev --physdev-in ath00 -m addrtype --dst-type BROADCAST -j DROP
+iptables -t raw -I PREROUTING -m physdev --physdev-in ath10 -m addrtype --dst-type BROADCAST -j DROP

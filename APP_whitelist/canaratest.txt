@@ -1,0 +1,29 @@
+ip r --- ip of device
+
+-- Run below commands in 210 --
+
+iw dev --- To check the interface of AP
+
+tcpdump -i ath10 -w /tmp/pkt.pcap --> To capture the packets in AP 210plus
+
+scp /tmp/pkt.pcap zen@192.168.7.175:/home/zen  --> To copy the capture file to Local PC .
+
+
+
+-- Run below commands in CLI --
+
+sudo /home/zen/ndpiReader -i pkt3.pcap | cut -d"[" -f2 | cut -d"]" -f1 | sort | uniq
+
+-- Run below commands in 270 --
+
+sh whitelist.sh
+
+vi /etc/config/dhcp
+
+list ipset '/LINKS/whitelist'
+
+ipset flush
+
+/etc/init.d/dnsmasq restart
+
+ipset list 
