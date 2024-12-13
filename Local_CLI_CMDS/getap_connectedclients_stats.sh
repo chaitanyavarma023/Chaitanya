@@ -109,12 +109,13 @@ fi
 /bin/echo "|-------|--------------------------------|-------------------|----------|----------------|-------------------------|-----|"
 
 # Ask the user if they want more detailed information
-read -p "Do you want more detailed information about any client? (yes/no): " user_choice
+echo "Do you want more detailed information about any client? (yes/no): "
+read user_choice
 
 if [ "$user_choice" = "yes" ]; then
     # Ask the user to enter the MAC address of the client
-    read -p "Please enter the MAC address of the client: " input_mac
-
+     echo "Please enter the MAC address of the client: "
+     read input_mac
     # Check if MAC address exists in the /tmp/connected_client directory
     client_found=0
     for a in `/bin/ls /tmp/connected_client/`; do
