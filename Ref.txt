@@ -97,6 +97,10 @@ source code path
 harshal@harshal:~/bob-the-builder/upstream/qn-i-280/qsdk$ grep -inr ""
 
 firmware upgrad (CV)
+wget {below link for example}
+http://172.105.35.235:9000/firmwares/QN-O-240.HW2-7.0.1.B1-27-nov-2k24.sysupgrade
+
+
 root@QN_FD:14:E9:/tmp# sysupgrade -n -v QN-O-240.HW2-qca-wifi-80\+80-.sysupgrade 
 
 
@@ -134,12 +138,15 @@ ethtool eth0
 
 manual retrieve cloud configurations
 
- lsof -i:2232
+root@QN_01:D9:49:~# lsof -i:2232
 COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
 ssh     10596 root    3u  inet  21168      0t0  TCP 10.1.1.70:42976->192-46-209-149.ip.linodeusercontent.com:2232 (ESTABLISHED)
-root@QN_01:D9:49:~# echo 0> /etc/RevisionNo 
+root@QN_01:D9:49:~# echo 0> /etc/RevisionNo
 
 root@QN_01:D9:49:~# lua /usr/lib/lua/luci/ap
 ap/           application/
 root@QN_01:D9:49:~# lua /usr/lib/lua/luci/ap/Ask_Config.lua 
+
+
+syslog server : 192.168.7.98
 

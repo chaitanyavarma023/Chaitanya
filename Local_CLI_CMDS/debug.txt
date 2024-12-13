@@ -1,0 +1,64 @@
+root@QN_00:0F:39:~# history
+   0 cat /usr/lib/lua/luci/quantum_release 
+   1 EXIT
+   2 exit
+   3 vi /usr/LocalCLI/USER/radclient
+   4 chmod 777 /usr/LocalCLI/USER/radclient
+   5 echo "User-Name=vlan10,User-Password=vlan10vlan10" | radclient -x 194.195.118.174:25000 auth Be4DgfGAHN4K
+   6 echo "User-Name=radtest,User-Password=12345678" | radclient -x 192.46.209.149:1812 auth dz
+   7 ls /usr/LocalCLI/
+   8 ls /usr/LocalCLI/USER/
+   9 sh -x /usr/lib/lua/luci/reboot_hook.sh 
+  10 ls /usr/LocalCLI/USER/
+  11 ls /usr/LocalCLI/
+  12 vi /usr/terminal.sh 
+  13 /usr/bin/ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  14 /usr/bin/ssh -i /etc/dropbear/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  15 /usr/bin/ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  16 ls -ltah /usr/LocalCLI/id_rsa
+  17 chmod 444 /usr/LocalCLI/id_rsa
+  18 ls -ltah /usr/LocalCLI/id_rsa
+  19 /usr/bin/ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  20 cat /usr/LocalCLI/id_rsa
+  21 cat /etc/dropbear/id_rsa
+  22 /usr/bin/ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  23 ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  24 ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  25 rm .ssh/known_hosts 
+  26 /usr/bin/ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  27 ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  28 vi /usr/lib/lua/luci/reboot_hook.sh 
+  29 ls -ltah /usr/LocalCLI/id_rsa 
+  30 chmod +655 /usr/LocalCLI/id_rsa 
+  31 chmod 655 /usr/LocalCLI/id_rsa 
+  32 ls -ltah /usr/LocalCLI/id_rsa 
+  33 ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  34 ls -ltah /usr/LocalCLI/id_rsa 
+  35 chmod 777 /usr/LocalCLI/id_rsa 
+  36 ls -ltah /usr/LocalCLI/id_rsa 
+  37 ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  38 chmod 600 /usr/LocalCLI/id_rsa 
+  39 ls -ltah /usr/LocalCLI/id_rsa 
+  40 ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  41 ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  42 chmod 666 /usr/LocalCLI/id_rsa 
+  43 ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  44 chmod 660 /usr/LocalCLI/id_rsa 
+  45 ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  46 chmod 600 /usr/LocalCLI/id_rsa 
+  47 ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  48 vi /usr/LocalCLI/USER/radclient 
+  49 sh -x /usr/LocalCLI/USER/radclient 
+  50 ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@localhost "date"
+  51 /usr/bin/ssh -v -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  52 /usr/bin/ssh -i /usr/LocalCLI/id_rsa -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -q root@localhost "date"
+  53 ls -ltah /usr/LocalCLI/id_rsa 
+  54 vi /usr/LocalCLI/USER/radclient
+  55 ls -ltr  /usr/LocalCLI/USER/radclient
+  56 cat /usr/LocalCLI/id_rsa 
+  57 reboot
+  58 vi /usr/LocalCLI/USER/tcpdump
+  59 chmod 777 /usr/LocalCLI/USER/tcpdump
+  60 vi /usr/LocalCLI/USER/logread_f
+  61 chmod 777 /usr/LocalCLI/USER/logread_f
+  62 history

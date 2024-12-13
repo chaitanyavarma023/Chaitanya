@@ -4,9 +4,9 @@ ip r --- ip of device
 
 iw dev --- To check the interface of AP
 
-tcpdump -i ath10 -w /tmp/pkt.pcap --> To capture the packets in AP 210plus
+tcpdump -i ath00 -w pkt10.pcap --> To capture the packets in AP 210plus
 
-scp /tmp/pkt.pcap zen@192.168.7.175:/home/zen  --> To copy the capture file to Local PC .
+scp pkt10.pcap zen@192.168.7.185:/home/zen  --> To copy the capture file to Local PC .
 
 
 
@@ -27,3 +27,28 @@ ipset flush
 /etc/init.d/dnsmasq restart
 
 ipset list 
+
+
+list ipset '/cdn.rawgit.com/fonts.gstatic.com/objects.githubusercontent.com/unpkg.com/github.com/ajax.googleapis.com/fonts.googleapis.com
+
+
+
+
+        list ipset '/canarabank.com/canarabankcsis.in/.canarabank.in/canarabank.in/canarites.canarabankdigi.in/cbdc.canarabank.in/CN=canarabank.com/CN=canarabankcsis.in
+        list ipset '/web.sensibull.com/canarites.canarabankdigi.in/canarabank.com/services.gst.gov.in/www.canmoney.in/canmoney.in/udyamregistration.gov.in/udyamimitra.i
+        list ipset '/googletagmanager.com/stackpath.bootstrapcdn.com/cdnjs.cloudflare.com/cdn.jsdelivr.net/APP_whitelist_Dk1F0RpqT6'
+
+
+
+
+www.psballiance.com/www.digital-infomedia.com/www.trai.gov.in/epayment.canarabank.in/traces.syndicatebank.in/udgam.rbi.org.in/cybercrime.gov.in/cms.rbi.org.in/pgportal.gov.in/consumerhelpline.gov.in/odr.canarabank.com/www.psballiance.com/rtionline.gov.in/pledge.cvc.nic.in/www.nabard.org/finmin.gov.in/WWW.bcsbi.org.in/www.worldbank.org/www.vidyalakshmi.co.in/www.jansamarth.in/dlp.canarabank.in/www.startupindia.gov.in/www.rupay.co.in/onelink.to/billpe.setu.co/www.westernunion.com/
+
+canarabank.net.in
+##############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
+
+list ipset '/canarabank.com/canarabankcsis.in/.canarabank.in/canarabank.in/canarites.canarabankdigi.in/cbdc.canarabank.in/CN=canarabank.com/CN=canarabankcsis.in/CN=*.canarabank.in/CN=canarites.canarabankdigi.in/CN=*.digiloans.canarabank.in/CN=emandate.canarabank.in/CN=odr.canarabank.com/.digiloans.canarabank.in/digiloans.canarabank.in/emandate.canarabank.in/odr.canarabank.com/portal.digiloans.canarabank.in/www.canarabank.com/www.canarabankcsis.in/accounts.google.com/apac.mastercard.com/apfintechexpress.mastercard.com/artistaccelerator.mastercard.com/asset.mastercard.com/assets.eop.mastercard.com/bel.cyberark.mastercard.com/bestbusinesspartner.mastercard.com/boa.mastercard.com/brand.mastercard.com/cdn.cookielaw.org/www.mas.canarabank.com/mas.canarabank.com/canarabank.in/.canarabank.in/mobility.canarabank.in/canarabank.com/online.canarabank.in/www.canmoney.in/pmjdy.gov.in/safal.canarabank.in/www.gstatic.com/APP_whitelist_Dk1F0RpqT6'
+	list ipset '/web.sensibull.com/canarites.canarabankdigi.in/canarabank.com/services.gst.gov.in/www.canmoney.in/canmoney.in/udyamregistration.gov.in/udyamimitra.in/pmsvanidhi.mohua.gov.in/mudra.org.in/npci.org.in/emeetings.kfintech.com/ris.kfintech.com/remittrack.canarabank.com/www.evoting.nsdl.com/evoting.nsdl.com/www.canmoneyonline.com/canmoneyonline.com/instigo.ndml.in/webapp.canarabank.in/tin.canarabank.in/www.canararewardz.com/credit.canararewardz.com/debit.canararewardz.com/canarabank.cardhq.com/billpe.setu.co/smartodr.in/help.smartodr.in/www.nseindia.com/nseindia.com/www.sebi.gov.in/sebi.gov.in/www.mcxindia.com/mcxindia.com/www.rbi.org.in/rbi.org.in/www.m.rbi.org.in/m.rbi.org.in/www.cdslindia.com/cdslindia.com/nsdl.co.in/www.ncdex.com/ncdex.com/irdai.gov.in/www.amfiindia.com/amfiindia.com/www.canararobeco.com/canararobeco.com/www.canarahsbclife.com/sa.cardholder.mastercard.com/www.sihub.in/sihub.in/eservices.nsdl.com/images.loylty.com/APP_whitelist_Dk1F0RpqT6'
+	list ipset '/www.googletagmanager.com/googletagmanager.com/stackpath.bootstrapcdn.com/cdnjs.cloudflare.com/cdn.jsdelivr.net/analytics.google.com/kwikid.s3.ap-south-1.amazonaws.com/api-dev-t2.test.getkwikid.com/APP_whitelist_Dk1F0RpqT6'
+	list ipset '/apis.google.com/aws.amazon.com/videokyc.canarabank.com/td.doubleclick.net/stats.g.doubleclick.net/www.google.co.in/cabprod.gupshup.io/content.dionglobal.in/content-autofill.googleapis.com/getkwikid.com/cdn.rawgit.com/fonts.gstatic.com/objects.githubusercontent.com/unpkg.com/github.com/ajax.googleapis.com/fonts.googleapis.com/APP_whitelist_Dk1F0RpqT6'
+#	list ipset '/analytics.google.com/kwikid.s3.ap-south-1.amazonaws.com/api-dev-t2.test.getkwikid.com/APP_whitelist_Dk1F0RpqT6'
+	

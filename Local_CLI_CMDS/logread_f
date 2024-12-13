@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Ask the user for the duration to run logread -f
+printf "\e[1;91m%-15s\e[m"  "Enter the duration (in seconds) to run logread -f: "
+read duration
+
+# Validate the input is a positive integer
+if ! [ "$duration" -ge 0 ] 2>/dev/null; then
+    echo "Invalid input. Please enter a positive number."
+    exit 1
+fi
+
+printf "\e[1;91m%-15s\e[m"  "Starting logread in follow mode for $duration seconds. Press Ctrl+C to stop early."
+
+# Run logread -f in the background and stop it after the specified duration
+logread -f &
+LOGREAD_PID=$!
+
+# Wait for the specified duration
+sleep "$duration"
+
+# Stop the logread process
+kill "$LOGREAD_PID"
+
+
+

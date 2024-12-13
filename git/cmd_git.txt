@@ -1,0 +1,37 @@
+Git command 
+
+1) git clone  https://gitlab.com/quantum-networks-internal-team/qsdk-11.4.git (change link for what ever project clone)
+
+-----> this command is used to clone project frome gitlib
+
+2) cd /project name
+
+3) git remote -v
+---> this command for showing remote
+4) git remote add mainorigin  link of that project
+
+5) git remote -v
+-----> show mainorigin added sucessfuly
+6) git fetch mainorigin
+----> this for showing all branch
+7) git branch
+----> this for showing which branch selected
+8) git checkout --track mainorigin/branch_name
+-----> this for added new branch and select that branch at add time
+9) git checkout branch_name
+----> this for selecting branch in added list
+
+
+
+
+
+for firmware build
+
+go in docker and
+
+command :- bash -x autobuid.sh h/w_selection “first”
+
+package ipk build
+
+command :-  make path	-j1 V=sc
+example :- make package/ndpi-netfilter/compile -j1 V=sc
