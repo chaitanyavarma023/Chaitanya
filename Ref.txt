@@ -51,7 +51,7 @@ tcp port 8888'
 
 Finally you must tell UCI to commit your changes to the configuration file: ---> uci commit opennds
 
-Default Dynamic Click to Continue
+Default Dynamic Click to Continue
 #option login_option_enabled '1'
 
 Pre-Installed dynamic User/email Login page sequence
@@ -113,13 +113,13 @@ docker exec -it bob-the-builder bash
 
 harshal@8f9bac2755d9:~/workdir/qntm-upstream/qsdk-6.2.1$
 make menuconfig to open and select package using / then see the no to select filesystem and then compile
-harshal@8f9bac2755d9:~/workdir/qntm-upstream/qsdk-6.2.1$ bash -x autobuild.sh i270 "backup_270" 
+harshal@8f9bac2755d9:~/workdir/qntm-upstream/qsdk-6.2.1$ bash -x autobuild.sh i270 "lm75" 
 
 
-bash -x autobuild.sh i210"pbx_voice_210" 
+bash -x autobuild.sh i270 "firstbuild" "firstbuild"
 
 compile only single IPK
-make package/network/services/igmpproxy/compile -j1 V=sc
+make qca/src/linux-4.4/drivers/hwmon/compile -j1 V=sc
 
 
 220 - 6.2.1
@@ -138,15 +138,34 @@ ethtool eth0
 
 manual retrieve cloud configurations
 
-root@QN_01:D9:49:~# lsof -i:2232
-COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
-ssh     10596 root    3u  inet  21168      0t0  TCP 10.1.1.70:42976->192-46-209-149.ip.linodeusercontent.com:2232 (ESTABLISHED)
-root@QN_01:D9:49:~# echo 0> /etc/RevisionNo
-
-root@QN_01:D9:49:~# lua /usr/lib/lua/luci/ap
-ap/           application/
-root@QN_01:D9:49:~# lua /usr/lib/lua/luci/ap/Ask_Config.lua 
+lsof -i:2232
+echo 0> /etc/RevisionNo
+lua /usr/lib/lua/luci/ap/Ask_Config.lua 
 
 
 syslog server : 192.168.7.98
 
+
+
+RMA ::_-----------------------------------------
+
+setenv serverip 10.1.1.86 && setenv ipaddr 10.1.1.101 && tftpboot upgrade-h245.img && setenv imgaddr $fileaddr && source $imgaddr:script && reset
+
+
+
+
+
+STEPS FOR Building firmware
+
+without docker running
+
+---> clone source code from git to local dir
+---> qsdk/mkdir dl
+---> copy dl files to folder dl
+
+run docker
+
+---> give permissions chmod 777 to qsdk-11.4/* and qsdk-11.4/
+---> run bash -x autobuild i270 "" ""
+
+once compilation success check firmware generated in ls ../../../../generated
