@@ -75,7 +75,7 @@ ebtables -A FORWARD -p IPv4 --ip-proto icmp -s 2c:be:eb:97:45:45 -d 04:ea:56:23:
 --------------------------------------------------------------------------------------------------------
 
 
-ebtables -D FORWARD -i wlan1 -p IPv4 --ip-proto icmp -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP
+ebtables -A FORWARD -i eth0 -p IPv4 --ip-proto 50 -j DROP
 ebtables -D FORWARD -i wlan1 -p IPv4 --ip-proto icmp -s 2c:be:eb:97:45:45 -d 04:ea:56:23:74:70 -j DROP
 
 ebtables -D FORWARD -i wlan0 -p IPv4 --ip-proto icmp -s 04:ea:56:23:74:70 -d 2c:be:eb:97:45:45 -j DROP

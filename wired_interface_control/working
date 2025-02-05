@@ -1,0 +1,575 @@
+cat /proc/sys/net/bridge/bridge-nf-call-iptables 
+
+iptables -F
+iptables -t raw -F
+iptables -t mangle -F
+
+
+FTP 
+./ftp.sh 
+tcpdump -i br-wan port 21
+
+iptables -A FORWARD -i br-wan -p tcp --dport 21 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 21 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 21 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 21 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 21 -j DROP
+
+
+esp
+
+sudo python3 generate_esp.py 
+ tcpdump -i br-wan proto 50
+
+ iptables -A FORWARD -i br-wan -p esp -j DROP
+iptables -A INPUT -i br-wan -p esp -j DROP
+iptables -A OUTPUT -o br-wan -p esp -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p esp -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p esp  -j DROP
+
+h323 tcp    
+
+sudo python3 generate_h323_traffic.py
+tcpdump -i br-wan port 1720
+
+iptables -A INPUT -i br-wan -p tcp --dport 1720 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 1720 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 1720 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 1720 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 1720 -j DROP
+
+h323 udp
+sudo python3 generate_udp_h323_traffic.py
+tcpdump -i br-wan udp port 1719
+
+iptables -A INPUT -i br-wan -p udp --dport 1719 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 1719 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 1719 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 1719 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 1719 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 1720 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 1720 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 1720 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 1720 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 1720 -j DROP
+
+
+http proxy2
+sudo python3 generate_http_proxy2.py 
+tcpdump -i br-wan port 8080
+
+iptables -A INPUT -i br-wan -p tcp --dport 8080 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 8080 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 8080 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 8080 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 8080 -j DROP
+
+http proxy3
+sudo python3 generate_http_proxy3.py
+tcpdump -i br-wan port 3128
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 3128 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 3128 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 3128 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 3128 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 3128 -j DROP
+
+
+http
+sudo python3 generate_http.py
+tcpdump -i br-wan port 80
+
+iptables -A INPUT -i br-wan -p tcp --dport 80 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 80 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 80 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 80 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 80 -j DROP
+
+
+https
+sudo python3 generate_https.py
+tcpdump -i br-wan port 443
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 443 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 443 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 443 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 443 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 443 -j DROP
+
+
+ike udp
+sudo python3 generate_ike.py
+tcpdump -i br-wan udp and \( port 500 or port 4500 \)
+
+iptables -A INPUT -i br-wan -p udp --dport 500 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 500 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 500 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 500 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 500 -j DROP
+
+iptables -A INPUT -i br-wan -p udp --dport 4500 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 4500 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 4500 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 4500 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 4500 -j DROP
+
+
+Kerberos
+sudo python3 generate_kerberos.py
+tcpdump -i br-wan 'udp and (port 88 or port 464)' or 'tcp and port 88'
+
+
+# Block TCP port 88
+iptables -A INPUT -i br-wan -p tcp --dport 88 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 88 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 88 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 88 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 88 -j DROP
+
+# Block UDP port 88
+iptables -A INPUT -i br-wan -p udp --dport 88 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 88 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 88 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 88 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 88 -j DROP
+
+# Block UDP port 464 (Kerberos password change)
+iptables -A INPUT -i br-wan -p udp --dport 464 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 464 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 464 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 464 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 464 -j DROP
+
+
+
+L2tp udp 1701     and    Block IPsec (UDP ports 500 and 4500 for L2TP over IPsec):
+sudo python3 generate_l2tp.py 
+tcpdump -i br-wan 'udp and (port 1701 or port 500 or port 4500)'
+
+iptables -A INPUT -i br-wan -p udp --dport 1701 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 1701 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 1701 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 1701 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 1701 -j DROP
+
+
+
+iptables -A INPUT -i br-wan -p udp --dport 500 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 500 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 500 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 500 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 500 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 4500 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 4500 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 4500 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 4500 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 4500 -j DROP
+
+
+Lpd tcp
+sudo python3 generate_lpd.py
+    tcpdump -i br-wan 'tcp port 515'
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 515 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 515 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 515 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 515 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 515 -j DROP
+
+Lpd udp
+sudo python3 generate_udp_lpd.py
+tcpdump -i br-wan 'udp port 515'
+
+
+iptables -A INPUT -i br-wan -p udp --dport 515 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 515 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 515 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 515 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 515 -j DROP
+
+
+
+msrpc tcp and udp
+sudo python3 generate_msrpc.py
+tcpdump -i br-wan 'tcp port 135 or udp port 135'
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 135 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 135 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 135 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 135 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 135 -j DROP
+
+iptables -A INPUT -i br-wan -p udp --dport 135 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 135 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 135 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 135 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 135 -j DROP
+
+
+
+natt 
+sudo python3 generate_natt.py 
+tcpdump -i br-wan 'udp port 4500'
+
+
+iptables -A INPUT -i br-wan -p udp --dport 4500 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 4500 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 4500 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 4500 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 4500 -j DROP
+
+
+netbios dgm 
+sudo python3 generate_netbios_dgm.py 
+tcpdump -i br-wan 'udp port 138' 
+
+
+iptables -A INPUT -i br-wan -p udp --dport 138 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 138 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 138 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 138 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 138 -j DROP
+
+
+netbios ns
+sudo python3 generate_netbios_ns.py
+tcpdump -i br-wan 'udp port 137'
+
+
+iptables -A INPUT -i br-wan -p udp --dport 137 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 137 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 137 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 137 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 137 -j DROP
+
+
+    
+netbios ssn tcp 
+sudo python3 generate_netbios_ssn.py
+tcpdump -i br-wan 'tcp port 139'
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 139 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 139 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 139 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 139 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 139 -j DROP
+
+
+
+NTP 
+sudo python3 generate_ntp.py
+tcpdump -i br-wan 'udp port 123'
+
+iptables -A INPUT -i br-wan -p udp --dport 123 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 123 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 123 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 123 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 123 -j DROP
+
+
+POP3 
+sudo python3 generate_pop3.py
+tcpdump -i br-wan 'tcp port 110 or port 995'
+
+iptables -A INPUT -i br-wan -p tcp --dport 110 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 110 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 110 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 995 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 995 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 995 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 110 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 995 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 110 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 995 -j DROP
+
+
+
+PPTP 
+sudo python3 generate_pptp.py 
+tcpdump -i br-wan 'tcp port 1723 or proto 47'
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 1723 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 1723 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 1723 -j DROP
+iptables -A INPUT -i br-wan -p 47 -j DROP
+iptables -A OUTPUT -o br-wan -p 47 -j DROP
+iptables -A FORWARD -i br-wan -p 47 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 1723 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p 47 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 1723 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p 47 -j DROP
+
+
+RTSP
+sudo python3 generate_rtsp.py
+tcpdump -i br-wan 'tcp port 554 or udp portrange 6970-6999'
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 554 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 554 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 554 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 554 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 554 -j DROP
+
+
+iptables -A INPUT -i br-wan -p udp --dport 6970:6999 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 6970:6999 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 6970:6999 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 6970:6999 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 6970:6999 -j DROP
+
+
+
+SCCP
+sudo python3  generate_sccp.py
+tcpdump -i br-wan 'tcp port 2000 or tcp port 2443 or udp portrange 16384-32767'
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 2000 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 2000 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 2000 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 2000 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 2000 -j DROP
+
+iptables -A INPUT -i br-wan -p tcp --dport 2443 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 2443 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 2443 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 2443 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 2443 -j DROP
+
+iptables -A INPUT -i br-wan -p udp --dport 16384:32767 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 16384:32767 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 16384:32767 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 16384:32767 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 16384:32767 -j DROP
+
+
+SIPS
+sudo python3 generate_sips.py
+tcpdump -i br-wan 'tcp port 5061 or udp port 5061'
+
+iptables -A INPUT -i br-wan -p tcp --dport 5061 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 5061 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 5061 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 5061 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 5061 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 5061 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 5061 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 5061 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 5061 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 5061 -j DROP
+
+
+SIP
+sudo python3 generate_sip.py
+tcpdump -i br-wan 'udp port 5060 or tcp port 5060'
+
+iptables -A INPUT -i br-wan -p tcp --dport 5060 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 5060 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 5060 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 5060 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 5060 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 5060 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 5060 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 5060 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 5060 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 5060 -j DROP
+
+
+smb  # Block SMB traffic (direct TCP over 445 and NetBIOS over 137, 138, 139) 
+sudo python3 generate_smb.py
+tcpdump -i br-wan 'tcp port 139 or tcp port 445 or udp port 137 or udp port 138' 
+
+iptables -A INPUT -i br-wan -p tcp --dport 445 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 445 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 137 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 138 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 139 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 139 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 137 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 138 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 139 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 139 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 445 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 137 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 138 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 139 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 139 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 445 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 137 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 138 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 139 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 139 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 445 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 137 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 138 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 139 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 139 -j DROP
+
+
+smtp
+sudo python3 generate_smtp.py
+tcpdump -i br-wan 'tcp port 25 or tcp port 465 or tcp port 587' -vv
+
+
+
+iptables -A INPUT -i br-wan -p tcp --dport 25 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 465 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 587 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 25 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 465 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 587 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 25 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 465 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 587 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 25 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 465 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 587 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 25 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 465 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 587 -j DROP
+
+
+snmp
+sudo python3 generate_snmp.py
+tcpdump -i br-wan 'udp port 161 or udp port 162 or tcp port 161' -vv
+
+iptables -A INPUT -i br-wan -p tcp --dport 161 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 161 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 162 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 161 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 161 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 162 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 161 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 161 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 162 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 161 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 161 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 162 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 161 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 161 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 161 -j DROP
+
+
+ssh
+
+iptables -A INPUT -i br-wan -p tcp --dport 22 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 22 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 22 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 22 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 22 -j DROP
+
+
+
+svp
+sudo python3 generate_svp.py
+tcpdump -i br-wan 'udp port 5060 or udp portrange 16384-32767' -vv
+
+iptables -A INPUT -i br-wan -p udp --dport 5060 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 5060 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 5060 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 5060 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 5060 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 16384:32767 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 16384:32767 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 16384:32767 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 16384:32767 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 16384:32767 -j DROP
+
+
+
+syslog
+sudo python3 generate_syslog.py
+tcpdump -i br-wan udp port 514 -vv
+
+iptables -A INPUT -i br-wan -p udp --dport 514 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 514 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 514 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 514 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 514 -j DROP
+
+
+telnet
+sudo python3 generate_telnet.py
+tcpdump -i br-wan tcp port 23 -vv
+
+iptables -A INPUT -i br-wan -p tcp --dport 23 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 23 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 23 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 23 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 23 -j DROP
+
+
+tftp
+sudo python3 generate_tftp.py
+tcpdump -i br-wan udp port 69 -vv
+
+iptables -A INPUT -i br-wan -p udp --dport 69 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 69 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 69 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 69 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 69 -j DROP
+
+
+vocera
+sudo python3 generate_vocera.py
+tcpdump -i br-wan port 5000 or port 5100 or port 16666 -vv
+
+
+iptables -A INPUT -i br-wan -p udp --dport 5000 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 5100 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 16666 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 5000 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 5100 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 16666 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 5000 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 5100 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 16666 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 5000 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 5100 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 16666 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 5000 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 5100 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 16666 -j DROP
+
+
+
+
+iptables -I INPUT -i br-wan -m comment --comment "HTTP Forwarding" -m tcp -p tcp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+
+iptables -I FORWARD -i br-wan -m comment --comment "HTTP Forwarding" -m udp -p udp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+
+iptables -I INPUT -i br-wan -m comment --comment "HTTP Forwarding" -m tcp -p tcp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+
+iptables -I FORWARD -i br-wan -m comment --comment "HTTP Forwarding" -m udp -p udp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+
+
+
+
+iptables -A INPUT -i br-wan -p udp --dport 53 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 53 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 53 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 53 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 53 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 53 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 53 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 53 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 53 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 53 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 53 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m tcp -p tcp --dport 53 -j DNAT --to-destination 10.1.1.177:53
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m udp -p udp --dport 53 -j DNAT --to-destination 10.1.1.177:53
+
+
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m tcp -p tcp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m udp -p udp --dport 80 -j DNAT --to-destination 10.1.1.177:80
