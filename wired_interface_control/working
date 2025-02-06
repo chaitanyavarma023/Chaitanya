@@ -552,24 +552,48 @@ iptables -I FORWARD -i br-wan -m comment --comment "HTTP Forwarding" -m udp -p u
 
 
 
-iptables -A INPUT -i br-wan -p udp --dport 53 -j DROP
-iptables -A INPUT -i br-wan -p tcp --dport 53 -j DROP
-iptables -A INPUT -i br-wan -p udp --dport 53 -j DROP
-iptables -A OUTPUT -o br-wan -p udp --sport 53 -j DROP
-iptables -A OUTPUT -o br-wan -p tcp --sport 53 -j DROP
-iptables -A OUTPUT -o br-wan -p udp --sport 53 -j DROP
-iptables -A FORWARD -i br-wan -p udp --dport 53 -j DROP
-iptables -A FORWARD -i br-wan -p tcp --dport 53 -j DROP
-iptables -A FORWARD -i br-wan -p udp --dport 53 -j DROP
-iptables -t raw -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
-iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 53 -j DROP
-iptables -t raw -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
-iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
-iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 53 -j DROP
-iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 53 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 443 -j DROP
+iptables -A INPUT -i br-wan -p tcp --dport 443 -j DROP
+iptables -A INPUT -i br-wan -p udp --dport 443 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 443 -j DROP
+iptables -A OUTPUT -o br-wan -p tcp --sport 443 -j DROP
+iptables -A OUTPUT -o br-wan -p udp --sport 443 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 443 -j DROP
+iptables -A FORWARD -i br-wan -p tcp --dport 443 -j DROP
+iptables -A FORWARD -i br-wan -p udp --dport 443 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 443 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p tcp --dport 443 -j DROP
+iptables -t raw -A PREROUTING -i br-wan -p udp --dport 443 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 443 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p tcp --dport 443 -j DROP
+iptables -t mangle -A PREROUTING -i br-wan -p udp --dport 443 -j DROP
 iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m tcp -p tcp --dport 53 -j DNAT --to-destination 10.1.1.177:53
 iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m udp -p udp --dport 53 -j DNAT --to-destination 10.1.1.177:53
 
 
-iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m tcp -p tcp --dport 80 -j DNAT --to-destination 10.1.1.177:80
-iptables -t nat -I PREROUTING -i br-wan -m comment --comment "DNS Forwarding" -m udp -p udp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "HTTP Forwarding" -m tcp -p tcp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "HTTP Forwarding" -m udp -p udp --dport 80 -j DNAT --to-destination 10.1.1.177:80
+
+
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "HTTPS Forwarding" -m tcp -p tcp --dport 443 -j DNAT --to-destination 10.1.1.177:443
+iptables -t nat -I PREROUTING -i br-wan -m comment --comment "HTTPS Forwarding" -m udp -p udp --dport 443 -j DNAT --to-destination 10.1.1.177:443
+
+
+
+setup_forwarding_DNAT() {
+    # Prompt for destination IP
+    printf "Enter destination IP address: "
+    read -r dest_ip
+
+    # Prompt for ports for each service
+    printf "Enter destination port: "
+    read -r dns_port
+
+    # Forwarding rules (TCP/UDP)
+    iptables -t nat -I PREROUTING -i "$interface" -m comment --comment "DNS Forwarding" -m "$proto" -p "$proto" --dport "$port" -j DNAT --to-destination "${dest_ip}:${dns_port}"
+    iptables -t nat -I PREROUTING -i "$interface" -m comment --comment "DNS Forwarding" -m "$proto" -p "$proto" --dport "$port" -j DNAT --to-destination "${dest_ip}:${dns_port}"
+
+}
+
+iptables -t mangle -I PREROUTING -i "$interface" -p "$proto" --dport "$port" -j "$action"
+ 

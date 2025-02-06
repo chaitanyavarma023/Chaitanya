@@ -586,7 +586,8 @@ usage() {
 
 protocol=$1
 action=$(echo "$2" | tr '[:lower:]' '[:upper:]')
-[ "$action" != "ACCEPT" ] && [ "$action" != "DROP" ] && usage
+[ "$action" != "ACCEPT" ] && [ "$action" != "DROP" ] && [ "$action" != "DNAT" ] && [ "$action" != "SNAT" ] && usage
+
 
 # Function to manage iptables rules
 manage_rules() {
@@ -672,6 +673,8 @@ select_interface() {
   echo "$interfaces"
 }
 
+
+
 # Protocol configuration
 configure_protocol() {
   case "$protocol" in
@@ -712,9 +715,37 @@ configure_protocol() {
   esac
 }
 
+setup_forwarding_DNAT() {
+  
+  
+
+    printf "Enter Interface Name:"
+    read -r interface
+
+    # Prompt for destination IP
+    printf "Enter destination IP address: "
+    read -r dest_ip
+
+    # Prompt for ports for each service
+    printf "Enter destination port: "
+    read -r dport
+
+     if [ -z "$interface" ]; then
+        echo "Error: Interface not specified!" >&2
+        exit 1
+    fi
+
+    # Forwarding rules (TCP/UDP)
+    iptables -t nat -I PREROUTING -i "$interface" -m comment --comment "$1 Forwarding" -m tcp -p tcp --dport "$port" -j DNAT --to-destination "${dest_ip}:${dport}"
+    iptables -t nat -I PREROUTING -i "$interface" -m comment --comment "$1 Forwarding" -m udp -p udp --dport "$port" -j DNAT --to-destination "${dest_ip}:${dport}"
+
+}
 # Main execution
+
+ 
 interfaces=$(select_interface)
-configure_protocol
+      configure_protocol
+  
 
 # Apply rules to all selected interfaces
 for interface in $interfaces; do
@@ -723,12 +754,12 @@ for interface in $interfaces; do
     echo "Interface $interface does not exist!" >&2
     continue
   fi
-
+  
   # Delete existing rules first
   case "$protocol" in
     esp)
-      manage_rules -D "esp" ""
-      manage_rules -A "esp" ""
+        manage_rules -D "esp" ""
+        manage_rules -A "esp" ""
       ;;
     *)
       # Process TCP ports

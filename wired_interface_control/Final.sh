@@ -2,7 +2,7 @@
 
 # Function to display usage and supported protocols
 usage() {
-  echo "Usage: $0 <protocol> <ACCEPT|DROP>"
+  echo "Usage: $0 <protocol> <ACCEPT|DROP|DNAT|SNAT>"
   echo "Supported protocols:"
   echo "  ftp, esp, h323, h323-udp, http-proxy2, http-proxy3, http, https, ike"
   echo "  kerberos, l2tp, lpd, msrpc, natt, netbios-dgm, netbios-ns, netbios-ssn"
@@ -114,13 +114,13 @@ manage_rules_interface() {
 #    iptables $operation OUTPUT -o "$interface" -p esp -j "$action"
     iptables $operation FORWARD -i "$interface" -p esp -j "$action"
     iptables -t raw $operation PREROUTING -i "$interface" -p esp -j "$action"
-    iptables -t mangle $operation PREROUTING -i "$interface" -p esp -j "$action"
+    
   else
     iptables $operation INPUT -i "$interface" $common_cmd -j "$action"
  #   iptables $operation OUTPUT -o "$interface" $common_cmd --sport $port -j "$action"
     iptables $operation FORWARD -i "$interface" $common_cmd -j "$action"
     iptables -t raw $operation PREROUTING -i "$interface" $common_cmd -j "$action"
-    iptables -t mangle $operation PREROUTING -i "$interface" $common_cmd -j "$action"
+    
   fi
 }
 
@@ -183,6 +183,7 @@ setup_forwarding_SNAT() {
   iptables -t nat -I POSTROUTING -o "$interface" -p "$proto" --sport "$port" -j SNAT --to-source "$src_ip"
 }
 
+# Collect SSIDs and interfaces
 # Collect SSIDs and interfaces
 fetch_ssids() {
   MODEL_FILE="/etc/model"
@@ -304,7 +305,9 @@ for interface in $interfaces; do
     continue
   fi
 
-  # Get destination parameters
+  case "$action" in
+    ACCEPT|DROP)
+# Get destination parameters
   dest_spec=$(select_destination)
   [ $? -ne 0 ] && exit 1
   dest_param=$(echo "$dest_spec" | cut -d: -f2-)
@@ -320,8 +323,8 @@ for interface in $interfaces; do
         manage_rules_interface -A "esp" "" "$dest_param"
       fi
       ;;
-    *)
-      # Process TCP ports
+        *)
+          # Process TCP ports
       if [ -n "$tcp_ports" ]; then
         for port in $tcp_ports; do
           if [ "$RULE_METHOD" = "ssid" ]; then
@@ -333,8 +336,7 @@ for interface in $interfaces; do
           fi
         done
       fi
-      
-      # Process UDP ports
+          # Process UDP ports
       if [ -n "$udp_ports" ]; then
         for port in $udp_ports; do
           if [ "$RULE_METHOD" = "ssid" ]; then
@@ -346,17 +348,41 @@ for interface in $interfaces; do
           fi
         done
       fi
-      
-      # Process generic ports
+      esac
+      ;;
+    DNAT)
+      if [ -n "$tcp_ports" ]; then
+        for port in $tcp_ports; do
+                    setup_forwarding_DNAT "$interface" "tcp" "$port"  "$dest_param"
+		
+        done
+      fi
+      if [ -n "$udp_ports" ]; then
+        for port in $udp_ports; do
+          setup_forwarding_DNAT "$interface" "udp" "$port" "$dest_param"
+        done
+      fi
       if [ -n "$ports" ]; then
         for port in $ports; do
-          if [ "$RULE_METHOD" = "ssid" ]; then
-            manage_rules_ssid -D "$proto" "$port" "$dest_param"
-            manage_rules_ssid -A "$proto" "$port" "$dest_param"
-          else
-            manage_rules_interface -D "$proto" "$port" "$dest_param"
-            manage_rules_interface -A "$proto" "$port" "$dest_param"
-          fi
+          setup_forwarding_DNAT "$interface" "$proto" "$port" "$dest_param"
+        done
+      fi
+      ;;
+    *)
+      # Process TCP ports
+      if [ -n "$tcp_ports" ]; then
+        for port in $tcp_ports; do
+          setup_forwarding_SNAT "$interface" "tcp" "$port" "$dest_param"
+        done
+      fi
+      if [ -n "$udp_ports" ]; then
+        for port in $udp_ports; do
+          setup_forwarding_SNAT "$interface" "udp" "$port" "$dest_param"
+        done
+      fi
+      if [ -n "$ports" ]; then
+        for port in $ports; do
+          setup_forwarding_SNAT "$interface" "$proto" "$port" "$dest_param"
         done
       fi
       ;;
@@ -364,4 +390,3 @@ for interface in $interfaces; do
 done
 
 echo "Firewall rules successfully applied to: $interfaces"
-
