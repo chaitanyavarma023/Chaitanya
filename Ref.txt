@@ -169,3 +169,24 @@ run docker
 ---> run bash -x autobuild i270 "" ""
 
 once compilation success check firmware generated in ls ../../../../generated
+
+
+
+
+
+
+Association Request detected from Source MAC: 86:e2:73:21:2d:dd
+Found IE: ID = 0x00, Length = 9
+Found IE: ID = 0x01, Length = 8
+Found IE: ID = 0x21, Length = 2
+Found IE: ID = 0x30, Length = 20
+Found IE: ID = 0x46, Length = 5
+Found IE: ID = 0x36, Length = 3
+Found IE: ID = 0x3B, Length = 20
+Found IE: ID = 0x2D, Length = 26
+Found IE: ID = 0x7F, Length = 11
+Found IE: ID = 0xBF, Length = 12
+Found IE: ID = 0x5A, Length = 3
+Found IE: ID = 0xFF, Length = 26
+Found IE: ID = 0xDD, Length = 7
+Found IE: ID = 0xDD, Length = 7

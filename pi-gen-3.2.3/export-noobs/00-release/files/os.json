@@ -1,0 +1,14 @@
+{
+    "description": "NOOBS_DESCRIPTION",
+    "kernel": "KERNEL",
+    "name": "NOOBS_NAME",
+    "password": "wlanpi",
+    "release_date": "UNRELEASED",
+    "supported_models": [
+        "Pi 4",
+        "Pi Compute Module 4"
+    ],
+    "url": "https://www.wlanpi.com/",
+    "username": "wlanpi",
+    "version": "RELEASE"
+}
