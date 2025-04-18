@@ -1,0 +1,92 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /etc/chilli/functions
+
+num_last_rule() {
+	echo $(iptables -w -L $1 -n --line-numbers | tail -n -1 | cut -d' ' -f1)
+}
+
+ipt() {
+	iptables -w $* >/dev/null 2>&1
+}
+
+ipt_clear() {
+	for chain in input forward; do
+		ipt -D zone_hotspot_${chain} -j builtin_hotspot_${chain}
+		ipt -F builtin_hotspot_${chain}
+		ipt -X builtin_hotspot_${chain}
+	done
+
+	ipt -t nat -D zone_hotspot_prerouting -j builtin_hotspot_prerouting
+	ipt -t nat -F builtin_hotspot_prerouting
+	ipt -t nat -X builtin_hotspot_prerouting
+
+	ipt -t nat -D OUTPUT -j builtin_hotspot_output
+	ipt -t nat -F builtin_hotspot_output
+	ipt -t nat -X builtin_hotspot_output
+
+	ipt -t mangle -D FORWARD -j builtin_hotspot_forward
+	ipt -t mangle -F builtin_hotspot_forward
+	ipt -t mangle -X builtin_hotspot_forward
+}
+
+ipt_init() {
+	for chain in input forward; do
+		local num=$(num_last_rule zone_hotspot_${chain})
+		ipt -N builtin_hotspot_${chain}
+		ipt -I zone_hotspot_${chain} $num -j builtin_hotspot_${chain}
+	done
+
+	ipt -t nat -N builtin_hotspot_prerouting
+	ipt -t nat -A zone_hotspot_prerouting -j builtin_hotspot_prerouting
+
+	ipt -t nat -N builtin_hotspot_output
+	ipt -t nat -A OUTPUT -j builtin_hotspot_output
+
+	ipt -t mangle -N builtin_hotspot_forward
+	ipt -t mangle -A FORWARD -j builtin_hotspot_forward
+}
+
+ipt_setup() {
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -p tcp -d $HS_UAMLISTEN --dport $HS_HTTPPORT -j ACCEPT
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -p tcp -d $HS_UAMLISTEN --dport $HS_HTTPSPORT -j ACCEPT
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -p icmp -d $HS_UAMLISTEN -j ACCEPT
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -p udp -d $HS_UAMLISTEN --dport 67:68 -j ACCEPT
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -p udp -d $HS_UAMLISTEN --dport 53 -j ACCEPT
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -p tcp -m tcp -d $HS_UAMLISTEN --dport $HS_UAMUIPORT -j ACCEPT
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -p tcp -m tcp -d $HS_UAMLISTEN --dport $HS_UAMPORT -j ACCEPT
+	ipt -A builtin_hotspot_input -i $HS_TUNDEV -d $HS_UAMLISTEN -j DROP
+	ipt -A builtin_hotspot_input -i $HS_DHCPIF -j DROP
+	ipt -t nat -A PREROUTING -p tcp -d $HS_UAMLISTEN --dport $HS_HTTPPORT -j REDIRECT --to-ports $HS_UAMUIPORT
+	ipt -t nat -A PREROUTING -p tcp -d $HS_UAMLISTEN --dport $HS_HTTPSPORT -j REDIRECT --to-ports $HS_UAMUIPORT
+
+	ipt -A builtin_hotspot_forward -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+	ipt -A builtin_hotspot_forward -i $HS_DHCPIF -j DROP
+	ipt -A builtin_hotspot_forward -o $HS_DHCPIF -j DROP
+
+	if [ -n "$HS_DHCPGATEWAY" -a "$HS_DHCPGATEWAYPORT" == "67" ]; then
+		ipt -t nat -I builtin_hotspot_prerouting -i $HS_WANIF -s $HS_DHCPGATEWAY -p udp --dport 67 -j DNAT --to-destination $HS_DHCPRELAYAGENT:1067
+		ipt -t nat -I builtin_hotspot_output -d $HS_DHCPGATEWAY -p udp --sport 1067 -j DNAT --to-destination $HS_DHCPGATEWAY:67
+	fi
+
+	ipt -t mangle -A builtin_hotspot_forward -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+	# ipt -t mangle -A builtin_hotspot_forward -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	ipt -t mangle -A builtin_hotspot_forward -i $HS_DHCPIF -j DROP
+	ipt -t mangle -A builtin_hotspot_forward -o $HS_DHCPIF -j DROP
+}
+
+(
+	flock -x 200
+
+	config_load hotspot
+	config_get enabled hotspot hs_status
+
+	ipt_clear
+
+	if [ "$enabled" == "1" ]; then
+		ipt_init
+		ipt_setup
+	fi
+
+) 200>/var/lock/firewall.hotspot.flock

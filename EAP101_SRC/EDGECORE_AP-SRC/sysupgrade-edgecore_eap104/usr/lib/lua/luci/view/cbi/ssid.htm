@@ -1,0 +1,5 @@
+<div id="<%=self.title .. self.num%>" class="tab-pane <% if self.num == '1' then %> active <% end %> ">
+    <fieldset class="cbi-section-node<% if self.tabs then %> cbi-section-node-tabbed<% end %>" id="cbi-<%=self.config%>-<%=section%>">
+        <%+cbi/ucisection%>
+    </fieldset>
+</div>   

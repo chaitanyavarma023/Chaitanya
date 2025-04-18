@@ -1,0 +1,42 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+check_dai_include() {
+	local path
+
+	config_get path $1 path
+	if [ "$path" == "/etc/firewall.dai" ]; then
+		uci_remove firewall $1
+	fi
+}
+
+add_firewall_dai() {
+	config_load firewall
+	config_foreach check_dai_include include
+
+	uci -q batch <<-EOF
+	delete firewall.dai
+	set firewall.dai=include
+	set firewall.dai.path='/etc/firewall.dai'
+	set firewall.dai.reload='1'
+	set firewall.dai.type='script'
+	EOF
+
+	if [ "$(uci -q show firewall.@dai[-1])" == "" ]; then
+		uci -q batch <<-EOF >/dev/null
+		add firewall dai
+		set firewall.@dai[-1].dhcpsnooping_enable=0
+		set firewall.@dai[-1].arpinspection_enable=0
+		set firewall.@dai[-1].forcedhcp_enable=0
+		set firewall.@dai[-1].trustlistbroadcast_enable=0
+		set firewall.@dai[-1].statictrust_enable=0
+		EOF
+	fi
+
+	uci_commit firewall
+}
+
+add_firewall_dai
+
+exit 0

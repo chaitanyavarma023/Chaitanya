@@ -1,0 +1,12 @@
+Package: kmod-usb-dwc3
+Version: 4.4.60-1
+Depends: kernel (=4.4.60-1-67fb0d677d8cb7f320ed3d092c75caba), kmod-usb-core
+Source: package/kernel/linux
+SourceName: kmod-usb-dwc3
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1734663187
+Architecture: arm_cortex-a7
+Installed-Size: 12902
+Description:  This driver provides support for the Dual Role SuperSpeed
+ USB Controller based on the Synopsys DesignWare USB3 IP Core

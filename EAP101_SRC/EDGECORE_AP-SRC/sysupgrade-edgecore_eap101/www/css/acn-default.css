@@ -1,0 +1,437 @@
+.cbi-section {
+    border: 0px !important;
+    /*margin-bottom: 0px !important;*/
+    color: #515151 !important;
+   /* padding-bottom:20px;*/
+}
+
+input, button, select, textarea
+{
+    font-family: 'Open Sans' !important;
+    
+}
+
+h2 {
+    /*font-weight: lighter;*/
+    font-size: 23px;
+   /* border-bottom: solid 1px rgb(221, 221, 221);*/
+}
+
+h3 {
+    font-size: 18px;
+    text-transform: uppercase;
+    color: #3e5e6e;
+}
+
+.page-content { padding: 10px; }
+
+.cbi-section-node{
+    border: 0px !important;
+}
+
+select {
+    border-color: #ccc !important;
+    color: rgb(85, 85, 85) !important;
+}
+
+.form-horizontal{
+    padding-left: 20px;
+    padding-right:20px;
+}
+
+/* Make input color a bit darker, hard to see on some screens */
+textarea, input[type="text"], input[type="password"], input[type="datetime"], input[type="datetime-local"], input[type="date"], input[type="month"], input[type="time"], input[type="week"], input[type="number"], input[type="email"], input[type="url"], input[type="search"], input[type="tel"], input[type="color"]
+{
+    color: #777 !important;
+}
+
+/* Set Ace Admin error color */
+.control-group.error .inline-control-label {
+    color: #d16e6c;   
+}
+
+.spacer 
+{
+    margin-top:10px;
+}
+
+/* Don't indent password field */
+input.cbi-input-password {
+    text-indent: 0;
+}
+
+input.tooltip-error {
+    border-color:red;
+}
+
+/* center modals 
+.modal {  width: 50%  }*/
+
+/* Don't add margin if we're in a modal dialog */
+.modal .cbi-section {
+    margin-left:0px;
+}
+
+.brand img { height: 40px;}
+
+.graph-label {
+    margin-top:-5px;
+}
+
+.navbar-inverse .navbar-inner {
+background: #646464; /* Old browsers */
+background: -moz-linear-gradient(top,  #646464 0%, #7d7d7d 36%, #7d7d7d 100%); /* FF3.6+ */
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#646464), color-stop(36%,#7d7d7d), color-stop(100%,#7d7d7d)); /* Chrome,Safari4+ */
+background: -webkit-linear-gradient(top,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); /* Chrome10+,Safari5.1+ */
+background: -o-linear-gradient(top,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); /* Opera 11.10+ */
+background: -ms-linear-gradient(top,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); /* IE10+ */
+background: linear-gradient(to bottom,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#646464', endColorstr='#7d7d7d',GradientType=0 ); /* IE6-9 */
+    
+}
+.gray{
+background: #646464; 
+background: -moz-linear-gradient(top,  #646464 0%, #7d7d7d 36%, #7d7d7d 100%); 
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#646464), color-stop(36%,#7d7d7d), color-stop(100%,#7d7d7d)); 
+background: -webkit-linear-gradient(top,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); 
+background: -o-linear-gradient(top,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); 
+background: -ms-linear-gradient(top,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); 
+background: linear-gradient(to bottom,  #646464 0%,#7d7d7d 36%,#7d7d7d 100%); 
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#646464', endColorstr='#7d7d7d',GradientType=0 ); 
+
+}
+
+
+/** Make things smaller/less padded **/
+label, input, button, select, textarea,
+select, textarea, input, input[type="text"],
+input[type="password"]
+ {
+    font-size: 13px ;
+}
+.login-layout input[type="text"], .login-layout input[type="password"]{
+
+    line-height:20px;
+}
+
+.form-horizontal .control-group {
+    margin-bottom:10px;
+}
+
+.padding-top-10 { padding-top: 10px; }
+.padding-bottom-10 { padding-bottom: 10px; }
+
+/* Secondary titles with widget-like header styles */
+.acn-subtitle {
+    border: 0px;
+    color: white;
+    background: #B6B6B6;
+    margin-bottom: 15px;
+}
+
+.acn-subtitle-smaller {
+    margin-bottom: 5px;
+}
+
+.cbi-page-actions {
+    background: #e2e2e2;
+    padding:10px;
+}
+
+/* Line up with other controls in form */
+#btn_save {
+    margin-left: 150px;
+}
+
+.help-tip .tooltip.top .tooltip-arrow { border-top-color: #fff; }
+.help-tip .tooltip.right .tooltip-arrow { border-right-color: #fff; }
+.help-tip .tooltip.bottom .tooltip-arrow { border-bottom-color: #fff; }
+.help-tip .tooltip.left .tooltip-arrow { border-left-color: #fff; }
+
+.help-tip .tooltip .tooltip-inner {
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+
+    text-shadow: none;
+    font-weight: normal;
+    color: #636363;
+    font-family: 'Open Sans';
+    background-color: #fff;
+    border-left: 2px solid #FFA12A;
+    text-align: left;
+    box-shadow: 2px 2px 2px rgba(128, 128, 128, 0.62) ;
+}
+
+.help-tip { display:inline; }
+
+.help-tip i { 
+    cursor: pointer;
+    font-size: 14pt;
+    color: #CACACA;
+    position: absolute;
+    margin-top: 3px;
+    margin-left: 4px;
+    line-height: 25px;
+ }
+
+.help-text { color: gray; }
+
+@media only screen and  (min-width: 614px) {
+    .help-text{   margin-left:165px; }
+}
+
+@media only screen and  (max-width: 614px) {
+      .help-text {  margin-left:0px; }
+}
+
+.nav-list>li>.submenu { padding-bottom: 10px; padding-top: 10px; }
+
+.nav-tabs>li {
+    font-weight: 600;
+}
+
+.product-name {
+    font-size: 17px;
+    color: whitesmoke;
+    background-color: inherit;
+    padding-left: 10px;
+    text-align: left;
+    text-shadow: 0px 1px 1px rgb(25, 25, 25);
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    padding-right: 10px;
+}
+
+.device-name {
+    text-align: center;
+    font-size: 14px;
+    color: #CECECE;
+    letter-spacing: .4px;
+}
+
+ #ssid_action_buttons { margin-bottom: 10px; }
+
+@media only screen and  (max-width:981px) {
+    /*.page-content { padding-top: 40px;}*/
+
+    .page-content {
+        margin-left: 85px;
+    }
+}
+
+@media only screen and  (max-width:585px) {
+    .user-profile { line-height: 40px !important; margin-top:10px;}
+    .product-name { display:block; padding-left: 0px; }
+    .device-name {  display:none; }
+    #title_bar .logo { text-align: center; }
+    .ace-nav { }
+}
+
+@media only screen and  (max-width:423px) {
+    .product-name {  text-align: center;  padding-right: 0px; }
+    .device-name {  display:block; padding-bottom: 10px;}
+    .user-profile { line-height: 20px !important; }
+}
+
+
+@media only screen and (max-width:410px){
+
+    .lan_section .controls {
+        margin-left:0px !important;
+    }
+
+    #cbi-network .widget-toolbar:before { border-right: 0px;}
+    #cbi-network .widget-toolbar { display: block;
+    padding-left: 0px;}
+    #cbi-network .widget-toolbar .lbl {
+        padding-right: 10px;
+    }
+}
+
+/* Show menu toggler */
+@media only screen and (max-width:767px){
+
+    .menu-toggler { 
+        width: 100% !important;
+        padding-left: 0px !important;
+    }
+
+    .menu-toggler > .menu-text {
+        left: 50% !important;
+        margin-left: -45px;
+    }
+
+    /* Get rid of arrow on menu */
+
+
+    #menu-toggler:before, #menu-toggler:after {
+        left: 50% !important;
+        margin-left: -45px !important;
+    }
+
+    .sys-info-row{ 
+        margin-left: 0px !important;
+    }
+
+    .page-content {
+        margin-top: 40px !important;
+        margin-left: 0px;
+    }
+
+    #menu-toggler>span {
+        border-color: transparent;
+    }
+
+    #save_alert { text-align: center}
+    
+    #save_alert h4 { margin-bottom: 10px;}
+    #save_alert .span3 { margin-top: 10px;}
+
+    #save_alert .span3 .controls {
+        float:none;
+    }
+
+    .product { width: auto !important ;}
+
+    #cbi-wireless #btn_add_ssid  { margin-left: 0px; }
+    #cbi-wireless #ssid_tabs {   
+        display: inline-block;
+        margin-top: 50px;
+    }
+    #cbi-wireless #ssidTabContent { margin-top: -5px;}
+
+    #cbi-wireless #ssid_action_buttons, #last_ssid {     
+        position: absolute;
+    }
+    #cbi-wireless #last_ssid {
+      margin-top: -50px;
+    }
+}
+
+/* Make inputs smaller on ip alias modal so shows up correctly on small screens */
+#cbi-network-alias input {
+    width: 110px;
+}
+
+.menu-background {
+    background-color:#325465;
+}
+
+input.ace-switch[type="checkbox"] + .lbl {
+    margin-top: 4px;
+}
+
+select[multiple], select[size] {
+    height: 30px;
+}
+
+#main-content { margin-left: 170px;}
+
+#sidebar { width: 170px; }
+
+#sidebar:before {  width: 170px; }
+
+.spinner-container{
+    padding-top:10px;
+    color:gray;
+}
+
+.broadcast-checkbox {
+    margin-left: 5px;
+}
+
+    
+@media only screen and  (max-width: 922px) {
+    .sys-info-row .span2 {
+        float:none;
+        text-align: center;
+        width: 100%;
+        margin-left:10px;
+    }
+}
+
+.error-badge-visible {     
+    font-size: 110%;    
+    color: #A70019;   
+    animation: blinker 1s linear infinite;
+}    
+
+.error-msg-visible {     
+    font-size: 90%;       
+    animation: 3s linear infinite;
+}                         
+                             
+.error-badge-invisible {     
+    display:none !important; 
+}                            
+                             
+.mgmtd-badge-disabled {      
+    color: #FF8080;          
+    top: 10px;               
+    display: inline-block;   
+    vertical-align: top;     
+    margin-top: 6px;         
+    margin-left: -13px;      
+    text-shadow: gray 1px 1px 1px;        
+}                                         
+                        
+@keyframes blinker {    
+  50% { opacity: 0.2; } 
+} 
+                        
+@keyframes blinker_less {    
+  50% { opacity: 0.4; } 
+}                           
+
+a { color:#5C93B5; }
+
+.orange { color: #efb413 !important;}
+.eth-gray { color: #c7c7c7; }
+
+.wifi-green { color: #36B9C8;}
+.status-green { color: #69aa46;}
+
+@media only screen and (max-width: 979px){
+    #sidebar {
+        border: 0px;
+    }
+}
+
+.cbi-section tbody,
+.tab-content { 
+    background-color: white;
+}
+
+#cbi-wireless tbody { background-color: inherit;}
+
+#panel-user-info {
+
+    letter-spacing: .4px;
+ }
+
+ .user-menu i { padding-right: 5px;}
+
+ .user-menu li a { padding:11px; }
+
+
+.cbi-page-actions { margin-top: 20px; }
+
+h2 { padding-bottom: 10px;}
+
+.form-horizontal .control-group {  line-height: 30px; }
+
+.main-footer {
+    border-top: solid 1px #CCCCCC;
+    text-align: center;
+    padding: 5px;
+    color: #B7B7B7;
+    letter-spacing: .4px;
+    margin-top: 30px;
+}
+.tab-content { overflow:visible; }
+.tab-content>.tab-pane { overflow:auto; }
+
+.btn-add { margin-bottom: 5px; }
+
+.btn-dynamic { margin-left: 3px; }

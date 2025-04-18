@@ -1,0 +1,40 @@
+. /lib/upgrade/common.sh
+. /lib/upgrade/nand.sh
+
+generate_certificate_volume() {
+	grep certificates /proc/mtd > /dev/null
+	[ $? -eq 0 ] && return
+
+	ls /dev/ubi0 > /dev/null
+	[ $? -eq 0 ] || return
+
+	ubinfo /dev/ubi0 -N certificates > /dev/null
+	[ $? -eq 0 ] || {
+		local has_conf=0
+
+		mkdir /tmp/new_root
+		mount -t ubifs ubi0:rootfs_data /tmp/new_root
+		[ -f "/tmp/new_root/$BACKUP_FILE" ] && {
+			has_conf=1
+			cp /tmp/new_root/$BACKUP_FILE /tmp
+		}
+		umount /tmp/new_root
+
+		ubirmvol /dev/ubi0 -N rootfs_data
+		ubimkvol /dev/ubi0 -N certificates -S 20
+		ubimkvol /dev/ubi0 -N rootfs_data -m
+		nand_find_volume ubi0 rootfs_data
+		nand_find_volume ubi0 certificates
+
+		[ "$has_conf" -gt 0 ] && {
+			mount -t ubifs ubi0:rootfs_data /tmp/new_root
+			cp /tmp/$BACKUP_FILE /tmp/new_root
+			rm /tmp/$BACKUP_FILE
+			umount /tmp/new_root
+			sync
+		}
+		rmdir /tmp/new_root
+	}
+}
+
+boot_hook_add preinit_main generate_certificate_volume

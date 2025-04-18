@@ -1,0 +1,10 @@
+Package: private-mibs
+Version: 1
+Depends: libc
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/cip/private-mibs
+SourceName: private-mibs
+Section: snmp
+SourceDateEpoch: 1723789570
+Architecture: arm_cortex-a7
+Installed-Size: 33420
+Description:  Snmp mibs for Edgecore device

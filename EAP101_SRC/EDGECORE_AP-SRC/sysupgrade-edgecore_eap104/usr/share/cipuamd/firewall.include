@@ -1,0 +1,279 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/acn/acn_functions.sh
+
+WIZARD_IFNAME="wlan0-1 wlan0-2 wlan1-1 wlan1-2"
+wan_ifname=""
+auth_en="0"
+
+init_var() {
+	local rf_id device
+	config_get device "$1" device
+	rf_id=${device: -1}
+	eval "[ -z \$vap$rf_id ] && vap$rf_id=0"
+}
+
+parse_hs20_config() {
+	local hs20_en hs20_profile
+	local iw_section_name iw_portal_en
+	config_get hs20_en "$1" hs20 "0"
+
+	if [ "$hs20_en" = "0" ]; then
+		echo "0"
+		return
+	fi
+
+	config_get hs20_profile "$1" hs20_profile
+
+	if [ -z "$hs20_profile" ]; then
+		echo "0"
+		return
+	fi
+
+	iw_section_name=$(uci -q show hotspot20 | grep "$hs20_profile" | grep "name" | awk -F '.' '{print $2}')
+	if [ -z "$iw_section_name" ]; then
+		echo "0"
+		return
+	fi
+
+	iw_portal_en=$(uci_get hotspot20 "$iw_section_name" iw_portal_enable 0)
+	if [ -z "$iw_portal_en" ] || [ "$iw_portal_en" = "0" ]; then
+		echo "0"
+		return
+	else
+		echo "1"
+		return
+	fi
+}
+
+parser_conifg() {
+	local device rf_id vap_id ifname
+	local cloud_aaa=0 ssid network
+	local rf vap ssl_id port ssl_port
+	local iw_portal_en=0
+
+	config_get device "$1" device
+	config_get cloud_aaa "$1" cloud_aaa
+	config_get ssid "$1" ssid
+	config_get network "$1" network
+
+	rf_id=${device: -1}
+	eval "vap_id=\$vap$rf_id"
+	if [ "${vap_id}" = "0" ]; then
+		ifname=wlan${rf_id}
+	else
+		ifname=wlan${rf_id}-${vap_id}
+	fi
+
+	#21098:Binding SSID enhancement
+	/sbin/get_binding_ssid.sh "$ssid"
+	binding_status=$?
+
+	iw_portal_en=$(parse_hs20_config "$1")
+
+	if [ "$binding_status" == "0" -o "${cloud_aaa}" = "1" -o "$iw_portal_en" = "1" ]; then
+		auth_en="1"
+		rf=$((rf_id+1))
+		vap=$(printf %02d ${vap_id})
+		ssl_id=$((rf+7))
+		port="8${rf}${vap}"
+		ssl_port="8${ssl_id}${vap}"
+		iptables -t nat -A PROXIED -p tcp -m physdev --physdev-in ${ifname} -m tcp --dport 80 -j REDIRECT --to-ports ${port}
+		#iptables -t nat -A PROXIED -p tcp -m physdev --physdev-in ${ifname} -m tcp --dport 443 -j REDIRECT --to-ports ${ssl_port}
+	elif [ "$network" = "wan" ]; then
+		if [ -z "$wan_ifname" ]; then
+			wan_ifname=$ifname
+		else
+			wan_ifname="$wan_ifname $ifname"
+		fi
+	fi
+
+	eval "vap$rf_id=\$((vap$rf_id+1))"
+}
+
+ipt() {
+#	echo "iptables $*"
+	iptables -w $*
+}
+
+ip6t() {
+#	echo "ip6tables $*"
+	ip6tables -w $*
+}
+
+ipt_clear() {
+	ipt -t nat -D PREROUTING -m ifgroup --ifgroup-src 0x1/0x1  -j PROXIED
+	ipt -t nat -D PREROUTING -j PRE_PROXIED
+	ipt -t nat -F PRE_PROXIED
+	ipt -t nat -F PROXIED
+	ipt -t nat -X PRE_PROXIED
+	ipt -t nat -X PROXIED
+
+	ipt -t filter -D FORWARD -j AAA
+	ipt -t filter -F AAA
+	ipt -t filter -X AAA
+
+	ipt -t filter -F zone_aaa_check
+	ipt -t filter -X zone_aaa_check
+	ipt -t filter -F zone_aaa_forward
+	ipt -t filter -X zone_aaa_forward
+
+	ipt -t filter -F CACCEPT
+	ipt -t filter -X CACCEPT
+
+	ipt -t nat -D PREROUTING -m ifgroup --ifgroup-src 0x1/0x1 -p udp -m udp --dport 53 -j DNS_REDIRECT
+	ipt -t nat -F DNS_REDIRECT
+	ipt -t nat -X DNS_REDIRECT
+
+	# IPv6
+	ip6t -t filter -D FORWARD -j zone_aaa_forward
+	ip6t -t filter -F zone_aaa_check
+	ip6t -t filter -X zone_aaa_check
+	ip6t -t filter -F zone_aaa_forward
+	ip6t -t filter -X zone_aaa_forward
+
+	ip6t -t nat -D PREROUTING -m ifgroup --ifgroup-src 0x1/0x1  -j PROXIED
+	ip6t -t nat -F PROXIED
+	ip6t -t nat -X PROXIED
+}
+
+ipt_init() {
+	ipt -t nat -N PRE_PROXIED
+	ipt -t nat -N PROXIED
+	ipt -t nat -I PREROUTING -m ifgroup --ifgroup-src 0x1/0x1  -j PROXIED
+	ipt -t nat -I PREROUTING -j PRE_PROXIED
+
+	ipt -t filter -N AAA
+	ipt -t filter -I FORWARD -j AAA
+
+	ipt -t filter -N zone_aaa_check
+	ipt -t filter -N zone_aaa_forward
+
+	ipt -t filter -N CACCEPT
+
+	ipt -t nat -N DNS_REDIRECT
+	ipt -t nat -I PREROUTING -m ifgroup --ifgroup-src 0x1/0x1 -p udp -m udp --dport 53 -j DNS_REDIRECT
+
+	# IPv6
+	ip6t -t filter -N zone_aaa_check
+	ip6t -t filter -N zone_aaa_forward
+	ip6t -t filter -I FORWARD -j zone_aaa_forward
+	ip6t -t nat -N PROXIED
+	ip6t -t nat -I PREROUTING -m ifgroup --ifgroup-src 0x1/0x1  -j PROXIED
+}
+
+ipt_setup() {
+	ipset list zone_ip >/dev/null 2>&1 || ipset create zone_ip hash:net
+	ipset list wizard_ip >/dev/null 2>&1 || ipset create wizard_ip hash:net
+
+	ipt -t nat -A PRE_PROXIED -p udp -m udp --sport 53 -j ACCEPT
+	ipt -t nat -A PRE_PROXIED -p udp -m udp --dport 53 -j ACCEPT
+	ipt -t nat -A PRE_PROXIED -p udp -m udp --sport 67:68 --dport 67:68 -j ACCEPT
+
+	ipset list open_ip >/dev/null 2>&1 && ipset flush open_ip
+	if [ "$(uci -q get acn.wizard.ez_setup)" != "0" ]; then
+		ipset list open_ip >/dev/null 2>&1 || ipset create open_ip hash:ip
+		#local inet_conn=$(check_internet_connection)
+		for ifname in $WIZARD_IFNAME
+		do
+			w_id=$(( ${ifname:4:1} + 1 ))
+			vap_id=${ifname#*-}
+			s_id=$(printf %02d ${vap_id})
+			ssl_id=$(( ${w_id} + 7 ))
+			port="8${w_id}${s_id}"
+			ssl_port="8${ssl_id}${s_id}"
+			ipt -t nat -A PRE_PROXIED -p tcp -m physdev --physdev-in ${ifname} -m set --match-set open_ip src -j ACCEPT
+			#if [ "$inet_conn" != "" ]; then
+				ipt -t nat -A PRE_PROXIED -p tcp -m physdev --physdev-in ${ifname} -m set --match-set wizard_ip dst -j ACCEPT
+			#fi
+			ipt -t nat -A PRE_PROXIED -p tcp -m physdev --physdev-in ${ifname} -m tcp --dport 80 -j REDIRECT --to-ports ${port}
+			#iptables -t nat -A PRE_PROXIED -p tcp -m physdev --physdev-in ${ifname} -m tcp --dport 443 -j REDIRECT --to-ports ${ssl_port}
+		done
+
+		#if [ "$inet_conn" = "" ]; then
+		#	ipt -t nat -A PRE_PROXIED -p tcp --dport 80 -j REDIRECT --to-ports 9999
+		#fi
+	fi
+
+	ipt -t nat -A PROXIED -m cipnam --rcheck --name users --rdest --rsrcmac --learning -j ACCEPT
+	ipt -t nat -A PROXIED -m set --match-set zone_ip dst -j ACCEPT
+
+	config_load wireless
+	config_foreach init_var wifi-iface
+	config_foreach parser_conifg wifi-iface
+
+	if [ "$auth_en" = "1"  ]; then
+		for ifname in $wan_ifname
+		do
+			#iptables -t filter -I FORWARD -m physdev --physdev-in ${ifname} -j ACCEPT
+			ipt -t filter -I AAA -m physdev --physdev-in ${ifname} -j ACCEPT
+		done
+	fi
+
+	ipt -t nat -A PROXIED -p tcp -m tcp --dport 443 -j DROP
+	# ACCT_CHECK, ACCT_ACCEPT default create in firewall3
+
+	ipt -t filter -A zone_aaa_check -m set --match-set zone_ip dst -j ACCEPT
+	ipt -t filter -A zone_aaa_check -m cipnam --update --account --name users --rdest --rsrcmac -j ACCEPT
+	ipt -t filter -A zone_aaa_check -j DROP
+
+	ipt -t filter -A zone_aaa_forward -p udp -m udp --sport 53 -j ACCEPT
+	ipt -t filter -A zone_aaa_forward -p udp -m udp --dport 53 -j ACCEPT
+	ipt -t filter -A zone_aaa_forward -p udp -m udp --sport 67:68 --dport 67:68 -j ACCEPT
+	ipt -t filter -A zone_aaa_forward -m ifgroup --ifgroup-src 0x1/0x1 -j zone_aaa_check
+	ipt -t filter -A zone_aaa_forward -m cipnam --update --name users --rdest --rsrcmac --account -j ACCEPT
+
+	if [ -n "$(uci -q get network.bridge.type)" ]; then
+		for idx in $(seq 4 1 19); do
+			if [ -n "$(uci -q get network.vlan${idx}_vlan)" ]; then
+				#iptables -t filter -I FORWARD -i $(uci -q get network.vlan${idx}.device) -j ACCEPT
+				ipt -t filter -I AAA -i $(uci -q get network.vlan${idx}.device) -j ACCEPT
+			fi
+		done
+	else
+		#iptables -t filter -I FORWARD -i br-vlan+ -j ACCEPT
+		ipt -t filter -I AAA -i br-vlan+ -j ACCEPT
+	fi
+	ipt -t filter -I AAA -j zone_aaa_forward
+	#iptables -t filter -I FORWARD -j zone_aaa_forward
+	#iptables -t filter -I delegate_forward -j zone_aaa_forward
+	#iptables -t filter -A delegate_forward -i br-vlan+ -j ACCEPT
+	#iptables -t filter -D delegate_forward -j reject
+	#iptables -t filter -A delegate_forward -j reject
+
+	ipt -t filter -A CACCEPT -m cipnam --update --name users --rdest --rsrcmac --account -j ACCEPT
+	ipt -t filter -A zone_wan_forward -j CACCEPT
+	ipt -t filter -A CACCEPT -j ACCEPT
+
+	ipset list wan_ip >/dev/null 2>&1 || ipset create wan_ip hash:ip
+	ipt -t nat -A DNS_REDIRECT -p udp -m set ! --match-set wan_ip dst -j REDIRECT --to-ports 53
+	ipt -t nat -A DNS_REDIRECT -j ACCEPT
+
+	#IPv6
+	ip6t -t filter -A zone_aaa_check -m cipnam ! --rcheck --name users --rdest --rsrcmac -j DROP
+	ip6t -t filter -A zone_aaa_forward -p udp -m udp --sport 53 -j ACCEPT
+	ip6t -t filter -A zone_aaa_forward -p udp -m udp --dport 53 -j ACCEPT
+	ip6t -t filter -A zone_aaa_forward -p udp -m udp --sport 67:68 --dport 67:68 -j ACCEPT
+	ip6t -t filter -A zone_aaa_forward -m ifgroup --ifgroup-src 0x1/0x1 -j zone_aaa_check
+	#ip6tables -t filter -I delegate_forward -j zone_aaa_forward
+	ip6t -t nat -A PROXIED -p udp -m udp --sport 53 -j ACCEPT
+	ip6t -t nat -A PROXIED -p udp -m udp --dport 53 -j ACCEPT
+	ip6t -t nat -A PROXIED -p udp -m udp --sport 67:68 --dport 67:68 -j ACCEPT
+
+	# TODO: The "nat" table is not intended for filtering, the use of DROP is therefore inhibited.
+	# Need to resolve.
+	ip6t -t nat -A PROXIED -m cipnam ! --rcheck --name users --rdest --rsrcmac -j DROP
+}
+
+(
+	flock -x 200
+
+	ipt_clear
+	ipt_init
+	ipt_setup
+
+) 200>/var/lock/firewall.cipuamd.flock
+
+
+

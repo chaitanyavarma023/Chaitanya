@@ -1,0 +1,16 @@
+#!/bin/sh
+
+uci batch <<-EOF >/dev/null 2>/dev/null
+               # side:       client-------------------- ap------------------------
+               # ac:         cwmin cwmax aifs txoplimit cwmin cwmax aifs txoplimit
+   set wireless.radio0.wme_0="4     6     5    8192      4     10    3    4096" #BestEffort
+   set wireless.radio0.wme_1="4     10    7    0         4     10    7    0"    #BackGround
+   set wireless.radio0.wme_2="3     4     1    3008      3     4     2    3008" #Video
+   set wireless.radio0.wme_3="2     3     1    1504      2     3     2    1504" #Voice
+   set wireless.radio1.wme_0="4     6     5    8192      4     10    3    4096" #BestEffort
+   set wireless.radio1.wme_1="4     10    7    0         4     10    7    0"    #BackGround
+   set wireless.radio1.wme_2="3     4     1    3008      3     4     2    3008" #Video
+   set wireless.radio1.wme_3="2     3     1    1504      2     3     2    1504" #Voice
+EOF
+
+uci commit

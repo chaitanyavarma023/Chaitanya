@@ -1,0 +1,19 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+remove_mpsk_sae_mixed() {
+    config_get encryption $1 encryption
+    config_get key_method $1 key_method
+
+    # ECCLOUD-194: Replace the encryption method WPA3 personal transition by WPA2-PSK when key_method is MPSK
+    if [ "$encryption" = "sae-mixed" ] && [ "$key_method" = "mpsk" ]; then
+        uci set wireless.$1.encryption='psk2'
+    fi
+}
+
+config_load wireless
+config_foreach remove_mpsk_sae_mixed wifi-iface
+uci commit wireless
+
+exit 0

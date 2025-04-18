@@ -1,0 +1,10 @@
+#!/usr/bin/env cgilua.cgi
+<%
+local sta_ip = tostring(cgilua.servervariable("REMOTE_ADDR"))
+local url = ""
+local scope = ""
+url = cgilua.urlcode.escape("__REDIRECT_URI")
+scope = cgilua.urlcode.escape("__SCOPE")
+cgilua.redirect("__AUTHORIZE?client_id=__CLIENT_ID&response_type=code&redirect_uri=" .. url .. "&response_mode=query&scope=" .. scope .. "&state=" .. sta_ip)
+%>
+

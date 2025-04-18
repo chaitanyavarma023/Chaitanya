@@ -1,0 +1,1450 @@
+
+<%
+local acn = require("luci.acn.util")
+local acn_status = require "luci.acn.status"
+local fs = require "nixio.fs"
+local product = require "luci.acn.product"
+local bitwise = require "luci.acn.bitwise"
+local uci = acn.cursor()
+local brand = require("luci.acn.brand")
+local product = require("luci.acn.product")
+local cloud_controller_url = uci:get("acn", "mgmt", "controller_url") or brand.controller_url
+
+local mgmt_enabled = (uci:get("acn", "mgmt", "enabled") == "1")
+
+local MAX_Profiles = uci:get("hotspot20", "settings", "profile_maxnum") or 32
+local MAX_Venue_Name = 10
+
+-- main mac address
+local eth = product.eth(0)
+local main_mac_addr = fs.readfile('/sys/class/net/' .. eth.logical_name .. '/address'):upper():gsub("\n", "")
+
+-- JS file for this page
+luci.dispatcher.context.page_js =
+   '<script type="text/javascript">\n'
+.. '  var MAX_Profiles_COUNT = ' .. MAX_Profiles .. ';\n'
+.. '  var MAX_Venue_Name = ' .. MAX_Venue_Name .. ';\n'
+.. '</script>\n'
+.. '<script src="' .. luci.config.main.resourcebase .. '/common.js?ver="></script>\n'
+.. '<script src="' .. media .. '/js/openroaming.js?ver=' .. acn_status.version() .. '"></script>\n'
+
+----------------- hs20 profile ------------------------------
+
+-- is_cbi_apply is for Save&Apply button of profile list
+local is_cbi_apply = luci.http.formvalue("cbi.apply")
+-- is_cbi_save are for Save button of profile list
+local is_cbi_save = luci.http.formvalue("btn_save")
+-- is_cbi_save_profile is for Save button of profile
+local is_cbi_save_profile = luci.http.formvalue("btn_save_profile")
+
+if is_cbi_save_profile then
+  local profile_name = luci.http.formvalue("cbid.profile_name")
+  local iw_internet = luci.http.formvalue("cbid.iw_internet") or "0"
+  local iw_access_network_type = luci.http.formvalue("cbid.iw_access_network_type")
+  local iw_hessid = luci.http.formvalue("cbid.iw_hessid")
+  local iw_venue_group = luci.http.formvalue("cbid.iw_venue_group")
+  local iw_venue_type = luci.http.formvalue("cbid.iw_venue_type")
+  local network_auth_type = luci.http.formvalue("cbid.network_auth_type")
+  local iw_ipaddr_ipv4_type_availability = luci.http.formvalue("cbid.iw_ipaddr_ipv4_type_availability")
+  local iw_ipaddr_ipv6_type_availability = luci.http.formvalue("cbid.iw_ipaddr_ipv6_type_availability")
+  local hs20_operating_class = luci.http.formvalue("cbid.hs20_operating_class")
+  local iw_portal_enable = luci.http.formvalue("cbid.iw_portal_enable") or "0"
+  local iw_portal_url = luci.http.formvalue("cbid.iw_portal_url")
+  local iw_portal_wall = luci.http.formvalue("cbid.iw_portal_wall")
+  local Editsection = luci.http.formvalue("Edit_section")
+
+  if profile_name and profile_name ~= ""then
+    local cfg_name = ""
+
+    if Editsection ~= "" then -- Edit Profie
+      cfg_name = Editsection
+      -- delete all venue name/url
+      uci:delete("hotspot20", cfg_name, "iw_venue_name")
+      uci:delete("hotspot20", cfg_name, "iw_venue_url")
+      uci:delete("hotspot20", cfg_name, "hs20_oper_friendly_name")
+      uci:delete("hotspot20", cfg_name, "iw_roaming_consortium")
+      uci:delete("hotspot20", cfg_name, "iw_domain_name")
+    else  -- new Add Profie
+      cfg_name = uci:add("hotspot20", "profile")
+    end
+
+    if cfg_name then
+      uci:set("hotspot20", cfg_name, "name", profile_name)
+      uci:set("hotspot20", cfg_name, "iw_internet", iw_internet)
+      uci:set("hotspot20", cfg_name, "iw_access_network_type", iw_access_network_type)
+      uci:set("hotspot20", cfg_name, "iw_hessid", iw_hessid)
+      uci:set("hotspot20", cfg_name, "iw_venue_group", iw_venue_group)
+      uci:set("hotspot20", cfg_name, "iw_venue_type", iw_venue_type)
+      uci:set("hotspot20", cfg_name, "network_auth_type", network_auth_type)
+      uci:set("hotspot20", cfg_name, "iw_ipaddr_ipv4_type_availability", iw_ipaddr_ipv4_type_availability)
+      uci:set("hotspot20", cfg_name, "iw_ipaddr_ipv6_type_availability", iw_ipaddr_ipv6_type_availability)
+      uci:set("hotspot20", cfg_name, "hs20_operating_class", hs20_operating_class)
+      uci:set("hotspot20", cfg_name, "iw_portal_enable", iw_portal_enable)
+
+      if iw_portal_enable == "1" then
+        uci:set("hotspot20", cfg_name, "iw_portal_url", iw_portal_url)
+        uci:set("hotspot20", cfg_name, "iw_portal_wall", iw_portal_wall)
+      else
+        uci:delete("hotspot20", cfg_name, "iw_portal_url")
+        uci:delete("hotspot20", cfg_name, "iw_portal_wall")
+      end
+
+      -- calculate iw_ipaddr_type_availability
+      local sum_ipv4, sum_ipv6, availability
+      sum_ipv4 = bitwise.lshift(iw_ipaddr_ipv4_type_availability, 2)
+      sum_ipv6 = iw_ipaddr_ipv6_type_availability
+      availability = bitwise.dectohex(bitwise.OR(sum_ipv4, sum_ipv6))
+      if #availability < 2 then
+        availability = "0" .. availability
+      end
+      uci:set("hotspot20", cfg_name, "iw_ipaddr_type_availability", availability)
+
+      ------ venue name -----
+      local name_list = {}
+      local url_list = {}
+      local cnt = 1
+      for _idx = 1, MAX_Venue_Name do
+
+        local _lang = luci.http.formvalue("VenueName" .. _idx .. ".lang")
+        local _name = luci.http.formvalue("VenueName" .. _idx .. ".name")
+        local _url = luci.http.formvalue("VenueName" .. _idx .. ".url")
+
+        if _lang and _name and _url then
+          name_list[cnt] = _lang .. ":" .. _name
+          url_list[cnt] = (cnt) .. ":" .. _url
+          cnt = cnt + 1
+        end
+      end
+      uci:set_list("hotspot20", cfg_name , "iw_venue_name", name_list)
+      uci:set_list("hotspot20", cfg_name , "iw_venue_url", url_list)
+      ------ venue name END -----
+
+      ------ 3gpp_cell_net -----
+      local _list = "" --'111,22;222,22'
+      for _idx = 1, MAX_Venue_Name do
+        local _country = luci.http.formvalue("cell_country" .. _idx)
+        local _network = luci.http.formvalue("cell_network" .. _idx)
+
+        if _country and _network then
+          if _list == "" then
+            _list = _country .. "," .. _network
+          else
+            _list = _list .. ";" .. _country .. "," .. _network
+          end
+        end
+      end
+
+      uci:set("hotspot20", cfg_name , "iw_anqp_3gpp_cell_net", _list)
+      ------ _3gpp_cell_net END -----
+
+      ------ Operator Friendly Name -----
+      local name_list = {}
+      local cnt = 1
+      for _idx = 1, MAX_Venue_Name do
+
+        local _lang = luci.http.formvalue("OperatorLang" .. _idx)
+        local _name = luci.http.formvalue("OperatorName" .. _idx)
+
+        if _lang and _name then
+          name_list[cnt] = _lang .. ":" .. _name
+          cnt = cnt + 1
+        end
+      end
+      uci:set_list("hotspot20", cfg_name , "hs20_oper_friendly_name", name_list)
+      ------ Operator Friendly Name END -----
+
+      local roaming_list = {}
+      local domain_list = {}
+      local roaming_cnt = 1
+      local domain_cnt = 1
+      for _idx = 1, MAX_Venue_Name do
+        local roaming_val = luci.http.formvalue("RoamingConsortium" .. _idx) -- Roaming Consortium List
+        local domain_val = luci.http.formvalue("Domain" .. _idx) -- Domain Name List
+
+        if roaming_val then
+          roaming_list[roaming_cnt] = roaming_val
+          roaming_cnt = roaming_cnt + 1
+        end
+        if domain_val then
+          domain_list[domain_cnt] = domain_val
+          domain_cnt = domain_cnt + 1
+        end
+      end
+      uci:set_list("hotspot20", cfg_name , "iw_roaming_consortium", roaming_list)
+      uci:set_list("hotspot20", cfg_name , "iw_domain_name", domain_list)
+
+      -- NAI realm
+      local nai_list = {}
+      for _idx = 0, MAX_Venue_Name-1 do
+        local nai_val = luci.http.formvalue("hidden_nai_" .. _idx)
+        if nai_val and nai_val ~= '' then
+          nai_list[#nai_list+1] = nai_val
+        end
+      end
+      uci:set_list("hotspot20", cfg_name , "iw_nai_realm", nai_list)
+
+      uci:set("hotspot20", cfg_name, "iw_enabled", "1")
+      uci:set("hotspot20", cfg_name, "anqp_domain_id", "88")
+      uci:save("hotspot20")
+      uci:load("hotspot20")
+    end
+  end
+
+  ---- delete profile ------
+  uci:foreach("hotspot20", "profile",
+    function (hs20)
+      local profile_name_cfg = hs20.name
+      if profile_name_cfg then
+
+        if luci.http.formvalue("acn.del.profile" .. profile_name_cfg)  == "1" then
+          uci:delete("hotspot20", hs20[".name"])
+          uci:save("hotspot20")
+          uci:load("hotspot20")
+        end
+      end
+    end
+  )
+end
+
+if is_cbi_save or is_cbi_apply then
+  ---- delete profile ------
+  uci:foreach("hotspot20", "profile",
+    function (hs20)
+      local profile_name_cfg = hs20.name
+      if profile_name_cfg then
+
+        if luci.http.formvalue("acn.del.profile" .. profile_name_cfg)  == "1" then
+          uci:delete("hotspot20", hs20[".name"])
+          uci:save("hotspot20")
+          uci:load("hotspot20")
+        end
+      end
+    end
+  )
+end
+
+%>
+<%+header%>
+
+<style>
+label {
+  float: left;
+  text-align: right;
+  width: 150px;
+  padding-right:3px;
+}
+
+.help-tip i {
+  position:unset!important;
+}
+</style>
+
+<script type="text/javascript">
+function nai_realm_method_name(m_idx){
+  var res = 13;
+
+  switch(m_idx) {
+  case '13':
+    res = 'EAP-TLS';
+    break;
+  case '18':
+    res = 'EAP-SIM';
+    break;
+  case '21':
+    res = 'EAP-TTLS';
+    break;
+  case '23':
+    res = 'EAP-AKA Authentication';
+    break;
+  case '25':
+    res = 'PEAP';
+    break;
+  case '29':
+    res = 'EAP-MSCHAP-V2';
+    break;
+  case '43':
+    res = 'EAP-FAST';
+    break;
+  case '50':
+    res = 'EAP-AKA Prime';
+    break;
+  }
+
+  return res;
+}
+
+function nai_realm_auth1_name(_idx){
+  switch(_idx) {
+  case '1':
+    res = 'Expanded EAP Method';
+    break;
+  case '2':
+    res = 'Non-EAP Inner Authentication Type';
+    break;
+  case '3':
+    res = 'Inner Authentication EAP Method Type';
+    break;
+  case '4':
+    res = 'Expanded Inner EAP Method';
+    break;
+  case '5':
+    res = 'Credential Type';
+    break;
+  case '6':
+    res = 'Tunneled EAP Method Credential Type';
+    break;
+  case '221':
+    res = 'Nai Realm EAP Auth Vendor Specific';
+    break;
+  }
+
+  return res;
+}
+
+function nai_realm_auth2_name(_1idx, _2idx){
+  var res = 'SIM';
+
+  switch(_2idx) {
+  case '1':
+    if (_1idx == '2') {
+      res = 'PAP';
+    }else{
+      res = 'SIM';
+    }
+    break;
+  case '2':
+    if (_1idx == '2') {
+      res = 'CHAP';
+    }else{
+      res = 'USIM';
+    }
+    break;
+  case '3':
+    if (_1idx == '2') {
+      res = 'MSCHAP';
+    }else{
+      res = 'NFC Secure Element';
+    }
+    break;
+  case '4':
+    if (_1idx == '2') {
+      res = 'MSCHAPV2';
+    }else{
+      res = 'Hardware Token';
+    }
+    break;
+  case '5':
+    res = 'Softoken';
+    break;
+  case '6':
+    res = 'Certificate';
+    break;
+  case '7':
+    res = 'username/password';
+    break;
+  case '8':
+    res = 'none';
+    break;
+  case '9':
+    res = 'Anonymous';
+    break;
+  case '10':
+    res = 'Vendor Specific';
+    break;
+  }
+
+  return res;
+}
+
+var NAIRealm_edit_idx = '';
+
+function EditRow_NAIRealm(Editsection, nai_idx) {
+  $('#row_empty_NAI_Realm').hide();
+  $('#nai_realm_modal').modal('show');
+  $('#cbid\\.nai_realm_domain').attr('disabled', true);
+  clear_validate_error('#cbid\\.nai_realm_domain');
+  NAIRealm_edit_idx = (nai_idx+1);
+
+  //0,odyssys.net,21[2:4][5:7] or
+  //0,odyssys.net,13[5:6],21[2:4][5:7]
+  var nai_all_val = $('#hidden_nai_' + nai_idx).val(); //0,odyssys.net,21[2:4][5:7]
+  var nai_all_val_arr = nai_all_val.split(',');
+  var _encoding = nai_all_val_arr[0];
+  var _domain = nai_all_val_arr[1];
+
+  $('#cbid\\.nai_realm_domain').val(_domain);
+  $('#cbid\\.nai_realm_encoding').val(_encoding);
+
+  var nai_auth_content = '';
+  $('#table_NAI_Auth tbody').html('');
+
+  for (var i = 2; i < nai_all_val_arr.length ; i++) {
+    var other_arr = nai_all_val_arr[i].split('['); //21  2:4] 5:7]
+    var _method = other_arr[0];
+    var _method_name = '';
+    var _auth_name = '';
+
+    for (var j = 1; j < other_arr.length ; j++) {
+      var _auth_all_arr = other_arr[j].replace(/]/, '').split(':');
+      auth_name= '';
+      auth_name=nai_realm_auth1_name(_auth_all_arr[0]) + ':';
+      auth_name=auth_name + nai_realm_auth2_name(_auth_all_arr[0], _auth_all_arr[1]);
+
+      if (_auth_name.length == 0) {
+        _auth_name=auth_name;
+      }
+      else {
+        _auth_name= _auth_name + ',' + auth_name;
+      }
+    }
+
+    _method_name = nai_realm_method_name(_method);
+
+    //show NAI Realm Auth List
+    nai_auth_content = nai_auth_content +
+    '<tr id="NAIAuth' + _method + '_row">' +
+    '  <td id="nai_realm_method_' + _method + '">' +
+    '' + _method_name + '' +
+    '  </td>' +
+    '  <td id="nai_realm_auth_row_' + _method + '" value=' + nai_all_val_arr[i] + '>' + _auth_name + '</td>' +
+    '  <td>' +
+    '    <button class="btn btn-info btn-mini btn-danger" onclick="{removeRowNAIAuth(this.id);  return false;}"' +
+    '      alt="<%:Delete%>" id="delNAIAuth' + _method + '" value="' + _method + '" alt="<%:Delete%>">' +
+    '    <i class="icon-trash"></i></button>' +
+    '  </td> ' +
+    '</tr>';
+
+    if (nai_auth_content != '') {
+      $('#row_empty_NAI_Auth').hide();
+      nai_auth_content = $.parseHTML(nai_auth_content );
+      $('#table_NAI_Auth tbody').append(nai_auth_content);
+    }
+  }
+
+  $('#cbid\\.nai_realm_domain').val(_domain);
+  $('#cbid\\.nai_realm_encoding').val(_encoding);
+
+  //show NAI Realm Auth List -- END
+}
+
+var edit_profile_name = '';
+function EditRow(edit_profile) {
+  $('#row_empty').hide();
+  clear_error_msg();
+<%
+  uci:foreach("hotspot20", "profile",
+    function (hs20)
+       -- cloud may push "FF:FF:FF:FF:FF:FF" to iw_hessid, covert it to be device mac
+      if hs20.iw_hessid and hs20.iw_hessid:upper() == "FF:FF:FF:FF:FF:FF" then
+        hs20.iw_hessid = main_mac_addr
+      end
+%>
+  var profile_name_cfg = '<%=hs20.name%>';
+  if (profile_name_cfg != '') {
+    var Editsection = '<%=hs20[".name"]%>';
+    var iw_enabled = '<%=hs20.iw_enabled%>';
+    var anqp_domain_id = '<%=hs20.anqp_domain_id%>';
+    var iw_internet = '<%=hs20.iw_internet%>';
+    var iw_access_network_type = '<%=hs20.iw_access_network_type%>';
+    var iw_hessid = '<%=hs20.iw_hessid%>';
+    var iw_venue_group = '<%=hs20.iw_venue_group%>';
+    var iw_venue_type = '<%=hs20.iw_venue_type%>';
+    var network_auth_type = '<%=hs20.network_auth_type%>';
+    var iw_ipaddr_ipv4_type_availability = '<%=hs20.iw_ipaddr_ipv4_type_availability%>';
+    var iw_ipaddr_ipv6_type_availability = '<%=hs20.iw_ipaddr_ipv6_type_availability%>';
+    var iw_anqp_3gpp_cell_net = '<%=hs20.iw_anqp_3gpp_cell_net%>';
+    var hs20_operating_class = '<%=hs20.hs20_operating_class%>';
+    var iw_portal_enable = '<%=hs20.iw_portal_enable%>';
+    var iw_portal_url = '<%=hs20.iw_portal_url%>';
+    var iw_portal_wall = '<%=hs20.iw_portal_wall%>';
+
+    if (edit_profile == profile_name_cfg) {
+      edit_profile_name = edit_profile;
+
+      $('#Edit_section').val(Editsection);
+
+      $('#cbid\\.profile_name').val(edit_profile);
+      $('#cbid\\.profile_name').attr('disabled', true);
+      $('#cbid\\.anqp_domain_id').val(anqp_domain_id);
+      $('#cbid\\.iw_internet').val(iw_internet);
+      $('#cbid\\.iw_access_network_type').val(iw_access_network_type);
+      $('#cbid\\.iw_hessid').val(iw_hessid);
+      $('#cbid\\.iw_venue_group').val(iw_venue_group);
+      $('#cbid\\.iw_venue_type').val(iw_venue_type);
+      $('#cbid\\.network_auth_type').val(network_auth_type);
+      $('#cbid\\.iw_ipaddr_ipv4_type_availability').val(iw_ipaddr_ipv4_type_availability);
+      $('#cbid\\.iw_ipaddr_ipv6_type_availability').val(iw_ipaddr_ipv6_type_availability);
+      $('#cbid\\.hs20_operating_class').val(hs20_operating_class);
+      $('#cbid\\.iw_portal_enable').val(iw_portal_enable);
+      if (iw_portal_enable == '1') {
+        $('#cbid\\.iw_portal_url').val(iw_portal_url);
+        $('#cbid\\.iw_portal_wall').val(iw_portal_wall);
+      }
+      iw_portal_change();
+      
+
+        //show venue_name value
+        var venue_lang_array = new Array();
+        var venue_name_array = new Array();
+        var venue_url_array = new Array();
+<%
+        local iw_venue_name_val = hs20.iw_venue_name
+        if type(iw_venue_name_val) == 'table' then
+          for i, n in ipairs(iw_venue_name_val) do
+%>
+            var _val = '<%=n%>';
+            _val = _val.split(':');
+            venue_lang_array.push(_val[0]);
+            venue_name_array.push(_val[1]);
+<%
+          end
+        end
+
+        local iw_venue_url_val = hs20.iw_venue_url
+        if type(iw_venue_url_val) == 'table' then
+          for i, n in ipairs(iw_venue_url_val) do
+%>
+            var _val = '<%=n%>';
+            var _tmp = '';
+            _val = _val.split(':');
+            for (var i = 1 ; i  < _val.length; i++) {
+              if(_tmp == '') {
+                _tmp = _val[i];
+              } else {
+              _tmp = _tmp + ':' + _val[i];
+              }
+            }
+            venue_url_array.push(_tmp);
+<%
+          end
+        end
+%>
+        var venue_name_content = '';
+        $('#table_Venue_Names tbody').html('');
+        for (var i = 1 ; i <= venue_lang_array.length; i++) {
+          venue_name_content = venue_name_content + '<tr id="VenueName' + i + '_row">' +
+          '  <td>' +
+          '    <div id="VenueName-cfg' + i + '-target">' +
+          '      <select style="width:100px" class="cbi-input-select" onchange="cbi_d_update(this.id)" id="VenueName' + i + '.lang" name="VenueName' + i + '.lang" size="1">' +
+          '        <option id="VenueName-cfg' + i + '-ara" value="ara"><%:Arabic%></option>' +
+          '        <option id="VenueName-cfg' + i + '-ben" value="ben"><%:Bengali%></option>' +
+          '        <option id="VenueName-cfg' + i + '-zho" value="zho"><%:Chinese%></option>' +
+          '        <option id="VenueName-cfg' + i + '-eng" value="eng"selected="selected"><%:English%></option>' +
+          '        <option id="VenueName-cfg' + i + '-fra" value="fra"><%:French%></option>' +
+          '        <option id="VenueName-cfg' + i + '-deu" value="deu"><%:German%></option>' +
+          '        <option id="VenueName-cfg' + i + '-hin" value="hin"><%:Hindi%></option>' +
+          '        <option id="VenueName-cfg' + i + '-ind" value="ind"><%:Indonesian%></option>' +
+          '        <option id="VenueName-cfg' + i + '-jpn" value="jpn"><%:Japanese%></option>' +
+          '        <option id="VenueName-cfg' + i + '-kor" value="kor"><%:Korean%></option>' +
+          '        <option id="VenueName-cfg' + i + '-por" value="por"><%:Portuguese%></option>' +
+          '        <option id="VenueName-cfg' + i + '-rus" value="rus"><%:Russian%></option>' +
+          '        <option id="VenueName-cfg' + i + '-spa" value="spa"><%:Spanish%></option>' +
+          '        <option id="VenueName-cfg' + i + '-tgl" value="tgl"><%:Tagalog%></option>' +
+          '        <option id="VenueName-cfg' + i + '-tha" value="tha"><%:Thai%></option>' +
+          '        <option id="VenueName-cfg' + i + '-urd" value="urd"><%:Urdu%></option>' +
+          '        <option id="VenueName-cfg' + i + '-vie" value="vie"><%:Vietnamese%></option>' +
+          '      </select>' +
+          '    </div>' +
+          '  </td>' +
+          '  <td>' +
+          '    <input style="width:50px" type="text" class="ace-tooltip" name="VenueName' + i + '.name" id="VenueName' + i + '.name" value="' + venue_name_array[i-1] + '" data-original-title="" title="">' +
+          '  </td>' +
+          '  <td>' +
+          '    <input style="width:150px" type="text" class="ace-tooltip" name="VenueName' + i + '.url" id="VenueName' + i + '.url" value="' + venue_url_array[i-1] + '" data-original-title=""> <br>' +
+          '  </td>' +
+          '  <td>' +
+          '    <button class="btn btn-info btn-mini btn-danger" onclick="{removeRowVenueName(this.id);  return false;}" alt="<%:Delete%>" id="VenueName' + i + '" value="' + i + '" title="<%:Delete%>">' +
+          '      <i class="icon-trash"></i>' +
+          '    </button>' +
+          '  </td>' +
+          '</tr>';
+        }
+
+        if (venue_name_content != '') {
+          $('#row_empty_Venue_Names').hide();
+          venue_name_content = $.parseHTML(venue_name_content);
+          $('#table_Venue_Names tbody').append(venue_name_content);
+
+          for (var i = 1 ; i <= venue_lang_array.length; i++) {
+            $('#VenueName' + i + '\\.lang').val(venue_lang_array[i-1]);
+          }
+        }
+        //show venue_name value -- END
+
+        //show 3gpp_cell
+        var countrycode_array = new Array();
+        var networkcode_array = new Array();
+        var _val = '<%=hs20.iw_anqp_3gpp_cell_net%>';  //'111,22;222,22'
+
+        if (_val != '') {
+          _val = _val.split(';');
+          for (var i = 0; i < _val.length; i++ ) {
+            var _val2 = _val[i].split(',');
+            countrycode_array.push(_val2[0]);
+            networkcode_array.push(_val2[1]);
+          }
+
+          var cellular_content = '';
+          $('#table_3GPP_Cellular tbody').html('');
+          for (var i = 1 ; i <= countrycode_array.length; i++) {
+            cellular_content = cellular_content + '<tr id="3GPP_Cellular' + i + '_row">' +
+            '  <td>' +
+            '    <input style="width:50px" type="text" class="ace-tooltip" name="cell_country' + i + '" id="cell_country' + i + '" value="' + countrycode_array[i-1] + '" data-original-title="" title="">' +
+            '  </td>' +
+            '  <td>' +
+            '    <input style="width:150px" type="text" class="ace-tooltip" name="cell_network' + i + '" id="cell_network' + i + '" value="' + networkcode_array[i-1] + '" data-original-title=""> <br>' +
+            '  </td>' +
+            '  <td>' +
+            '    <button class="btn btn-info btn-mini btn-danger" onclick="{removeRowCellNetwork(this.id);  return false;}" alt="<%:Delete%>" id="3GPPCellular' + i + '" value="' + i + '" title="<%:Delete%>">' +
+            '      <i class="icon-trash"></i>' +
+            '    </button>' +
+            '  </td>' +
+            '</tr>';
+          }
+
+          if (cellular_content != '') {
+            $('#row_empty_3GPP_Cellular').hide();
+            cellular_content = $.parseHTML(cellular_content );
+            $('#table_3GPP_Cellular tbody').append(cellular_content);
+
+          }
+        }
+        //show 3gpp_cell value -- END
+
+
+        //show Operator Friendly Name value
+        var _lang_array = new Array();
+        var _name_array = new Array();
+<%
+        local _name_val = hs20.hs20_oper_friendly_name
+        if type(_name_val) == 'table' then
+          for i, n in ipairs(_name_val) do
+%>
+            var _val = '<%=n%>';
+            _val = _val.split(':'); //eng:Example operator
+            _lang_array.push(_val[0]);
+            _name_array.push(_val[1]);
+<%
+          end
+        end
+%>
+        var operator_name_content = '';
+        $('#table_Operator_Names tbody').html('');
+        for (var i = 1 ; i <= _name_array.length; i++) {
+          operator_name_content = operator_name_content + '<tr id="OperatorName' + i + '_row">' +
+          '  <td>' +
+          '    <div id="OperatorName-cfg' + i + '-target">' +
+          '      <select style="width:80px" class="cbi-input-select" onchange="cbi_d_update(this.id)" id="OperatorLang' + i + '" name="OperatorLang' + i + '" size="1">' +
+          '        <option id="OperatorName-cfg' + i + '-ara" value="ara"><%:Arabic%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-ben" value="ben"><%:Bengali%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-zho" value="zho"><%:Chinese%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-eng" value="eng" selected="selected"><%:English%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-fra" value="fra"><%:French%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-deu" value="deu"><%:German%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-hin" value="hin"><%:Hindi%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-ind" value="ind"><%:Indonesian%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-jpn" value="jpn"><%:Japanese%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-kor" value="kor"><%:Korean%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-por" value="por"><%:Portuguese%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-rus" value="rus"><%:Russian%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-spa" value="spa"><%:Spanish%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-tgl" value="tgl"><%:Tagalog%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-tha" value="tha"><%:Thai%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-urd" value="urd"><%:Urdu%></option>' +
+          '        <option id="OperatorName-cfg' + i + '-vie" value="vie"><%:Vietnamese%></option>' +
+          '      </select>' +
+          '    </div>' +
+          '  </td>' +
+          '  <td>' +
+          '    <input style="width:250px" type="text" class="ace-tooltip" name="OperatorName' + i + '" id="OperatorName' + i + '" value="' + _name_array[i-1] + '" data-original-title="" title="">' +
+          '  </td>' +
+          '  <td>' +
+          '    <button class="btn btn-info btn-mini btn-danger" onclick="{removeRowOperatorName(this.id);  return false;}" alt="<%:Delete%>" id="delOperatorName' + i + '" value="' + i + '" title="<%:Delete%>">' +
+          '      <i class="icon-trash"></i>' +
+          '    </button>' +
+          '  </td>' +
+          '</tr>';
+        }
+
+        if (operator_name_content != '') {
+          $('#row_empty_Operator_Names').hide();
+          operator_name_content = $.parseHTML(operator_name_content );
+          $('#table_Operator_Names tbody').append(operator_name_content);
+
+          for (var i = 1 ; i <= _lang_array.length; i++) {
+            $('#OperatorLang' + i).val(_lang_array[i-1]);
+          }
+        }
+        //show Operator Friendly Name value -- END
+
+
+        //Roaming Consortium List
+        var roaming_array = new Array();
+<%
+        local roaming_val = hs20.iw_roaming_consortium
+        if type(roaming_val) == 'table' then
+          for i, n in ipairs(roaming_val) do
+%>
+            roaming_array.push('<%=n%>');
+<%
+          end
+        end
+%>
+        var _content = '';
+        $('#table_Roaming_Consortium tbody').html('');
+        for (var i = 1 ; i <= roaming_array.length; i++) {
+          _content = _content + '<tr id="Roaming' + i + '_row">' +
+          '  <td>' +
+          '    <input style="width:250px" type="text" class="ace-tooltip" name="RoamingConsortium' + i + '" id="RoamingConsortium' + i + '" value="' + roaming_array[i-1] + '" data-original-title="" title="">' +
+          '  </td>' +
+          '  <td>' +
+          '    <button class="btn btn-info btn-mini btn-danger" onclick="{removeRowRoaming(this.id);  return false;}" alt="<%:Delete%>" id="delRoaming' + i + '" value="' + i + '" title="<%:Delete%>">' +
+          '      <i class="icon-trash"></i>' +
+          '    </button>' +
+          '  </td>' +
+          '</tr>';
+        }
+
+        if (_content != '') {
+          $('#row_empty_Roaming_Consortium').hide();
+          _content = $.parseHTML(_content );
+          $('#table_Roaming_Consortium tbody').append(_content);
+        }
+        //show Roaming Consortium Lis -- END
+
+
+        //show Domain Name List
+        var domain_array = new Array();
+<%
+        local domain_val = hs20.iw_domain_name
+        if type(domain_val) == 'table' then
+          for i, n in ipairs(domain_val) do
+%>
+            domain_array.push('<%=n%>');
+<%
+          end
+        end
+%>
+        var _content = '';
+        $('#table_Domain tbody').html('');
+        for (var i = 1 ; i <= domain_array.length; i++) {
+          _content = _content + '<tr id="Domain' + i + '_row">' +
+          '  <td>' +
+          '    <input style="width:250px" type="text" class="ace-tooltip" name="Domain' + i + '" id="Domain' + i + '" value="' + domain_array[i-1] + '" data-original-title="" title="">' +
+          '  </td>' +
+          '  <td>' +
+          '    <button class="btn btn-info btn-mini btn-danger" onclick="{removeRowDomain(this.id);  return false;}" alt="<%:Delete%>" id="delDomain' + i + '" value="' + i + '" title="<%:Delete%>">' +
+          '      <i class="icon-trash"></i>' +
+          '    </button>' +
+          '  </td>' +
+          '</tr>';
+        }
+
+        if (_content != '') {
+          $('#row_empty_Domain').hide();
+          _content = $.parseHTML(_content );
+          $('#table_Domain tbody').append(_content);
+        }
+        //show Domain Name List -- END
+
+
+        //show NAI Realm List
+        var _nai_array = new Array();
+        var _hidden_nai_arrry = new Array();
+<%
+        local _nai_realm = hs20.iw_nai_realm
+        if type(_nai_realm) == 'table' then
+          for i, n in ipairs(_nai_realm) do
+%>
+            var _val = '<%=n%>';
+            _hidden_nai_arrry.push(_val)
+
+            _val = _val.split(','); //0,odyssys.net,21[2:4][5:7]
+            _nai_array.push(_val[1]);
+<%
+          end
+        end
+%>
+        var nai_realm_content = '';
+        $('#table_NAI_Realm tbody').html('');
+        for (var i = 1 ; i <= _nai_array.length; i++) {
+          $('#hidden_nai_' + (i-1)).val(_hidden_nai_arrry[i-1]);
+
+          nai_realm_content = nai_realm_content +
+          '<tr id="NAI_Realm' + i + '_row">' +
+          '  <td id="nai_domain_txt_' + i + '">' +
+          _nai_array[i-1] +
+          '</td>' +
+          '  <td>' +
+          '      <button class="btn btn-mini btn-danger"' +
+          '      onclick="EditRow_NAIRealm(this.value, ' + (i-1) + ');  return false;"' +
+          '      alt="<%:Edit%>" id="NAIRealm_' + i + '_edit" value="' + i + '"><i class="icon-edit"></i></button>' +
+          '     <button class="btn btn-mini btn-danger"' +
+          '      onclick="removeRowNAIRealm(this.id);  return false;"' +
+          '      alt="<%:Delete%>" id="NAIRealm_' + i + '" value="' + i + '" alt="<%:Delete%>"><i class="icon-trash"></i></button>' +
+          '  </td>' +
+          '</tr>';
+        }
+
+        if (nai_realm_content != '') {
+          $('#row_empty_NAI_Realm').hide();
+          nai_realm_content = $.parseHTML(nai_realm_content );
+          $('#table_NAI_Realm tbody').append(nai_realm_content);
+        }
+
+        //show NAI Realm List -- END
+
+        $('#profile_modal').modal('show');
+      }
+    }
+<%
+    end
+  )
+%>
+
+}
+</script>
+
+<!--<div id="form_error_msg_placeholder" class="alert alert-error hide"><i class="icon-remove"></i>&nbsp;<span id="form_error_msg"></span></div>-->
+<form class="form-horizontal" id="form_hs20_profile" name="form_hs20_profile"  method="post" action="<%=REQUEST_URI%>">
+  <div class="hide">
+    <input type="hidden" name="cbi.submit" value="1" />
+    <input type="submit" value="<%:Save%>" class="hidden" />
+    <input type="hidden" name="Edit_section" id="Edit_section" value="" />
+    <input type="hidden" name="Edit_NAI_section" id="Edit_NAI_section" value="" />
+  </div>
+<% for i = 0, MAX_Venue_Name - 1 do %>
+    <input type="hidden" name="acn.del.venuename<%=i%>" id="acn.del.venuename<%=i%>" value="0" />
+    <input type="hidden" name="acn.del.cellnetwork<%=i%>" id="acn.del.cellnetwork<%=i%>" value="0" />
+    <input type="hidden" name="acn.del.operatorname<%=i%>" id="acn.del.operatorname<%=i%>" value="0" />
+    <input type="hidden" name="acn.del.roaming<%=i%>" id="acn.del.roaming<%=i%>" value="0" />
+    <input type="hidden" name="acn.del.domain<%=i%>" id="acn.del.domain<%=i%>" value="0" />
+    <input type="hidden" name="acn.del.naiRealm<%=i%>" id="acn.del.naiRealm<%=i%>" value="0" />
+    <input type="hidden" name="acn.del.naiauth<%=i%>" id="acn.del.naiauth<%=i%>" value="0" />
+    <input type="hidden" name="hidden_nai_<%=i%>" id="hidden_nai_<%=i%>" value="" />
+<% end %>
+
+<!-- add profile -->
+<div id="profile_modal" class="modal hide fade" style="display: none;" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-header">
+        <span class="pull-right">
+            <button type="button" class="close" style="float:none" data-dismiss="modal" aria-hidden="true" id="close_profile_window">×</button>
+        </span>
+
+        <h3 class="green"><%:OpenRoaming Profile%></h3>
+        <div id="wifi_frequency_error_msg_placeholder" autocomplete="off" class="alert alert-error hide"><i class="icon-remove"></i></div>
+        <div id="form_error_msg_placeholder" class="alert alert-error hide"><i class="icon-remove"></i>&nbsp;<span id="form_error_msg"></span></div>
+    </div>
+
+    <div id="profile_content" style="padding:15px">
+        <div style="min-height:200px;max-height:400px;overflow-y:scroll;width:100%">
+
+            <table id="table_channel" class="table table-striped table-bordered table-hover tablesorter">
+              <fieldset class="cbi-section-node" id="cbi-wireless">
+
+                  <div class="cbi-value" style="" id="cbi-profile_name" data-index="85" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.profile_name"><%:Profile Name%>&nbsp;   &nbsp;</label>
+                    <input title="" autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.profile_name" id="cbid.profile_name" value="">
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-iw_internet" data-index="83" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_internet"><%:Internet Access%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.iw_internet" name="cbid.iw_internet" size="1">
+                      <option id="cbi-iw_internet-00" value="0" selected="selected"><%:Disable%></option>
+                      <option id="cbi-iw_internet-01" value="1"><%:Enable%></option>
+                    </select>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-iw_access_network_type" data-index="84" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_access_network_type"><%:Access Network Type%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.iw_access_network_type" name="cbid.iw_access_network_type" size="1">
+                      <option id="cbi-iw_access_network_type-0" value="0" selected="selected"><%:Private network%></option>
+                      <option id="cbi-iw_access_network_type-1" value="1"><%:Private network with guest access%></option>
+                      <option id="cbi-iw_access_network_type-2" value="2"><%:Chargeable public network%></option>
+                      <option id="cbi-iw_access_network_type-3" value="3"><%:Free public network%></option>
+                      <option id="cbi-iw_access_network_type-4" value="4"><%:Personal device network%></option>
+                      <option id="cbi-iw_access_network_type-5" value="5"><%:Emergency services only network%></option>
+                      <option id="cbi-iw_access_network_type-14" value="14"><%:Test or experimental%></option>
+                      <option id="cbi-iw_access_network_type-15" value="15"><%:Wildcard%></option>
+                    </select>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-iw_hessid" data-index="85" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_hessid"><%:HESSID%>&nbsp;   &nbsp;</label>
+                    <input title="" autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.iw_hessid" id="cbid.iw_hessid" value="<%=main_mac_addr%>">
+                    <div class="help-tip">
+                      <i class="icon-question-sign" data-trigger="hover" data-html="true" data-placement="right" data-rel="tooltip" data-original-title="Enter one mac address.<br></i>Example: 00:12:34:56:78:9a"></i>
+                    </div>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-iw_venue_group" data-index="86" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_venue_group"><%:Venue Group%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.iw_venue_group" name="cbid.iw_venue_group" size="1">
+                      <option id="cbi-iw_venue_group-0" value="0" selected="selected"><%:Unspecified%></option>
+                      <option id="cbi-iw_venue_group-1" value="1"><%:Assembly%></option>
+                      <option id="cbi-iw_venue_group-2" value="2"><%:Business%></option>
+                      <option id="cbi-iw_venue_group-3" value="3"><%:Educational%></option>
+                      <option id="cbi-iw_venue_group-4" value="4"><%:Factory and Industrial%></option>
+                      <option id="cbi-iw_venue_group-5" value="5"><%:Institutional%></option>
+                      <option id="cbi-iw_venue_group-6" value="6"><%:Mercantile%></option>
+                      <option id="cbi-iw_venue_group-7" value="7"><%:Residential%></option>
+                      <option id="cbi-iw_venue_group-8" value="8"><%:Storage%></option>
+                      <option id="cbi-iw_venue_group-9" value="9"><%:Utility and Miscellaneous%></option>
+                      <option id="cbi-iw_venue_group-10" value="10"><%:Vehicular%></option>
+                      <option id="cbi-iw_venue_group-11" value="11"><%:Outdoor%></option>
+                    </select>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-iw_venue_type" data-index="87" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_venue_type"><%:Venue Type%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.iw_venue_type" name="cbid.iw_venue_type" size="1">
+                      <option id="cbi-iw_venue_type-0" value="0" selected="selected"><%:Unspecified%></option>
+                      <option id="cbi-iw_venue_type-1" value="1"><%:Arena%></option>
+                      <option id="cbi-iw_venue_type-2" value="2"><%:Stadium%></option>
+                      <option id="cbi-iw_venue_type-3" value="3"><%:Passenger Terminal%></option>
+                      <option id="cbi-iw_venue_type-4" value="4"><%:Amphitheater%></option>
+                      <option id="cbi-iw_venue_type-5" value="5"><%:Amusement Park%></option>
+                      <option id="cbi-iw_venue_type-6" value="6"><%:Place Of Worship%></option>
+                      <option id="cbi-iw_venue_type-7" value="7"><%:Convention Center%></option>
+                      <option id="cbi-iw_venue_type-8" value="8"><%:Library%></option>
+                      <option id="cbi-iw_venue_type-9" value="9"><%:Museum%></option>
+                      <option id="cbi-iw_venue_type-10" value="10"><%:Restaurant%></option>
+                      <option id="cbi-iw_venue_type-11" value="11"><%:Theater%></option>
+                      <option id="cbi-iw_venue_type-12" value="12"><%:Bar%></option>
+                      <option id="cbi-iw_venue_type-13" value="13"><%:Coffee Shop%></option>
+                      <option id="cbi-iw_venue_type-14" value="14"><%:Zoo or Aquarium%></option>
+                      <option id="cbi-iw_venue_type-15" value="15"><%:Emergency Coordination%></option>
+                    </select>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-network_auth_type" data-index="90" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.network_auth_type"><%:Network Auth Type%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.network_auth_type" name="cbid.network_auth_type" size="1">
+                      <option id="cbi-network_auth_type-00" value="00"><%:Acceptance of terms and conditions%></option>
+                      <option id="cbi-network_auth_type-01" value="01" selected="selected"><%:On-line enrollment supported%></option>
+                      <option id="cbi-network_auth_type-02" value="02"><%:http/https redirection%></option>
+                      <option id="cbi-network_auth_type-03" value="03"><%:DNS redirection%></option>
+                    </select>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-iw_ipaddr_ipv4_type_availability" data-index="92" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_ipaddr_ipv4_type_availability"><%:Type4 Availability%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.iw_ipaddr_ipv4_type_availability" name="cbid.iw_ipaddr_ipv4_type_availability" size="1">
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-0" value="0" selected="selected"><%:Address type not available%></option>
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-1" value="1"><%:Public IPv4 address available%></option>
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-2" value="2"><%:Port-restricted IPv4 address available%></option>
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-3" value="3"><%:Single NATed private IPv4 address available%></option>
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-4" value="4"><%:Double NATed private IPv4 address available%></option>
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-5" value="5"><%:Port-restricted IPv4 address and single NATed IPv4 address available%></option>
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-6" value="6"><%:Port-restricted IPv4 address and double NATed IPv4 address available%></option>
+                      <option id="cbi-iw_ipaddr_ipv4_type_availability-7" value="7"><%:Availability of the address type is not known%></option>
+                    </select>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-iw_ipaddr_ipv6_type_availability" data-index="93" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_ipaddr_ipv6_type_availability"><%:Type6 Availability%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.iw_ipaddr_ipv6_type_availability" name="cbid.iw_ipaddr_ipv6_type_availability" size="1">
+                      <option id="cbi-iw_ipaddr_ipv6_type_availability-0" value="0" selected="selected"><%:Address type not available%></option>
+                      <option id="cbi-iw_ipaddr_ipv6_type_availability-1" value="1"><%:Address type available%></option>
+                      <option id="cbi-iw_ipaddr_ipv6_type_availability-2" value="2"><%:Availability of the address type not known%></option>
+                    </select>
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-hs20_operating_class" data-index="98" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.hs20_operating_class"><%:Operating Class%>&nbsp;   &nbsp;</label>
+                    <input title="" autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.hs20_operating_class" id="cbid.hs20_operating_class" value="5173">
+                    <div class="help-tip">
+                      <i class="icon-question-sign" data-trigger="hover" data-html="true" data-placement="right" data-rel="tooltip" data-original-title="Please follow IEEE Std 802.11-2012 Annex E."></i>
+                    </div>
+                  </div>
+<!-- Captive Portal -->
+                  <div class="cbi-value" style="" id="cbi-iw_portal_enable" data-index="83" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_portal_enable"><%:Captive Portal%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id); iw_portal_change();" id="cbid.iw_portal_enable" name="cbid.iw_portal_enable" size="1">
+                      <option id="cbi-iw_portal_enable-00" value="0" selected="selected"><%:Disable%></option>
+                      <option id="cbi-iw_portal_enable-01" value="1"><%:Enable%></option>
+                    </select>
+                  </div>
+
+
+                  <div class="cbi-value" style="display:none" id="cbi-iw_portal_url" data-index="95" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_portal_url"><%:Captive Portal URL%>&nbsp;   &nbsp;</label>
+                    <input title="" autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.iw_portal_url" id="cbid.iw_portal_url" value="">
+                  </div>
+
+                  <div class="cbi-value cbi-value-last" style="display:none" id="cbi-iw_portal_wall" data-index="96" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_portal_wall"><%:Wall Garden%>&nbsp;   &nbsp;</label>
+                    <textarea class="cbi-input-textarea" style="width: 50%" onchange="cbi_d_update(this.id)" name="cbid.iw_portal_wall" id="cbid.iw_portal_wall" rows="10"></textarea>
+                    <div class="help-text"><small>Enter a list of space or newline-delimited hostnames and IPs.<br/>Example: 203.211.150.204 66.235.128.0/17 www.paypal.com</small></div>
+                    </div>
+                  </div>
+<!-- Captive Portal End -->
+              </fieldset>
+            </table>
+
+<!-- Venue Name Information-->
+            <fieldset class="cbi-section" id="" style="margin-left:20px; margin-right:5px">
+              <h5 class="header text-info semi-bold blue"><%:Venue Name Information%></h5>
+              <div class="cbi-section-create cbi-tblsection-create">
+                <button id="btn_add_Venue_Names" class="btn btn-info btn-add btn-small" onclick="{ addVenueNames(); return false;}" value="" title="Add">
+                  <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                </button>
+                <span id="alert_empty_Venue_Names" style="color:red; display:none">&nbsp;&nbsp;
+                  <%=luci.i18n.translatef("Venue Name List cannot be empty.") %> &nbsp;&nbsp;
+                </span>
+                <span id="alert_up_max_Venue_Names" style="color:red; display:none">&nbsp;&nbsp;
+                  <%=luci.i18n.translatef("The allowed max number is %d.", MAX_Venue_Name) %>
+                  &nbsp;&nbsp;</span>
+              </div>
+
+              <div class="cbi-section-node">
+                 <table id="table_Venue_Names" class="table table-bordered table-hover">
+                   <thead style="">
+                    <tr class="cbi-section-table-titles">
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Language Code%></th>
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Venue Name%></th>
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Venue URL%></th>
+                      <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+
+                <div id="row_empty_Venue_Names" style="font-style: italic;" class="grey">
+                  <%:No data available for this list%>
+                </div>
+              </div>
+            </fieldset>
+<!-- Venue Name Information -- END -->
+
+
+<!-- Cellular Network Information List(PLMN)-->
+            <fieldset class="cbi-section" id="" style="margin-left:20px; margin-right:5px">
+              <h5 class="header text-info semi-bold blue"><%:Cellular Network Information List(PLMN)%></h5>
+              <div class="cbi-section-create cbi-tblsection-create">
+                <button id="btn_add_3GPP_Cellular" class="btn btn-info btn-add btn-small" onclick="{ add3GPPCellular(); return false;}" value="" title="Add">
+                  <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                </button>
+<!--                <span id="alert_empty_3GPP_Cellular" style="color:red; display:none">&nbsp;&nbsp;
+                  <%=luci.i18n.translatef("Cellular Network Information List(PLMN) cannot be empty.") %> &nbsp;&nbsp;
+                </span>-->
+                <span id="alert_up_max_3GPP_Cellular" style="color:red; display:none">&nbsp;&nbsp;
+                  <%=luci.i18n.translatef("The allowed max number is %d.", MAX_Venue_Name) %> &nbsp;&nbsp;
+                </span>
+              </div>
+
+              <div class="cbi-section-node">
+                 <table id="table_3GPP_Cellular" class="table table-bordered table-hover">
+                   <thead style="">
+                    <tr class="cbi-section-table-titles">
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Mobile Country Code%></th>
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Mobile Network Code%></th>
+                      <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+
+                <div id="row_empty_3GPP_Cellular" style="font-style: italic;" class="grey">
+                  <%:No data available for this list%>
+                </div>
+              </div>
+            </fieldset>
+<!--Cellular Network Information List(PLMN) -- END -->
+
+
+<!-- Operator Friendly Name -->
+            <fieldset class="cbi-section" id="" style="margin-left:20px; margin-right:5px">
+              <h5 class="header text-info semi-bold blue"><%:Operator Friendly Name%></h5>
+              <div class="cbi-section-create cbi-tblsection-create">
+                <button id="btn_add_Operator_Names" class="btn btn-info btn-add btn-small" onclick="{ addOperatorNames(); return false;}" value="" title="Add">
+                  <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                </button>
+                <span id="alert_empty_Operator_Names" style="color:red; display:none">&nbsp;&nbsp;
+                  <%=luci.i18n.translatef("Operator Friendly Name cannot be empty.") %> &nbsp;&nbsp;
+                </span>
+                <span id="alert_up_max_Operator_Names" style="color:red; display:none">&nbsp;&nbsp;<%=luci.i18n.translatef("The allowed max number is %d.", MAX_Venue_Name) %> &nbsp;&nbsp;</span>
+              </div>
+
+              <div class="cbi-section-node">
+                 <table id="table_Operator_Names" class="table table-bordered table-hover">
+                   <thead style="">
+                    <tr class="cbi-section-table-titles">
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Language Code%></th>
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Operators Name%></th>
+                      <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+
+                <div id="row_empty_Operator_Names" style="font-style: italic;" class="grey">
+                  <%:No data available for this list%>
+                </div>
+              </div>
+            </fieldset>
+<!--Operator Friendly Name -- END -->
+
+<!-- Roaming Consortium List -->
+            <fieldset class="cbi-section" id="" style="margin-left:20px; margin-right:5px">
+              <h5 class="header text-info semi-bold blue"><%:Roaming Consortium List%></h5>
+              <div class="cbi-section-create cbi-tblsection-create">
+                <button id="btn_add_Roaming_Consortium" class="btn btn-info btn-add btn-small" onclick="{ addRoamingConsortium(); return false;}" value="" title="Add">
+                  <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                </button>
+                <span id="alert_up_max_Roaming_Consortium" style="color:red; display:none">&nbsp;&nbsp;<%=luci.i18n.translatef("The allowed max number is %d.", MAX_Venue_Name) %> &nbsp;&nbsp;</span>
+              </div>
+
+              <div class="cbi-section-node">
+                 <table id="table_Roaming_Consortium" class="table table-bordered table-hover">
+                   <thead style="">
+                    <tr class="cbi-section-table-titles">
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Roaming Consortium%></th>
+                      <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+
+                <div id="row_empty_Roaming_Consortium" style="font-style: italic;" class="grey">
+                  <%:No data available for this list%>
+                </div>
+              </div>
+            </fieldset>
+<!-- Roaming Consortium List -- END -->
+
+<!-- Domain Name List -->
+            <fieldset class="cbi-section" id="" style="margin-left:20px; margin-right:5px">
+              <h5 class="header text-info semi-bold blue"><%:Domain Name List%></h5>
+              <div class="cbi-section-create cbi-tblsection-create">
+                <button id="btn_add_Domain" class="btn btn-info btn-add btn-small" onclick="{ addDomain(); return false;}" value="" title="Add">
+                  <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                </button>
+                <span id="alert_empty_Domain" style="color:red; display:none">&nbsp;&nbsp;
+                  <%=luci.i18n.translatef("Domain Name List cannot be empty.") %> &nbsp;&nbsp;
+                </span>
+                <span id="alert_up_max_Domain" style="color:red; display:none">
+                  &nbsp;&nbsp;<%=luci.i18n.translatef("The allowed max number is %d.", MAX_Venue_Name) %> &nbsp;&nbsp;
+                </span>
+              </div>
+
+              <div class="cbi-section-node">
+                 <table id="table_Domain" class="table table-bordered table-hover">
+                   <thead style="">
+                    <tr class="cbi-section-table-titles">
+                      <th class="cbi-section-table-cell" style="width:100px"><%:Domain Name%></th>
+                      <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+
+                <div id="row_empty_Domain" style="font-style: italic;" class="grey">
+                  <%:No data available for this list%>
+                </div>
+              </div>
+            </fieldset>
+<!-- Domain Name List -- END -->
+
+
+<!-- NAI Realm List -->
+            <fieldset class="cbi-section" id="" style="margin-left:20px; margin-right:5px">
+              <h5 class="header text-info semi-bold blue"><%:NAI Realm List%></h5>
+              <div class="cbi-section-create cbi-tblsection-create">
+                <button id="btn_add_NAI_Realm" class="btn btn-info btn-add btn-small" onclick="{ addNAIRealm(); return false;}" value="" title="Add">
+                  <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                </button>
+                <span id="alert_up_max_NAI_Realm" style="color:red; display:none">&nbsp;&nbsp;<%=luci.i18n.translatef("The allowed max number is %d.", MAX_Venue_Name) %> &nbsp;&nbsp;</span>
+              </div>
+
+              <div class="cbi-section-node">
+                 <table id="table_NAI_Realm" class="table table-bordered table-hover">
+                   <thead style="">
+                    <tr class="cbi-section-table-titles">
+                      <th class="cbi-section-table-cell"><%:Domain Name%></th>
+                      <th class="cbi-section-table-cell" style="width:90px">&nbsp;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+
+                <div id="row_empty_NAI_Realm" style="font-style: italic;" class="grey">
+                  <%:No data available for this list%>
+                </div>
+              </div>
+            </fieldset>
+<!-- NAI Realm List -- END -->
+
+
+        </div>
+        <div class="cbi-section-create cbi-tblsection-create">
+            <div class="modal-footer">
+                <input id="btn_save_profile" class="btn btn-info btn-small cbi-button-save" style="margin-right:10px" type="submit" value="<%:Save%>" name="btn_save_profile">
+            </div>
+        </div>
+    </div>
+</div>
+<!-- add profile END -->
+
+<!-- add NAI Realm -->
+<div id="nai_realm_modal" class="modal hide fade" style="display: none;" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-header">
+        <span class="pull-right">
+            <button type="button" class="close" style="float:none" data-dismiss="modal" aria-hidden="true" id="close_nai_realm_window">×</button>
+        </span>
+
+        <h3 class="green"><%:NAI Realm%></h3>
+        <div id="wifi_frequency_error_msg_placeholder" autocomplete="off" class="alert alert-error hide"><i class="icon-remove"></i></div>
+    </div>
+
+    <div id="nai_realm_content" style="padding:15px">
+        <div style="min-height:200px;max-height:400px;overflow-y:scroll;width:100%">
+            <table id="table_nai_realm_list" class="table table-striped table-bordered table-hover tablesorter">
+              <fieldset class="cbi-section-node" id="cbi-nai_realm_list">
+                  <div class="cbi-value" style="" id="cbi-nai_realm_domain" data-index="85" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.nai_realm_domain"><%:Domain Name%>&nbsp;   &nbsp;</label>
+                    <input title="" autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.nai_realm_domain" id="cbid.nai_realm_domain" value="">
+                  </div>
+
+                  <div class="cbi-value" style="" id="cbi-nai_realm_encoding" data-index="84" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.iw_access_network_type"><%:Encoding%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.nai_realm_encoding" name="cbid.nai_realm_encoding" size="1">
+                      <option value="0"><%:Realm formatted in accordance with IETF RFC 4282%></option>
+                      <option value="1"><%:Realm formatted in accordance with UTF8 NON IETF RFC 4282%></option>
+                    </select>
+                  </div>
+              </fieldset>
+            </table>
+
+
+<!-- ADD Authentication list -->
+            <fieldset class="cbi-section" id="" style="margin-left:20px; margin-right:5px">
+              <h5 class="header text-info semi-bold blue"><%:Method/Authentication%></h5>
+              <div class="cbi-section-create cbi-tblsection-create">
+                <button id="btn_add_authentication" class="btn btn-info btn-add btn-small" onclick="{ addNAIMethodAuth(); return false;}" value="" title="Add">
+                  <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                </button>
+              </div>
+
+              <div class="cbi-section-node">
+                 <table id="table_NAI_Auth" class="table table-bordered table-hover">
+                   <thead style="">
+                    <tr class="cbi-section-table-titles">
+                      <th class="cbi-section-table-cell"><%:Method%></th>
+                      <th class="cbi-section-table-cell"><%:Authentication%></th>
+                      <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+
+                  </tbody>
+                </table>
+
+                <div id="row_empty_NAI_Auth" style="font-style: italic;" class="grey">
+                  <%:No data available for this list%>
+                </div>
+              </div>
+            </fieldset>
+<!-- Authentication list -- END -->
+
+        </div>
+        <div class="cbi-section-create cbi-tblsection-create">
+            <div class="modal-footer">
+                <input id="btn_save_nai" class="btn btn-info btn-small cbi-button-save" style="margin-right:10px" type="button" value="<%:Save%>" name="btn_save_nai" onclick="nai_save()">
+            </div>
+        </div>
+    </div>
+</div>
+<!-- add NAI Realm END -->
+
+<!-- add NAI Realm Method/Auth -->
+<div id="nai_realm_auth_modal" class="modal hide fade" style="display: none;" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-header">
+        <span class="pull-right">
+            <button type="button" class="close" style="float:none" data-dismiss="modal" aria-hidden="true" id="close_nai_realm_auth_window">×</button>
+        </span>
+
+        <h3 class="green"><%:Method/Authentication%></h3>
+        <div id="wifi_frequency_error_msg_placeholder" autocomplete="off" class="alert alert-error hide"><i class="icon-remove"></i></div>
+        <div class="cbi-section-create cbi-tblsection-create">
+          <span id="alert_duplicate" style="color:red; display:none">
+            &nbsp;&nbsp;<%:Duplicated authentication.%>
+          </span>
+        </div>
+    </div>
+
+    <div id="nai_realm_auth_content" style="padding:15px">
+        <div style="min-height:200px;max-height:400px;overflow-y:scroll;width:100%">
+            <table id="table_nai_realm_auth_list" class="table table-striped table-bordered table-hover tablesorter">
+              <fieldset class="cbi-section-node" id="cbi-nai_realm_auth_list">
+                  <div class="cbi-value" style="" id="cbi-nai_realm_method" data-index="84" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.nai_realm_method"><%:Method%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.nai_realm_method" name="cbid.nai_realm_method" size="1">
+                      <option value="13"><%:EAP-TLS%></option>
+                      <option value="18"><%:EAP-SIM%></option>
+                      <option value="21"><%:EAP-TTLS%></option>
+                      <option value="23"><%:EAP-AKA Authentication%></option>
+                      <option value="25"><%:PEAP%></option>
+                      <option value="29"><%:EAP-MSCHAP-V2%></option>
+                      <option value="43"><%:EAP-FAST%></option>
+                      <option value="50"><%:EAP-AKA Prime%></option>
+                    </select>
+                  </div>
+                  <div class="cbi-value" style="" id="cbi-nai_realm_auth1" data-index="84" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.nai_realm_auth1"><%:Authentication%>&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id);nai_realm_auth1_change(this.value)" id="cbid.nai_realm_auth1" name="cbid.nai_realm_auth1" size="1">
+                      <option value="1"><%:Expanded EAP Method%></option>
+                      <option value="2"><%:Non-EAP Inner Authentication Type%></option>
+                      <option value="3"><%:Inner Authentication EAP Method Type%></option>
+                      <option value="4"><%:Expanded Inner EAP Method%></option>
+                      <option value="5"><%:Credential Type%></option>
+                      <option value="6"><%:Tunneled EAP Method Credential Type%></option>
+                      <option value="221"><%:Nai Realm EAP Auth Vendor Specific%></option>
+                    </select>
+                  </div>
+                  <div class="cbi-value" style="" id="cbi-nai_realm_auth2" data-index="84" data-depends="[]">
+                    <label class="cbi-value-title text-info control-label" for="cbid.nai_realm_auth2">&nbsp;   &nbsp;</label>
+                    <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.nai_realm_auth2" name="cbid.nai_realm_auth2" size="1">
+                      <option value="1"><%:SIM%></option>
+                      <option value="2"><%:USIM%></option>
+                      <option value="3"><%:NFC Secure Element%></option>
+                      <option value="4"><%:Hardware Token%></option>
+                      <option value="5"><%:Softoken%></option>
+                      <option value="6"><%:Certificate%></option>
+                      <option value="7"><%:username/password%></option>
+                      <option value="8"><%:none%></option>
+                      <option value="9"><%:Anonymous%></option>
+                      <option value="10"><%:Vendor Specific%></option>
+                    </select>
+                  </div>
+
+              </fieldset>
+            </table>
+        </div>
+        <div class="cbi-section-create cbi-tblsection-create">
+            <div class="modal-footer">
+                <input id="btn_save_nai_auth" class="btn btn-info btn-small cbi-button-save" style="margin-right:10px" type="button" value="<%:Save%>" name="btn_save_nai_auth" onclick="nai_auth_save()">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- add NAI Realm Method/Auth END -->
+
+
+  <h2><%:OpenRoaming%></h2>
+  <div> <%=luci.i18n.translatef("Create up to %d profiles.", MAX_Profiles) %><br/><br/></div>
+
+  <% if mgmt_enabled == true then %>
+  <div class="alert alert-warning" id="openroaming_mgmt_notify"><strong><i class="icon-info-sign"></i> </strong>
+    <span>This device is currently being managed by the <a href='<%=cloud_controller_url%>' target='_blank'><%=product.company_name()%> Cloud Controller</a>. <%:Please login to your Cloud account to make any OpenRoaming configuration changes.%>
+    </span>
+  </div>
+  <% end %>
+
+  <% if mgmt_enabled == false then %>
+  <button class="btn btn-info btn-add btn-small" onclick="{ addProfile(); return false;}"  value=""  title="Add" id="btn_add">
+    <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+  </button>
+  <% end %>
+
+  <span id="alert_up_max" style="color:red; display:none">
+    &nbsp;&nbsp;<%=luci.i18n.translatef("The allowed max number is %d.", MAX_Profiles) %>
+  </span>
+  <span id="alert_member_nonempty" style="color:red; display:none">
+  &nbsp;&nbsp;<%:Please remove all Members before deleting Profile.%>
+  </span>
+  <table id="table_profiles" class="table table-striped table-bordered table-hover">
+    <thead>
+      <tr class="cbi-section-table-titles">
+        <th class="cbi-section-table-cell" style="width:100px"><%:Profile Name%></th>
+        <th class="cbi-section-table-cell"><%:Members%></th>
+        <% if mgmt_enabled == false then %>
+        <th class="cbi-section-table-cell" style="width:100px">&nbsp;</th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+<%
+local profile_name = ""
+local i = 0
+
+    uci:foreach("hotspot20", "profile", function (hs20)
+      local bind_ssid = ""
+      if hs20 then
+        profile_name = hs20.name
+        uci:foreach("wireless", "wifi-iface",
+          function(iface)
+            if iface.hs20_profile and iface.ssid and profile_name and iface.hs20_profile == profile_name then
+              if bind_ssid ~= "" then
+                bind_ssid = bind_ssid .. ", " .. iface.ssid
+              else
+                bind_ssid = iface.ssid
+              end
+            end
+          end
+        )
+        bind_ssid = bind_ssid:gsub("\n", "")
+        toHide = "display:none"
+%>
+        <input type="hidden" name="acn.del.profile<%=profile_name%>" id="acn.del.profile<%=profile_name%>" value="0" />
+
+          <tr id="profile<%=profile_name%>_row">
+            <td id="profile_name_<%=i%>">
+                <%=profile_name%>
+            </td>
+            <td id="bind_ssid_<%=profile_name%>"><%=bind_ssid%></td>
+            <% if mgmt_enabled == false then %>
+            <td>
+                <button class="btn btn-mini <% if not site_entity then print('btn-danger') else print('ace-tooltip disabled') end %>"
+                <% if site_entity then print('  data-original-title="This item is managed by the cloud and cannot be deleted. Please unselect ports instead." onclick="return false"') end %>
+                onclick="EditRow(this.value);  return false;"
+                alt="<%:Edit%>" id="profile_<%=profile_name%>_edit" value="<%=profile_name%>"><i class="icon-edit"></i></button>
+
+               <button class="btn btn-mini <% if not site_entity then print('btn-danger') else print('ace-tooltip disabled') end %>"
+                <% if site_entity then print('  data-original-title="This item is managed by the cloud and cannot be deleted. Please unselect ports instead." onclick="return false"') end %>
+                onclick="removeRowProfile(this.id);  return false;"
+                alt="<%:Delete%>" id="profile_<%=profile_name%>" value="<%=profile_name%>" alt="<%:Delete%>"><i class="icon-trash"></i></button>
+            </td>
+            <% end %>
+          </tr>
+<%
+      i = i + 1
+      end
+    end)
+
+%>
+    </tbody>
+  </table>
+
+  <div id="row_empty" style="font-style: italic; <%=toHide%>" class="grey">
+    <%:No data available for this list%>
+  </div>
+
+  <% if mgmt_enabled == false then %>
+  <div class="cbi-page-actions">
+    <input id="btn_apply" class="btn btn-info btn-small cbi-button-apply" type="button" value="<%:Save%> &amp; <%:Apply%>" name="btn_apply" onclick="cbi_submit(this, 'cbi.apply')">
+    <input id="btn_save" class="btn btn-info btn-small cbi-button-save" type="submit" value="<%:Save%>" name="btn_save">
+    <input class="btn btn-info btn-small cbi-button-reset" type="button" value="<%:Reset%>" onclick="location.href='/cgi-bin/luci/admin/network/openroaming'">
+  </div>
+  <% end %>
+
+</form>
+
+<% if is_cbi_apply then %>
+
+<script type="text/javascript">
+  L.require('ui').then(function(ui) {
+    ui.changes.apply();
+  });
+</script>
+
+<% end %>
+<%+footer%>

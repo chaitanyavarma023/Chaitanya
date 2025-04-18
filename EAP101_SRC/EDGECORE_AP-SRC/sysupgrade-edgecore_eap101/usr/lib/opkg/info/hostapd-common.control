@@ -1,0 +1,13 @@
+Package: hostapd-common
+Version: 2021-02-20-59e9794c-70
+Depends: libc
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/wifi-ax/hostapd
+SourceName: hostapd-common
+License: BSD-3-Clause
+Section: net
+SourceDateEpoch: 1734445176
+CPE-ID: cpe:/a:w1.fi:hostapd
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7
+Installed-Size: 17167
+Description:  hostapd/wpa_supplicant common support files

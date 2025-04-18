@@ -1,0 +1,8 @@
+#!/bin/sh
+
+LOCK_FILE=/var/run/chilli.flock
+(
+	flock -x 200
+	/etc/init.d/firewall restart > /dev/null 2>&1
+
+) 200>$LOCK_FILE

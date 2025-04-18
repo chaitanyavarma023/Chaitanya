@@ -1,0 +1,21 @@
+<%
+  local acn = require("luci.acn.util")
+  local acn_uci = acn.cursor()
+  local brand = require("luci.acn.brand")
+  local product = require("luci.acn.product")
+  local cloud_controller_url = acn_uci:get("acn", "mgmt", "controller_url") or brand.controller_url
+
+  -- https://redmine.ignitenet.com/issues/20890: If managed by ecCLOUD and MSP mode is enabled, root account can modify the local-configurable SSID from local UI
+  local msp_disabled = (acn_uci:get("acn", "settings", "msp_enable") == "0" or acn_uci:get("acn", "settings", "msp_enable") == nil)
+  local lc_enabled = (acn_uci:get("wireless", self.section, "local_configurable") == "1")
+  msp_local_config_tab = luci.util.msp_local_config(msp_disabled, lc_enabled)
+%>
+
+<%  -- https://redmine.ignitenet.com/issues/23514: For root user => Show Cloud controlled alert message, ..
+    -- when 'either MSP is disabled' or when 'MSP is enabled but Local configurable is disabled'
+if msp_disabled or not msp_local_config_tab then %>
+<div class="alert alert-warning" id="wifi_mgmt_notify_<%=self.section%>"
+    ><strong><i class="icon-info-sign"></i> </strong><span>This device is currently being managed by the <a href='<%=cloud_controller_url%>' target='_blank'><%=product.company_name()%> Cloud Controller</a>. <%:Please login to your Cloud account to make any wireless configuration changes.%>
+   </span>
+</div>
+<% end %>

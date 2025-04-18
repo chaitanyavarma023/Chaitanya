@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+set_ieee80211v() {
+    config_get ieee80211v $1 ieee80211v
+
+    [ "$ieee80211v" == "" ] && uci set wireless.$1.ieee80211v='0'
+}
+
+config_load wireless
+config_foreach set_ieee80211v wifi-iface
+uci commit wireless
+
+exit 0

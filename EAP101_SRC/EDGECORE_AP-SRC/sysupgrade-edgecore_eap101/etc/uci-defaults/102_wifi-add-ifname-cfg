@@ -1,0 +1,38 @@
+#!/bin/sh
+. /lib/functions.sh
+
+wif_to_ifname() {
+  local ifname radid vapid
+
+  vapid=$(echo $1 | cut -d "_" -f2)
+  radid=$(echo $1 | cut -d "_" -f1 | grep -o '[0-9]*')
+
+  ifname="wlan$radid"
+
+  if [ "$vapid" -gt 1 ]; then
+    vapid=$((vapid-1))
+    ifname="$ifname-$vapid"
+  fi
+
+  echo $ifname
+}
+
+
+add_ifname() {
+  local wifi_iface="$1"
+
+  config_get ifname $wifi_iface ifname
+  [ "$ifname" = "" ] && {
+    ifname=$(wif_to_ifname $wifi_iface)
+    uci set wireless.$wifi_iface.ifname="$ifname"
+    changed=1
+  }
+}
+
+changed=0
+
+config_load wireless
+config_foreach add_ifname wifi-iface
+[ $changed -eq 1 ] && uci commit wireless
+
+exit 0

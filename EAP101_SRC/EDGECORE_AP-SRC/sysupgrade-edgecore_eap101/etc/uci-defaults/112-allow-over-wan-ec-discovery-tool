@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# 22732: if Discovery Agent is enabled, enable "Allow over WAN" by default.
+# if Discovery Agent is disabled, disable "Allow over WAN" by default
+
+if [ "$(uci -q get acn.discovery.enabled)" == "1" ]; then
+        uci add firewall rule
+        uci set firewall.@rule[-1].enabled='1'
+        uci set firewall.@rule[-1].name='Allow-Multicast-Discovery'
+        uci set firewall.@rule[-1].src='wan'
+        uci set firewall.@rule[-1].proto='udp'
+        uci set firewall.@rule[-1].dest_port='17371'
+        uci set firewall.@rule[-1].dest_ip='233.89.188.1'
+        uci set firewall.@rule[-1].target='ACCEPT'
+        uci set firewall.@rule[-1].family='ipv4'
+
+        uci add firewall rule
+        uci set firewall.@rule[-1].enabled='1'
+        uci set firewall.@rule[-1].name='Allow-Broadcast-Discovery'
+        uci set firewall.@rule[-1].src='wan'
+        uci set firewall.@rule[-1].proto='udp'
+        uci set firewall.@rule[-1].dest_port='17371'
+        uci set firewall.@rule[-1].dest_ip='255.255.255.255'
+        uci set firewall.@rule[-1].target='ACCEPT'
+        uci set firewall.@rule[-1].family='ipv4'
+fi
+
+uci commit firewall
+
+exit 0

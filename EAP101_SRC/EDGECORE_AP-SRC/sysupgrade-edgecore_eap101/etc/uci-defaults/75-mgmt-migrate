@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ "$(uci -q get acn.mgmt.management)" == "" ]; then
+	old_mgmt="$(uci -q get acn.mgmt.enabled)"
+	if [ "$old_mgmt" == "0" ]; then
+		uci set acn.mgmt.management='0'
+		uci del acn.mgmt.enabled
+	else
+		uci set acn.mgmt.management='1'
+		uci set acn.mgmt.enabled='1'
+	fi
+	uci commit acn.mgmt
+fi
+exit 0

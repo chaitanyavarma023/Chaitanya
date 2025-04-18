@@ -1,0 +1,110 @@
+<% 
+
+local product = require "luci.acn.product"
+local utl = require "luci.util"
+local uci = require "luci.model.uci".cursor()
+luci.dispatcher.context.plain_page = true
+local isEmpty = true
+local mode = uci:get("wireless", radio_id, "mode")
+local wds = uci:get("wireless", radio_id, "wds")
+local ptp = uci:get("wireless", radio_id, "ptp")
+if mode == "sta" and wds == "1" and ptp == "1" then
+    ptp_slave = "1"
+else
+    ptp_slave = "0"
+end
+%>
+
+<table width="100%" class="table table-hover">
+<tr style="text-align:center;background-color:#CCC">
+<th><%:SSID/BSSID%></th>
+<% if ptp_slave == "1" then %>
+<th>PtP</th>
+<% end %>
+<th><%:Channel%></th>
+<th><%:Signal%></th>
+<th><%:Security%></th>
+<th></th>
+</tr>
+<% for i, net in ipairs(scanlist) do
+    net.encryption = net.encryption or { }
+    isEmpty = false
+
+    local security = ""
+    local suites = ""
+
+    for _, v in ipairs(net.encryption.auth_suites) do
+        suites = suites .. v .. ","
+    end
+
+    if net.encryption.description ~= "None"  then
+            -- for WPA2-EAP and WPA3-Enterprise
+            if net.encryption.description == "WPA2 802.1X (CCMP)" then
+                security = "WPA2/WPA3 802.1X (CCMP)"
+            elseif net.encryption.description == "WPA2 802.1X (TKIP, CCMP)" then
+                security = "WPA2/WPA3 802.1X (TKIP, CCMP)"
+            -- for WPA3 Enterprise Transition
+            elseif net.encryption.description == "mixed WPA/WPA2 802.1X (CCMP)" then
+                security = "mixed WPA2/WPA3 802.1X (CCMP)"
+            else
+                security = net.encryption.description
+            end
+    elseif net.encryption.wep == true then
+            security = translate("WEP")
+    else
+            security = translate("Open")
+    end
+%>
+<%
+
+    local highlight_flag = (net.ssid_type == 6)
+%>
+<% if highlight_flag and ptp_slave == "1" then %>
+<tr style="font-weight:bold">
+<%else%>
+<tr>
+<%end%>
+    <td>
+        <%=net.ssid and utl.pcdata(net.ssid) or "<em>hidden</em>" %><br/>
+        <%=net.bssid%>
+    </td>
+    <% if ptp_slave == "1" then %>
+    <td>
+        <% if highlight_flag then %>
+        *
+        <% end %>
+    </td>
+    <% end %>
+    <td>
+        <%=net.channel%>
+    </td>
+
+    <td>
+
+        <%=tonumber(net.signal)%> dBm
+    </td>
+
+    <td>
+       <%=security%>
+    </td>
+    <td>
+    <% if show_join then %>
+        <button data-ssid="<%=net.ssid and utl.pcdata(net.ssid)%>" 
+        data-suites="<%=suites%>"
+        data-security="<%=security%>"
+        class="btn btn-small join-btn"
+        <% if ptp_slave == "1" then
+            if not highlight_flag then %>
+                disabled
+        <%  end
+           end%>
+        >Join</button>
+    <%end%>
+    </td>
+</tr>
+<%end%>
+</table>
+
+<%if isEmpty then %>
+    <span style="font-style:itallic">(No scan results)</span>
+<%end%>

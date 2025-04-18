@@ -1,0 +1,3102 @@
+Package: snmp-utils
+Version: 5.8-2
+Depends: libc, libnetsnmp
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: cipfwd
+Version: 1
+Depends: libc, ulog-listener, libevent2-7, libjson-c5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-vxlan
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-iptunnel, kmod-udptunnel4, kmod-udptunnel6
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: syslog-ng
+Version: 4.4.0-7
+Depends: libc, libpcre2, glib2, libopenssl1.1, libpthread, librt, zlib, libdbi, libjson-c5, libcurl4, libuuid1
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/syslog-ng.conf 54ad6de33360a13d94a3f37c142609d455b614e1c22b1a984aec41c462a610cc
+ /etc/syslog-ng.d/.keep e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+Installed-Time: 1734663226
+
+Package: terminfo
+Version: 6.2-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libuci-lua
+Version: 2020-10-06-52bbc99f-5
+Depends: libc, libuci20130104, liblua5.1.5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: iwinfo
+Version: 2021-06-09-c0414642-2.1
+Depends: libc, libiwinfo20210430
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-eap
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/eap e04ee744db5d7a30c1e9e6f5512c487a0e364580ac9c2c155306eae5fb2911c5
+ /etc/freeradius3/policy.d/eap 9484c4b7c9d01bc9837ab4650e83f55ba466c9af4292068d5c9767849dfae027
+ /etc/freeradius3/sites-available/inner-tunnel 51e91116f2cc9d11fcdf8ce687ce333c1a6d63f052cb47fac5f6ba1d744b3c08
+Installed-Time: 1734663226
+
+Package: kmod-ip6tables-extra
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ip6tables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: liblucihttp0
+ABIVersion: 0
+Version: 2019-07-05-a34a17d5-1
+Depends: libc
+Provides: liblucihttp
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-lib-textsearch
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: cgi-io
+Version: 2022-08-10-901b0f04-21
+Depends: libc, libubox20210819, libubus20210809
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libc
+Version: 1.1.24-3
+Depends: libgcc
+Status: install hold installed
+Essential: yes
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ebtables
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-br-netfilter
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: gre
+Version: 12
+Depends: libc, kmod-gre, kmod-gre6, resolveip
+Provides: grev4, grev6
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: kmod-ip6-tunnel
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-iptunnel6
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-i18n-opkg-ja
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-app-opkg
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: opkg
+Version: 2021-06-13-1bf042dd-1
+Depends: libc, uclient-fetch, libpthread, libubox20210819
+Status: install user installed
+Essential: yes
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/opkg.conf f38c19f696ea87c0b30eb5bfeb8657237f4625e1a749c58b99f01595edfb6446
+ /etc/opkg/customfeeds.conf 61d1f3aa62fe977614ed0c2f0ad3b2ee2f7b451bfb34812071d86d31a4d43d4a
+Installed-Time: 1734663226
+
+Package: kmod-usb-core
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nls-base
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-app-opkg
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, opkg
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luci-i18n-base-ja
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: libpthread
+Version: 1.1.24-3
+Depends: libgcc1
+Status: install hold installed
+Essential: yes
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ubus
+Version: 2021-08-09-a72457b6-2
+Depends: libc, libubus20210809, libblobmsg-json20210819, ubusd
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: iw
+Version: 5.9-1
+Depends: libc, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libuci20130104
+ABIVersion: 20130104
+Version: 2020-10-06-52bbc99f-5
+Depends: libc, libubox20210819
+Provides: libuci
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-nft-nat6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nft-nat, kmod-nf-nat6
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnetfilter-queue1
+ABIVersion: 1
+Version: 1.0.5-4
+Depends: libc, libmnl0, libnfnetlink0
+Provides: libnetfilter-queue
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: rpcd
+Version: 2021-11-04-d11ffe93-1
+Depends: libc, libubus20210809, libubox20210819, libuci20130104, libblobmsg-json20210819, libjson-c5
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/rpcd 8cf5dd8b76d65fc4df49ae2395c942a17670121243234123d70a431844c4bfa9
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-detail
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/detail 4c4cedf0e7889e79bd3d4f23ca80f6cbe491aa486e7dd4d3e3359e05b5ec7e1f
+Installed-Time: 1734663226
+
+Package: kmod-gre6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-iptunnel, kmod-ip6-tunnel, kmod-gre
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: busybox
+Version: 1.33.1-15
+Depends: libc, jsonfilter
+Conflicts: busybox-selinux
+Status: install user installed
+Essential: yes
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nft-arp
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nft-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: openvswitch-vswitchd
+Version: 2.15.1-10
+Depends: libc, openvswitch-libopenvswitch, openvswitch-libofproto, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libpci
+Version: 3.8.0-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luci-lib-ip
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, liblua5.1.5, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ip-full
+Version: 5.11.0-3
+Depends: libc, libnl-tiny1, libbpf0
+Provides: ip
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Alternatives: 300:/sbin/ip:/usr/libexec/ip-full
+
+Package: jq
+Version: 1.6-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: qca-ssdk-shell
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nfnetlink
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ath11k
+Version: 4.4.60+20210222_001-4.4.60-b157d2276-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ath, kmod-qca-nss-drv
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libubus-lua
+Version: 2021-08-09-a72457b6-2
+Depends: libc, libubus20210809, liblua5.1.5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucode-mod-resolv
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, ucode
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: umdns
+Version: 2021-06-30-4a874719-2
+Depends: libc, libubox20210819, libubus20210809, libblobmsg-json20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/umdns b367ef7f98522881a80fed0b3a4230329f08b14901bb1de0cad765bbc0f73504
+Installed-Time: 1734663226
+
+Package: kmod-crypto-hash
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-nf-reject6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ustp
+Version: 2021-08-27-25555611-1
+Depends: libc, libubox20210819, libubus20210809
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-tun
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: glib2
+Version: 2.66.4-1
+Depends: libc, zlib, libpthread, libffi, libattr
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libiwinfo-lua
+Version: 2021-06-09-c0414642-2.1
+Depends: libc, libiwinfo20210430, liblua5.1.5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-batman-adv
+Version: 4.4.60+2021.1-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-lib-crc16, kmod-lib-crc32c, kmod-cfg80211, batctl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: tc-full
+Version: 5.11.0-3
+Depends: libc, kmod-sched-core, libxtables12, tc-mod-iptables, libbpf0
+Provides: tc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+Alternatives: 300:/sbin/tc:/usr/libexec/tc-full
+
+Package: freeradius3
+Version: 3_0_21-2
+Depends: libc, freeradius3-common
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/clients.conf 4f2f8d7d2ca32aefce16ea7dfd45cdb6e903306b84727d3d1de62e475519233e
+ /etc/freeradius3/policy.d/accounting fbad59f44b6e7303b6590b0c818afb57f68c7a97ccb608c072542d5dadc3b832
+ /etc/freeradius3/policy.d/filter be2c73d68e98fac5361294f8c46195fd2a49dc43c04544ba86a6bba75937d675
+ /etc/freeradius3/proxy.conf 6069714247cd4a9736e72e1104dfcaba8be8ccf6f8d57abeed18d584f184d6bd
+ /etc/freeradius3/radiusd.conf af9a1f80c9a4e34995e3f95a25927c2b3eb6b4807bbcacab8ccc50ae24c66e9a
+ /etc/freeradius3/sites-available/default 6e918fd6fe63eb3fc9632699fd99f2a80eeb6d48897f6daf8c718a63eec6c986
+Installed-Time: 1734663226
+
+Package: kmod-usb-dwc3
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-usb-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: swconfig
+Version: 12
+Depends: libc, libuci20130104, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ebtables
+Version: 2018-06-27-48cff25d-1
+Depends: libc, kmod-ebtables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-br-netfilter
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: conntrackd
+Version: 1.4.6-3
+Depends: libc, libnetfilter-conntrack3, libnetfilter-cttimeout1, libnetfilter-cthelper0, libnetfilter-queue1
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/conntrackd/conntrackd.conf e37769af217232d45626db17995ff1971f7b65904512f419968fdea2a38f404b
+Installed-Time: 1734663226
+
+Package: luci-mod-system
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: openssl-util
+Version: 1.1.1w-1
+Depends: libc, libopenssl1.1, libopenssl-conf
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nf-flow
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnl-tiny1
+ABIVersion: 1
+Version: 2020-08-05-c291088f-2
+Depends: libc
+Provides: libnl-tiny
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: firstcontact
+Version: 1
+Depends: libc, libubox20210819, libcurl4, libopenssl1.1, certificates
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-aaa
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-ipt
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-expr
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/expr 4bbe02303d7ec84e3ac96ffef1e4fa4942f60259acb64acddcec78ae4b961f49
+Installed-Time: 1734663226
+
+Package: openvswitch-libopenvswitch
+Version: 2.15.1-10
+Depends: libc, libopenssl1.1, libunwind8, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-lib-crc-ccitt
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-filter
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-lib-textsearch, kmod-ipt-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucode-mod-uloop
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, ucode, libubox20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: tisbl
+Version: 1.0.0-1
+Depends: libc, libstdcpp6, zlib
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: getrandom
+Version: 2020-10-25-9ef88681-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libxtables-nft12
+ABIVersion: 12
+Version: 1.8.7-1
+Depends: libc, libxtables12
+Provides: libxtables-nft
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: dynamic-vlan
+Version: 2021-06-04-55d78d3e-1
+Depends: libc, libubox20210819, libubus20210809
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-nat-extra
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-ipt-nat
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: acc
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucode-mod-ubus
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, ucode, libubus20210809, libblobmsg-json20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: client-limit
+Version: 1
+Depends: libc, tc, kmod-ifb, ucode, ucode-mod-uloop, ucode-mod-fs, ucode-mod-ubus
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: minicom
+Version: 2.7.1-2
+Depends: libc, libncurses6
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-asn1-decoder
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libustream-openssl20201210
+ABIVersion: 20201210
+Version: 2020-12-10-68d09243-1
+Depends: libc, libubox20210819, libopenssl1.1
+Provides: libustream-openssl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libev
+Version: 4.31-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: lua-bit32
+Version: 5.3.0-1
+Depends: libc, lua
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-gre
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-iptunnel
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libprotobuf-c
+Version: 1.4.0-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-nf-nathelper
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-nat
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-pppoe
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ppp, kmod-pppox
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libuuid1
+ABIVersion: 1
+Version: 2.36.1-2
+Depends: libc, librt
+Provides: libuuid
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ath11k-firmware-ipq60xx
+Version: 19
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-sched-bpf
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libcap
+Version: 2.43-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: qca-nss-fw-ipq60xx
+Version: 383
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libcap-ng
+Version: 0.8.1-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-pppox
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ppp
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-veth
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-conntrack
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-nf-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-nf-reject
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-lib-crc16
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: base-files
+Version: 1486-1457
+Depends: libc, netifd, jsonfilter, usign, openwrt-keyring, ubi-utils, fstools, fwtool
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/ethers 56bda09b0aa3d1e88107bfa8a1c6e4449d5c1f47245dc1c4037ff9b5db163b7c
+ /etc/group 45e8cab268d4a2254d48ccb1f889630047e81758de54a614cad5449fdbebe19c
+ /etc/hosts c1a978d90673437b35fa9494e0a54294062c152bb653d490b718052ab88447fd
+ /etc/inittab 8b395f7d827753e1e92d4a1c369d9fe16caa23bf742b3f78e4599c4dd9b1b6e3
+ /etc/iproute2/rt_protos a0712b1771c8d5f3e0dcf9a6314880e71aa3498ea1ae873535bdfcf70d814061
+ /etc/iproute2/rt_tables f771e2b81741f70e3faf658dc504f0dc048672fc8caaadea15e46c35da3de8f8
+ /etc/passwd 6a451aa33393f47ade89b8bce4d9711818c2630394c3967265ffed276bb25a55
+ /etc/profile c7e4ca53232e015d6f7262ed48bf964a7ee995d034e34a36589c51a110af4daa
+ /etc/protocols 7d551355d5540b07b9d86e623cbbc4abecbb94d2a662b3afcc917940eb0e3d52
+ /etc/rc.local 167918c3e7fcf4a3a9727e919c045eca23ed58cadc1d975adb351f9ea6b6cc68
+ /etc/services 754ccc71ca347bc79ac4c45139d416b7cf1e65a919dad1db15613a216cd6b9cc
+ /etc/shadow 1aa351dd8e01d07f5bd8d270de7edc47d20f695f4b4bd0a69a2b5de58c5744da
+ /etc/shells 8b35ce73c18161a7d7ed16fa244410993bd031515260e3e0c11749047df48d0a
+ /etc/shinit 7e7648d7bc6eb02fe0b24a87425d7d4ffc6600abd19f0954616662ce924f2446
+ /etc/sysctl.conf c02fe88dc055a1eaee9e7cb631760a3a5a9cea55610b42aa45196838c6f1a55e
+ /etc/sysupgrade.conf 9e87b05fe2f12c84d1c465b396322748479f64bc40e5bab061887f0bd95020a6
+Installed-Time: 1734663226
+
+Package: kmod-nf-nat
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libpcre
+Version: 8.44-3
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-crypto-crc32c
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-crypto-hash
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ebtables-watchers
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ebtables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucode-mod-uci
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, ucode, libuci20130104
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: msgpack-c
+Version: 5.0.0-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: netifd
+Version: 2021-10-20-c61a1d43-1
+Depends: libc, libuci20130104, libnl-tiny1, libubus20210809, ubus, ubusd, jshn, libubox20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/udhcpc.user 4dabffbc2110a29e01babc63d9b8db94da49efd3ed784d35b49a559ac8ce7035
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: coreutils
+Version: 8.32-6
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: lua-wsapi-base
+Version: 1.7-1
+Depends: libc, lua, luafilesystem
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: kmod-ipt-raw
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnl-route200
+ABIVersion: 200
+Version: 3.5.0-1
+Depends: libc, libnl-core200
+Provides: libnl-route
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-i18n-upnp-en
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-app-upnp
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: libubus20210809
+ABIVersion: 20210809
+Version: 2021-08-09-a72457b6-2
+Depends: libc, libubox20210819
+Provides: libubus
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: uboot-envtools
+Version: 2021.01-19
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: speedtest-netperf
+Version: 1.0.0-1
+Depends: libc, netperf
+Conflicts: speedtest
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: dnsmasq
+Version: 2.73-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: procd
+Version: 2021-11-04-0ee8e734-5
+Depends: libc, ubusd, ubus, libjson-script20210819, ubox, libubox20210819, libubus20210809, libblobmsg-json20210819, libjson-c5, jshn
+Conflicts: procd-selinux
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: resolveip
+Version: 2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: mgmtd
+Version: 1
+Depends: libc, luci, libexpat, luaexpat, luasocket, luasec, liblua5.1.5, libubox20210819, libubus20210809
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libbpf0
+ABIVersion: 0
+Version: 5.10.10-2
+Depends: libc, libelf1
+Provides: libbpf
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ip6tables-nft
+Version: 1.8.7-1
+Depends: libc, ip6tables, libxtables-nft12
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ubusd
+Version: 2021-08-09-a72457b6-2
+Depends: libc, libubox20210819, libblobmsg-json20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-qca-nss-drv-wifi-meshmgr
+Version: 4.4.60+153998d70fdba508a59a28c13a606032cbf32686-2
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-qca-nss-drv
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnl200
+ABIVersion: 200
+Version: 3.5.0-1
+Depends: libc, libnl-genl200, libnl-route200, libnl-nf200
+Provides: libnl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libdbi
+Version: 0.9.0-5
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ath11k-wifi-edgecore-eap101
+Version: 1
+Depends: libc
+Conflicts: ath11k-wifi-cig-wf188, ath11k-wifi-cig-wf188n, ath11k-wifi-cig-wf194c, ath11k-wifi-cig-wf194c4, ath11k-wifi-cig-wf196, ath11k-wifi-cybertan-eww622-a1, ath11k-wifi-sercomm-wallaby, ath11k-wifi-wallys-dr6018, ath11k-wifi-wallys-dr6018-v4
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnetfilter-conntrack3
+ABIVersion: 3
+Version: 1.0.8-1
+Depends: libc, libnfnetlink0, kmod-nf-conntrack-netlink, libmnl0
+Provides: libnetfilter-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-always
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/always 90b2c361152d097cd025bcac246037ef28a422a801710d03e0bbf4618c61f7be
+Installed-Time: 1734663226
+
+Package: ratelimit
+Version: 1
+Depends: libc, hostapd-utils, tc, kmod-ifb
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: hostapd-utils
+Version: 2021-02-20-59e9794c-70
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-nf-nat6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-conntrack6, kmod-nf-nat
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: xxd
+Version: 8.2-3
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucode-mod-math
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, ucode
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-nft-bridge
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nft-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-lib-crc32c
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-crypto-crc32c
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libelf1
+ABIVersion: 1
+Version: 0.180-1
+Depends: libc, zlib
+Provides: libelf, libelf11
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-iptunnel
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luci-mod-status
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base, libiwinfo20210430, libiwinfo-lua
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: lua-cjson
+Version: 2.1.0-2
+Depends: libc, lua
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libxtables12
+ABIVersion: 12
+Version: 1.8.7-1
+Depends: libc, libnftnl11
+Provides: libxtables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-qca-ssdk
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Provides: qca-ssdk
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: iptables-mod-physdev
+Version: 1.8.7-1
+Depends: libc, iptables, kmod-ipt-physdev
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-raw6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-ip6tables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: opennds
+Version: 9.0.0-1
+Depends: libc, libpthread, iptables-mod-ipopt, libmicrohttpd-no-ssl
+Conflicts: nodogsplash, nodogsplash2
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/opennds 8a4ae8b5afa6727dd9ea669c29d3d83a2c003337aec449571ad70164f6d1e7bc
+Installed-Time: 1734663226
+
+Package: ser2net
+Version: 3.5.1-5
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/ser2net 0d5b3785c50c054f6b539a698fc9f558a83e8d7efba252c725f0ce189ac9fb98
+ /etc/ser2net.conf 881dc0d838d40d520333b26713732210b5a308f564e30457a30c8d19cc44ec4f
+Installed-Time: 1734663226
+
+Package: vxlan
+Version: 7
+Depends: libc, kmod-vxlan
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: luasocket
+Version: 2019-04-21-733af884-1
+Depends: libc, lua
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: service-schedule
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: batctl-default
+Version: 2021.1-1
+Depends: libc, libnl-tiny1, librt
+Provides: batctl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+Alternatives: 200:/usr/sbin/batctl:/usr/libexec/batctl-default
+
+Package: kmod-nft-nat
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nft-core, kmod-nf-nat
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: netperf
+Version: 2.7.0-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: miniupnpd
+Version: 2.2.1-3
+Depends: libc, iptables, libip4tc2, libip6tc2, ip6tables, libuuid1, libcap-ng
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/upnpd f54505cdc46353aeedf7b5f62206248f187a0b53192661118cd4a86c914b53c3
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: firewall
+Version: 2021-03-23-61db17ed-1
+Depends: libc, libubox20210819, libubus20210809, libuci20130104, libip4tc2, libip6tc2, libxtables12, kmod-ipt-core, kmod-ipt-conntrack, kmod-nf-conntrack6, kmod-ipt-nat
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/firewall 0f402ecfc36d0a031b53b0123ddc31151b5c4c45ffa32a0324207fd28566cf21
+ /etc/firewall.user bd68324966481011f5e36570258ad97dd422655c16f3119d48325ed8459de510
+Installed-Time: 1734663226
+
+Package: capwap
+Version: 0.93.3-1
+Depends: libc, libopenssl1.1, libpthread, libevent2-7
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-app-firewall
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, firewall
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: freeradius3-mod-attr-filter
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/attr_filter a8537208372c09c8326b062b8a23b5cf08ac85ca77dac25d9739326c1d0a5a0d
+ /etc/freeradius3/mods-config/attr_filter/access_challenge 8d19246828d2427457805e758300ce6f0fb67136812b0c6f55a117bedabb6073
+ /etc/freeradius3/mods-config/attr_filter/access_reject df5f1adc98f67f9f67a965d3e4d85372a1a4904b87e5217c904770adbba65b3b
+ /etc/freeradius3/mods-config/attr_filter/accounting_response f0207b821cfb5d139f857d846c6070fcff545ec965dc1198895e37601b9ab056
+ /etc/freeradius3/mods-config/attr_filter/post-proxy f1820dcec7ef2f5e13345e91761fdf454a38b09a4da70039f0a30ca7236827b3
+ /etc/freeradius3/mods-config/attr_filter/pre-proxy 64d95b8a591ea6ed66f2d3e971b66570dcd5a3fd9e479a81fe52b0141fa700bb
+Installed-Time: 1734663226
+
+Package: kmod-nf-ipt
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ipt-conntrack-extra
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-ipt-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: nstat
+Version: 5.11.0-3
+Depends: libc, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucentral-client
+Version: 2021-02-15-e2735621-1
+Depends: libc, ucode, ucode-mod-fs, ucode-mod-ubus, ucode-mod-uci, ucode-mod-math, ucode-mod-resolv, libubox20210819, libwebsockets-openssl, libblobmsg-json20210819, libubus20210809
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ec-fp
+Version: 1
+Depends: libc, libubox20210819, libubus20210809, libuci20130104, libblobmsg-json20210819, cJSON
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: dhcp-helper
+Version: 2.1-1
+Depends: libc, libnl200, libev, jansson4
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libmnl0
+ABIVersion: 0
+Version: 1.0.4-2
+Depends: libc
+Provides: libmnl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: jansson4
+ABIVersion: 4
+Version: 2.13.1-2
+Depends: libc
+Provides: jansson
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: uuidgen
+Version: 2.36.1-2
+Depends: libc, libuuid1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: chilli-redirect
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: certificates
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: cJSON
+Version: 1.7.15-3
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: tcpdump
+Version: 4.9.3-3
+Depends: libc, libpcap1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: wpad-openssl
+Version: 2021-02-20-59e9794c-70
+Depends: libc, libnl-tiny1, hostapd-common, libubus20210809, libopenssl1.1
+Provides: hostapd, wpa-supplicant
+Conflicts: hostapd, hostapd-basic, hostapd-basic-openssl, hostapd-basic-wolfssl, hostapd-mini, hostapd-openssl, hostapd-wolfssl, wpad, wpad-mesh-openssl, wpad-mesh-wolfssl, wpad-basic, wpad-basic-openssl, wpad-basic-wolfssl, wpad-mini, wpad, wpad-mesh-openssl, wpad-mesh-wolfssl, wpad-basic, wpad-basic-openssl, wpad-basic-wolfssl, wpad-mini
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ubi-utils
+Version: 2.1.2-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ip6tables
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-reject6, kmod-nf-ipt6, kmod-ipt-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luci-i18n-upnp-ja
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-app-upnp
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: kmod-qca-nss-drv
+Version: 4.4.60-2
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-qca-nss-dp
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: odhcp6c
+Version: 2021-01-09-53f07e90-16
+Depends: libc, libubox20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: iptables-nft
+Version: 1.8.7-1
+Depends: libc, iptables, libxtables-nft12
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: fstools
+Version: 2021-07-28-cc63933f-1
+Depends: libc, ubox, ubi-utils
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libjson-script20210819
+ABIVersion: 20210819
+Version: 2021-08-19-c86a894e-2
+Depends: libc, libubox20210819
+Provides: libjson-script
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-udptunnel4
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: uclient-fetch
+Version: 2021-05-14-6a6011df-1
+Depends: libc, libuclient20201210
+Provides: wget
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Alternatives: 200:/usr/bin/wget:/bin/uclient-fetch
+
+Package: kmod-udptunnel6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: mac-auth
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-extra
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: iptables-mod-ipopt
+Version: 1.8.7-1
+Depends: libc, iptables, kmod-ipt-ipopt
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ti-zstack
+Version: 1.0.0-1
+Depends: libc, libprotobuf-c, libstdcpp6, zlib
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: discoveryd
+Version: 0.1
+Depends: libc, libuci20130104, zlib, jansson4
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ethtool
+Version: 5.10-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: uci
+Version: 2020-10-06-52bbc99f-5
+Depends: libc, libuci20130104
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-eap-ttls
+Version: 3_0_21-2
+Depends: libc, freeradius3-mod-eap-tls
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: lua
+Version: 5.1.5-9
+Depends: libc, liblua5.1.5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libwebsockets-openssl
+Version: 4.1.4-1
+Depends: libc, zlib, libcap, libopenssl1.1
+Provides: libwebsockets
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucode-mod-fs
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, ucode
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: udnssnoop
+Version: 2021-04-12-852a5246-1
+Depends: libc, libubox20210819, libubus20210809
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ebtables-ipv4
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ebtables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ebtables-ipv6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ebtables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libip4tc2
+ABIVersion: 2
+Version: 1.8.7-1
+Depends: libc, libxtables12
+Provides: libip4tc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: dropbear
+Version: 2020.81-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/dropbear/dropbear_ed25519_host_key e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+ /etc/dropbear/dropbear_rsa_host_key e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+ /etc/config/dropbear b3a508810ca192b8ab1015407113bc65e092ce805cdb91b34d86cd6a12f550cb
+Installed-Time: 1734663226
+Alternatives: 100:/usr/bin/scp:/usr/sbin/dropbear, 100:/usr/bin/ssh:/usr/sbin/dropbear
+
+Package: logrotate
+Version: 3.17.0-1
+Depends: libc, libpopt0
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/logrotate.conf 80a87173f3da177130b5201d9905db03fb8d33c6f885f5980d4c704ec463f15d
+Installed-Time: 1734663226
+
+Package: libpcre2
+Version: 10.36-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-chap
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/chap aaf7dc46c2291470b6648fc7313e849a7db0730b25064529d19fe3c4612f0367
+Installed-Time: 1734663226
+
+Package: curl
+Version: 7.83.1-1.1
+Depends: libc, libcurl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-usb-dwc3-of-simple
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-usb-dwc3, kmod-usb-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnftnl11
+ABIVersion: 11
+Version: 1.1.8-1
+Depends: libc, libmnl0
+Provides: libnftnl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libgmp10
+ABIVersion: 10
+Version: 6.2.1-1
+Depends: libc
+Provides: libgmp
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucentral-tools
+Version: 2021-01-28-b013fc63-1
+Depends: libc, libubox20210819, libcurl4, libradcli, libopenssl1.1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-compat
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: rpcd-mod-file
+Version: 2021-11-04-d11ffe93-1
+Depends: libc, libubus20210809, libubox20210819, rpcd
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: cipuamd
+Version: 1
+Depends: libc, libevent2-7
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: mtd
+Version: 26
+Depends: libc, libubox20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: openvswitch-ovsdb
+Version: 2.15.1-10
+Depends: libc, openvswitch-libopenvswitch, openvswitch-libovsdb, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: lua-coxpcall
+Version: 1.17.0-1
+Depends: libc, lua
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: odhcpd-ipv6only
+Version: 2021-07-18-bc9d317f-3
+Depends: libc, libubox20210819, libuci20130104, libubus20210809, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luafilesystem
+Version: 1.8.0-1
+Depends: libc, liblua5.1.5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ip6tables-mod-nat
+Version: 1.8.7-1
+Depends: libc, ip6tables, kmod-ipt-nat6
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-eap-tls
+Version: 3_0_21-2
+Depends: libc, freeradius3-mod-eap
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-theme-base
+Version: git-24.354.35592-f754fbf-1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: libnetfilter-cthelper0
+ABIVersion: 0
+Version: 1.0.0-2
+Depends: libc, libmnl0
+Provides: libnetfilter-cthelper
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-sched
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-sched-core, kmod-ipt-core, kmod-lib-crc32c
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ebtables-utils
+Version: 2018-06-27-48cff25d-1
+Depends: libc, kmod-ebtables, ebtables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-mod-ucentral
+Version: git-22.209.33035-88dc804
+Depends: libc, luci-base
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: libiwinfo-data
+Version: 2021-06-09-c0414642-2.1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: atfpolicy
+Version: 1
+Depends: libc, libubox20210819, libubus20210809, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ucode
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, libucode
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: rpcd-mod-luci
+Version: 20201107
+Depends: libc, rpcd, libubox20210819, libubus20210809, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: mesh-discovery
+Version: 8
+Depends: libc, libubox20210819, libubus20210809, libblobmsg-json20210819, libuci20130104, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-common
+Version: 3_0_21-2
+Depends: libc, libopenssl1.1, libcap, libpcap1, libncurses6, libpcre, libreadline8, libtalloc, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libtalloc
+Version: 2.3.1-3
+Depends: libc, libattr
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ucentral-wifi
+Version: 2021-04-13-b64cd414-1
+Depends: libc, libubox20210819, libubus20210809, libnl-tiny1, kmod-mac80211
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: openvswitch-libovsdb
+Version: 2.15.1-10
+Depends: libc, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-preprocess
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-config/preprocess/hints f5ae2a745e8e22f5653bbeca416506f850783083598e0758a5c0385c22b71a46
+ /etc/freeradius3/mods-config/preprocess/huntgroups 5eddab5ce281b400caefcb14c09a2e50e14b2d872bd168b846edc1d5250d1add
+ /etc/freeradius3/mods-available/preprocess 2760436c3fe44d81376fc4729607735f711230e7b3584f2dc5bdba4a41240c12
+Installed-Time: 1734663226
+
+Package: urandom-seed
+Version: 3
+Depends: libc, getrandom
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ipset
+Version: 7.6-1
+Depends: libc, kmod-ipt-ipset, libmnl0, libipset13
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-proto-ppp
+Version: git-24.354.35592-f754fbf-1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libffi
+Version: 3.3-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ppp
+Version: 2.4.8.git-2020-10-03-3
+Depends: libc, kmod-ppp
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/ppp/chap-secrets 6981fa176a79f8c12be5826c421b16253a616747018ba7e76752a9d36d1d51d4
+ /etc/ppp/filter 579583b318e0cff706ffc134620b42d3fbce8fc31aeb0ad7eea1cc859868e902
+ /etc/ppp/options 01f7358a5528be037dde329a2ecfb7a63382aababf21d4f5bc085f5acef95133
+Installed-Time: 1734663226
+
+Package: luci-mod-admin-full
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base, luci-mod-status, luci-mod-system, luci-mod-network
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: openvswitch-common
+Version: 2.15.1-10
+Depends: libc, openvswitch-libopenvswitch, openvswitch-libofproto, openvswitch-libovsdb, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/openvswitch 9b91739a462b5076596d5c6dd6e22e8f57e698e5a939273d9cd3c83c5baa8f70
+Installed-Time: 1734663226
+
+Package: libucode20220322
+ABIVersion: 20220322
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, libjson-c5
+Provides: libucode
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luci-base
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, lua, luci-lib-nixio, luci-lib-ip, rpcd, libubus-lua, luci-lib-jsonc, liblucihttp-lua, rpcd-mod-file, rpcd-mod-luci, cgi-io
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/luci-uploads/.placeholder e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+ /etc/config/luci 641b9410e72605e935475dc8ecf7b1a1c512c058da3c8bbbb792937bab3eadeb
+ /etc/config/ucitrack 25673abc93d3d05af2cae4466b16ddeef3805a6cb2804b8242628746ddc0e9a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libnettle8
+ABIVersion: 8
+Version: 3.6-1
+Depends: libc, libgmp10
+Provides: libnettle
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-utils
+Version: 3_0_21-2
+Depends: libc, freeradius3-common
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-i18n-firewall-en
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-app-firewall
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: kmod-gpio-button-hotplug
+Version: 4.4.60-3
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: snmpd
+Version: 5.8-2
+Depends: libc, libnetsnmp
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/snmpd 33b81662634ab59418677824e64134aaf257fba500d6b430787f7e414247e4ac
+Installed-Time: 1734663226
+
+Package: rtty-openssl
+Version: 7.1.4-1
+Depends: libc, libev, libopenssl1.1
+Provides: rtty
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/rtty 6a7e68cb84a0419740b650775e75e4afe621298687d7c2a6d2d0a8d8fbacd518
+Installed-Time: 1734663226
+
+Package: libreadline8
+ABIVersion: 8
+Version: 8.1-1
+Depends: libc, libncursesw6
+Provides: libreadline
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ip-bridge
+Version: 5.11.0-3
+Depends: libc, libnl-tiny1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ieee8021x
+Version: 2021-04-12-c1f36559-1
+Depends: libc, libubox20210819, libubus20210809, libuci20130104
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-lib-web
+Version: git-24.354.35592-f754fbf-1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: librt
+Version: 1.1.24-3
+Depends: libpthread
+Status: install hold installed
+Essential: yes
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libmicrohttpd-no-ssl
+Version: 0.9.71-1
+Depends: libc
+Provides: libmicrohttpd
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-mac80211
+Version: 4.4.60+20210222_001-4.4.60-b157d2276-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-cfg80211, hostapd-common, kmod-qca-nss-drv, kmod-qca-nss-drv-wifi-meshmgr
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libopenssl1.1
+ABIVersion: 1.1
+Version: 1.1.1w-1
+Depends: libc
+Provides: libopenssl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-qca-nss-dp
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-qca-ssdk
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ucentral-schema
+Version: 2021-02-15-6d321d65-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libipset13
+ABIVersion: 13
+Version: 7.6-1
+Depends: libc, kmod-ipt-ipset, libmnl0
+Provides: libipset
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-proto-ipv6
+Version: git-24.354.35592-f754fbf-1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: coreutils-sleep
+Version: 8.32-6
+Depends: libc, coreutils
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+Alternatives: 300:/bin/sleep:/usr/libexec/sleep-coreutils
+
+Package: uclibcxx
+Version: 0.2.5-3
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: acom_addon
+Version: 0.1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ath11k-pci
+Version: 4.4.60+20210222_001-4.4.60-b157d2276-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ath11k
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libip6tc2
+ABIVersion: 2
+Version: 1.8.7-1
+Depends: libc, libxtables12
+Provides: libip6tc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: iptables
+Version: 1.8.7-1
+Depends: libc, kmod-ipt-core, libip4tc2, libip6tc2, libxtables12
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: openwrt-keyring
+Version: 2021-02-20-49283916-2
+Depends: libc
+Provides: lede-keyring
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: cipgwacct
+Version: 1
+Depends: libc, libevent2-7
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnl-core200
+ABIVersion: 200
+Version: 3.5.0-1
+Depends: libc, libpthread
+Provides: libnl-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nf-conntrack-netlink
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nfnetlink, kmod-ipt-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nsh
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luci-theme-ec
+Version: git-24.354.35592-f754fbf-1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: lua-cgilua
+Version: 5.1.4-1
+Depends: libc, lua
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nf-nathelper-extra
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-nat, kmod-lib-textsearch, kmod-ipt-raw, kmod-asn1-decoder
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: bridge
+Version: 1.7-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Alternatives: 300:/usr/sbin/brctl:/usr/libexec/brctl-bridge-utils
+
+Package: ucentral-event
+Version: 2021-04-13-7b0d136e-1
+Depends: libc, libubox20210819, libubus20210809, libuci20130104, libblobmsg-json20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: jshn
+Version: 2021-08-19-c86a894e-2
+Depends: libc, libjson-c5, libubox20210819, libblobmsg-json20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: nftables-json
+Version: 0.9.6-2
+Depends: libc, kmod-nft-core, libnftnl11, jansson4
+Provides: nftables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-core
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-reject, kmod-nf-ipt
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libblobmsg-json20210819
+ABIVersion: 20210819
+Version: 2021-08-19-c86a894e-2
+Depends: libc, libjson-c5, libubox20210819
+Provides: libblobmsg-json
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: link_udptap
+Version: 1.0.0-1
+Depends: libc, ip-full
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: wifischedule
+Version: 1-3
+Depends: libc
+Status: install user installed
+Architecture: all
+Conffiles:
+ /etc/config/wifi_schedule f6c20d879063107859b4a05c76e93239751025bf488d64371220fa09d96b39e5
+Installed-Time: 1734663226
+
+Package: udhcpsnoop
+Version: 2021-04-12-b8663990-1
+Depends: libc, libubox20210819, libubus20210809, libuci20130104
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: openvswitch-libofproto
+Version: 2.15.1-10
+Depends: libc, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ppp
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-lib-crc-ccitt, kmod-slhc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libopenssl-conf
+Version: 1.1.1w-1
+Depends: libc, libopenssl1.1
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/ssl/openssl.cnf 5fa02b889f75a06883776dd8118b3c95a49cf0f4b8789a78d83a3fbfd314b319
+Installed-Time: 1734663226
+
+Package: libncurses6
+ABIVersion: 6
+Version: 6.2-1
+Depends: libc, terminfo
+Provides: libncursesw, libncurses, libncursesw6
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: private-mibs
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-i18n-firewall-ja
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-app-firewall
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: kmod-ipt-ipset
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-nfnetlink
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-pap
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/pap 93bf4b9752e10d32ef5aef8192f95a52e736dcfe6914ae49e5e2b70b5ea578c9
+Installed-Time: 1734663226
+
+Package: libunwind8
+ABIVersion: 8
+Version: 1.5.0-1
+Depends: libc, zlib
+Provides: libunwind
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: tc-mod-iptables
+Version: 5.11.0-3
+Depends: libc, libxtables12
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luci-app-upnp
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-compat, miniupnpd
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: libpcap1
+ABIVersion: 1
+Version: 1.9.1-3
+Depends: libc
+Provides: libpcap
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libiwinfo20210430
+ABIVersion: 20210430
+Version: 2021-06-09-c0414642-2.1
+Depends: libc, libnl-tiny1, libuci20130104, libubus20210809, libiwinfo-data
+Provides: libiwinfo
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: igmpproxy
+Version: 0.2.1-4
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/igmpproxy 0378809b92f1d537d51ee71a6835b49947cd7350884023eb88692e0a56b313a6
+Installed-Time: 1734663226
+
+Package: libjson-c5
+ABIVersion: 5
+Version: 0.15-2
+Depends: libc
+Provides: libjson-c
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: uhttpd
+Version: 2021-03-21-15346de8-1
+Depends: libc, libubox20210819, libblobmsg-json20210819, libjson-script20210819, libjson-c5
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/uhttpd 9e8c9a39cf4cad32e9e48cf265230b1f58de3fa3873e212d8b7cc4f3f0d9fb03
+Installed-Time: 1734663226
+
+Package: kmod-nf-conntrack
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-iptunnel6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luasec
+Version: 0.9-1
+Depends: libc, lua, libopenssl1.1, luasocket
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: freeradius3-mod-eap-peap
+Version: 3_0_21-2
+Depends: libc, freeradius3-mod-eap
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libcurl4
+ABIVersion: 4
+Version: 7.83.1-1.1
+Depends: libc, libopenssl1.1, libnghttp2-14, ca-bundle
+Provides: libcurl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: usign
+Version: 2020-05-23-f1f65026-1
+Depends: libc, libubox20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: iptables-mod-u32
+Version: 1.8.7-1
+Depends: libc, iptables, kmod-ipt-u32
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: stunnel
+Version: 5.59-1
+Depends: libc, libopenssl1.1, zlib, libpthread
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/stunnel/stunnel.conf a7a552c7a6e8c73b3b99cfffa247ce5e4eb2821e91f8cb5f6df12de2b4912c06
+ /etc/config/stunnel e7fefbac708860463f7e616b05dd2e9ff9b8d0df2ed215422301178bd40a6d67
+Installed-Time: 1734663226
+
+Package: ip6tables
+Version: 1.8.7-1
+Depends: libc, kmod-ip6tables, iptables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: liblua5.1.5
+ABIVersion: 5.1.5
+Version: 5.1.5-9
+Depends: libc
+Provides: liblua
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: zlib
+Version: 1.2.11-3
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: maverick
+Version: 1
+Depends: libc, libubox20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-arptables
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: snmp-mibs
+Version: 5.8-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nf-ipt6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-ipt
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-exec
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/exec 3acc0ab0e1aaa5e97f39ef896a9eba5273df312212ba68abddbf497ed5244e5f
+Installed-Time: 1734663226
+
+Package: luci-lib-nixio
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, liblua5.1.5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libssh
+Version: 0.9.6-1
+Depends: libc, libpthread, librt, zlib, libopenssl1.1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libradcli
+Version: 1.2.11-1
+Depends: libc, libnettle8
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/radcli/radiusclient.conf c0b33fa320269dc58565700a5a16f8942833c55f46dc3c1e3770aa30fafa8aa3
+Installed-Time: 1734663226
+
+Package: kmod-udptap
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-realm
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/realm f1d01fce17419695b6622019af2e9753b53e6bb8f3317936202a51b848e6303d
+Installed-Time: 1734663226
+
+Package: ulog-listener
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ca-bundle
+Version: 20210119-1
+Depends: libc
+Provides: ca-certs
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: libuclient20201210
+ABIVersion: 20201210
+Version: 2021-05-14-6a6011df-1
+Depends: libc, libubox20210819
+Provides: libuclient
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: liblucihttp-lua
+Version: 2019-07-05-a34a17d5-1
+Depends: libc, liblucihttp0, liblua5.1.5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: openvswitch
+Version: 2.15.1-10
+Depends: libc, coreutils, coreutils-sleep, uuidgen, openvswitch-common, openvswitch-vswitchd, openvswitch-ovsdb, kmod-openvswitch, libatomic1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-lib-jsonc
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, liblua5.1.5, libjson-c5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ipt-ipopt
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-nf-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-eap-mschapv2
+Version: 3_0_21-2
+Depends: libc, freeradius3-mod-eap, freeradius3-mod-mschap
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: qca-thermald-10.4
+Version: 1
+Depends: libc, libpthread
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: pppoe-discovery
+Version: 2.4.8.git-2020-10-03-3
+Depends: libc, ppp-mod-pppoe
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, uhttpd, luci-mod-admin-full, luci-theme-ec, luci-app-firewall, luci-app-opkg, luci-proto-ppp, libiwinfo-lua, luci-proto-ipv6, rpcd-mod-rrdns
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: kmod-usb-phy-ipq807x
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-usb-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nf-conntrack6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nf-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: freeradius3-mod-mschap
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/mschap 9967ff175fe1d2f72b48df94cde8484d1667b935326f51839c002f59163af879
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libgcc1
+ABIVersion: 1
+Version: 5.5.0-3
+Provides: libgcc
+Status: install hold installed
+Essential: yes
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: usteer
+Version: 2021-04-19-ab4d89e7-1
+Depends: libc, libubox20210819, libubus20210809, libblobmsg-json20210819, libnl-tiny1, libpcap1
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/usteer 2c45d8e38b1281c7f67897f639b736ab7b5effb3b3d8d800eeb9109965ec4f84
+Installed-Time: 1734663226
+
+Package: kmod-ath11k-ahb
+Version: 4.4.60+20210222_001-4.4.60-b157d2276-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ath11k, kmod-ath11k-pci
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: coova-chilli
+Version: 1.5-4
+Depends: libc, kmod-tun, librt, libubox20210819, libubus20210809, libblobmsg-json20210819, haserl, libopenssl1.1
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libstdcpp6
+ABIVersion: 6
+Version: 5.5.0-3
+Provides: libstdcpp
+Status: install hold installed
+Essential: yes
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: haserl
+Version: 0.9.35-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ipt-nat6
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-nf-nat6, kmod-ipt-core, kmod-ipt-conntrack, kmod-ipt-core, kmod-ipt-nat, kmod-ipt-core, kmod-ip6tables
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libubox20210819
+ABIVersion: 20210819
+Version: 2021-08-19-c86a894e-2
+Depends: libc
+Provides: libubox
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ath
+Version: 4.4.60+20210222_001-4.4.60-b157d2276-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-mac80211
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libexpat
+Version: 2.2.10-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ip6tables-extra
+Version: 1.8.7-1
+Depends: libc, ip6tables, kmod-ip6tables-extra
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: ubox
+Version: 2020-10-25-9ef88681-2
+Depends: libc, libubox20210819, ubusd, ubus, libubus20210809, libuci20130104
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+Alternatives: 100:/sbin/rmmod:/sbin/kmodloader, 100:/sbin/insmod:/sbin/kmodloader, 100:/sbin/lsmod:/sbin/kmodloader, 100:/sbin/modinfo:/sbin/kmodloader, 100:/sbin/modprobe:/sbin/kmodloader
+
+Package: kmod-sched-cake
+Version: 4.4.60+2021-07-09-d9e1398c-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-conntrack
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kernel
+Version: 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-qrtr_mproc
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-u32
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libevent2-7
+ABIVersion: -7
+Version: 2.1.12-1
+Depends: libc
+Provides: libevent2
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: rpcd-mod-iwinfo
+Version: 2021-11-04-d11ffe93-1
+Depends: libc, libubus20210809, libubox20210819, rpcd, libiwinfo20210430
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-mod-network
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base, libiwinfo-lua, rpcd-mod-iwinfo
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-nft-core
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nfnetlink, kmod-nf-reject, kmod-nf-reject6, kmod-nf-conntrack6, kmod-lib-crc32c
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: fbwifi
+Version: 2-0
+Depends: libc, iptables, luasec, luasocket, libuci-lua, luaposix, lua-cjson, uhttpd
+Status: install user installed
+Architecture: all
+Conffiles:
+ /etc/config/fbwifi 2e60e86d64db8a9fdc4a97253e3b84606592f4b04c6c42adba50f509b4fea8f2
+Installed-Time: 1734663226
+
+Package: luci-i18n-opkg-en
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-app-opkg
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: qosify
+Version: 1
+Depends: libc, libbpf0, libubox20210819, libubus20210809, kmod-sched-cake, tc-full
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/qosify 607916bf42a8eb644757b14b8696c4026abd91d501aee4d58560c2f18496e53b
+ /etc/qosify-defaults.conf 976e98e98ae6f927cce1bc3bdd32d22ba6a5bc1d459f29c15a77a9fb85ed8fd8
+Installed-Time: 1734663226
+
+Package: libnetsnmp
+Version: 5.8-2
+Depends: libc, libnl-tiny1, libpci
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-i18n-base-en
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: partver
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libatomic1
+ABIVersion: 1
+Version: 5.5.0-3
+Depends: libgcc1
+Provides: libatomic
+Status: install hold installed
+Essential: yes
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ifb
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-nls-base
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnfnetlink0
+ABIVersion: 0
+Version: 1.0.1-4
+Depends: libc
+Provides: libnfnetlink
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: lldpd
+Version: 1.0.5-1
+Depends: libc, libevent2-7
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/lldpd 77c3fbba94c772f65278dbc549a4f7a83d7d5d002ca4303230daeade11168414
+Installed-Time: 1734663226
+
+Package: uhttpd-mod-ubus
+Version: 2021-03-21-15346de8-1
+Depends: libc, uhttpd, libubus20210809, libblobmsg-json20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: udevmand
+Version: 20200623-b5a68ca1-1
+Depends: libc, libubus20210809, libblobmsg-json20210819, ubusd, libjson-c5, libnl-tiny1, libuci20130104
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: fwtool
+Version: 2019-11-12-8f7fe925-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: jsonfilter
+Version: 2018-02-04-c7e938d6-1
+Depends: libc, libubox20210819, libjson-c5
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libnetfilter-cttimeout1
+ABIVersion: 1
+Version: 1.0.0-2
+Depends: libc, libmnl0
+Provides: libnetfilter-cttimeout
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: libnl-nf200
+ABIVersion: 200
+Version: 3.5.0-1
+Depends: libc, libnl-route200
+Provides: libnl-nf
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: hostapd-common
+Version: 2021-02-20-59e9794c-70
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: iperf3
+Version: 3.10.1-1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libpopt0
+ABIVersion: 0
+Version: 1.16-2
+Depends: libc
+Provides: libpopt
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: wireless-tools
+Version: 29-6
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-offload
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-nf-flow
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libattr
+Version: 2.4.48-2
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-openvswitch
+Version: 4.4.60+2.15.1-10
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-lib-crc32c, kmod-nf-nat, kmod-nf-nat6, kmod-nf-conntrack, kmod-nf-conntrack6, kmod-nsh, kmod-ipt-conntrack-extra
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-ipt-physdev
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-br-netfilter
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luaposix
+Version: 35.0-1
+Depends: libc, lua, lua-bit32
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: tmate
+Version: 2.4.0-1
+Depends: libc, libevent2-7, libncurses6, libpthread, libssh, msgpack-c, terminfo
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: wireless-regdb
+Version: 2021.04.21-1
+Depends: libc
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: urngd
+Version: 2020-01-21-c7f7b6b6-1
+Depends: libc, libubox20210819
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-slhc
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-lib-crc-ccitt
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: kmod-cfg80211
+Version: 4.4.60+20210222_001-4.4.60-b157d2276-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), iw
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: luaexpat
+Version: 1.3.0-1
+Depends: libc, lua, libexpat
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: rpcd-mod-rrdns
+Version: 20170710
+Depends: libc, rpcd, libubox20210819, libubus20210809
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: ppp-mod-pppoe
+Version: 2.4.8.git-2020-10-03-3
+Depends: libc, kmod-pppoe
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: libnghttp2-14
+ABIVersion: -14
+Version: 1.43.0-1
+Depends: libc
+Provides: libnghttp2
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: tip-defaults
+Version: 1
+Depends: libc
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: radsecproxy
+Version: 1.8.1-2
+Depends: libc, libopenssl1.1, libpthread, libnettle8
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/config/radsecproxy bfb0c3a21968e3cece531a5bf8e28ab2a116b12821e88870f4c8a7c31bf9d956
+Installed-Time: 1734663226
+
+Package: kmod-sched-core
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+Auto-Installed: yes
+
+Package: kmod-ipt-nat
+Version: 4.4.60-1
+Depends: kernel (= 4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-core, kmod-nf-nat
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: luci-mod-wireless
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base, libiwinfo-lua, rpcd-mod-iwinfo
+Status: install user installed
+Architecture: all
+Installed-Time: 1734663226
+
+Package: libnl-genl200
+ABIVersion: 200
+Version: 3.5.0-1
+Depends: libc, libnl-core200
+Provides: libnl-genl
+Status: install user installed
+Architecture: arm_cortex-a7
+Installed-Time: 1734663226
+
+Package: freeradius3-mod-expiration
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Status: install user installed
+Architecture: arm_cortex-a7
+Conffiles:
+ /etc/freeradius3/mods-available/expiration 624311fb4e4427558c8ac2db869bec2ab1118a5affa190ad23ebc39834dd2227
+Installed-Time: 1734663226
+

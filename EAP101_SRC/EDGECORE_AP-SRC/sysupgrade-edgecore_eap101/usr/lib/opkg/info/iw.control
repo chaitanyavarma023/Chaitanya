@@ -1,0 +1,12 @@
+Package: iw
+Version: 5.9-1
+Depends: libc, libnl-tiny1
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/wifi-ax/iw
+SourceName: iw
+License: GPL-2.0
+Section: net
+SourceDateEpoch: 1728884520
+Maintainer: Felix Fietkau <nbd@openwrt.org>
+Architecture: arm_cortex-a7
+Installed-Size: 86716
+Description:  cfg80211 interface configuration utility

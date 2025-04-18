@@ -1,0 +1,8 @@
+detail detail_log {
+	filename = ${logdir}/radius.log
+	permissions = 0644
+	header = '%t\n\tSrc-IP-Address = %{Packet-Src-IP-Address}'
+	suppress {
+		User-Password
+	}
+}

@@ -1,0 +1,29 @@
+#!/bin/sh /etc/rc.common
+
+START=91
+
+USE_PROCD=1
+PROG=/usr/sbin/dhcp-helper
+
+start_service () {
+	local dhcprelay_enabled="$(uci -q get dhcp.dhcprelay.enabled)"
+
+	[ "${dhcprelay_enabled}" = "0" ] && return 0
+
+	/usr/sbin/mkcfg-dhcp-helper.lua
+
+	procd_open_instance
+	procd_set_param command "$PROG" -f /var/etc/dhcphelper.json
+	procd_close_instance
+}
+
+reload_service()
+{                         
+	stop
+	start
+}
+
+service_triggers() {
+	procd_add_reload_trigger "dhcp"
+}
+

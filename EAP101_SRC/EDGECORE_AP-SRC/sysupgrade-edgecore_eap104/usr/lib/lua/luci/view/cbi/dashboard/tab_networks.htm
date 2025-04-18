@@ -1,0 +1,340 @@
+<%
+local acn = require "luci.acn.util"
+local uci = acn.cursor()
+local ntm = require "luci.model.network".init()
+local l2tp_info = ntm:get_interface('l2tp-security')
+
+local is_up
+local l2tp_sever_ip = "N/A"
+local l2tp_client_ip = "N/A"
+
+if l2tp_info then
+    is_up = l2tp_info:is_up()
+    l2tp_sever_ip = l2tp_info:dstaddr()
+end
+
+local l2tp_network = l2tp_info and l2tp_info:get_network()
+if l2tp_network then
+    l2tp_client_ip = l2tp_network:ipaddr()
+end
+
+local disabled     = uci:get("network", "security", "disabled") or "1"
+local message       = ""
+local icon_class    = "icon-ban-circle disabled-icon"
+local state         = "disabled"
+local icon_classes = "ok"
+
+if disabled == "0" then
+    if is_up then
+        state = "ok"
+        message = "L2TP is running.<br>" ..
+                    "Client IP Address:" .. l2tp_client_ip .. "<br>" ..
+                    "Server IP Address:" .. l2tp_sever_ip
+    else
+        state = "error"
+        message = "L2TP is not currently able to connect to the VPN server."
+    end
+else
+    message = "L2TP is currently disabled. Go to the <a href='"
+            .. luci.dispatcher.build_url('admin','network','security')
+            .. "'>VPN Services</a> to enable it."
+end
+
+    if state == "ok" then
+        icon_class = " "
+        alert_class = "green"
+    elseif state == "error" then
+        icon_class = "icon-thumbs-down"
+        alert_class = "alert alert-error"
+    end
+
+%>
+
+<div id="tab_lans" class="tab-pane">
+
+    <h3 class="main-header"><%:Local Networks%></h3>
+
+    <div class="row-fluid">
+        <div class="span12">
+          <div class="widget-box transparent major-widget">
+
+            <div class="widget-body">
+                <div class="widget-body-inner">
+                    <div class="row-fluid">
+
+                        <table class="table network-table table-bordered margin-bottom-0 footable">
+
+                            <thead>
+                                <tr >
+                                    <th data-class="expand"><span></span></th>
+                                    <th><%:Name%></th>
+                                    <th style='min-width:150px' data-hide="phone"><%:Network Info%></th>
+                                    <th style='min-width:100px' data-hide="phone"><%:DHCP Server%></th>
+                                    <th data-hide="phone"><%:Members%></th>
+                                </tr>
+                            </thead>
+                            <tbody id="lan_info_list">
+                            <%
+
+                            local has_entries = false
+
+                            for ifname, info in pairs(devs)  do
+
+                                local iface = ntm:get_interface(ifname)
+
+                                if iface and not acn.hide_from_lan_page(ifname:gsub('br[-]', ''))
+                                    and iface:is_bridge() and iface:is_up() then
+
+                                    local iface_network = iface and iface:get_network()
+
+                                    if iface_network then
+                                        local net_name  = ifname:gsub('br[-]', '')
+                                        local ip        = iface_network:ipaddr()
+                                        local netmask   = iface_network:netmask()
+                                        local ip_mode   = iface_network:proto()
+                                        local dns       = iface_network:dnsaddrs()
+                                        local friendly  = ifname and acn.friendly_network(net_name, uci)
+                                        local ports     = iface:acn_ports() or {}
+
+                                        local is_vlan   = uci:get('network', net_name, 'vlan_net') or '0'
+
+                                        has_entries = true
+
+                                        if is_vlan ~= "1" then
+                                        %>
+                                            <!-- not vlan -->
+                                            <script type="text/javascript">
+                                                if(wan_type_cfg != "dhcp") {
+                                                    if(wan_ip != "-" && wan_ip_netmask != "-") {
+                                                        if (is_in_netmask(wan_ip, wan_ip_netmask, "<%=ip%>")) {
+                                                            var net_name = "<%=net_name%>";
+                                                            if(net_name.search("lan") != -1) {
+                                                                wan_dhcp_warning_msg = "Your Internet IP address falls in the same subnet as the Default Local Network IP address.";
+                                                            }
+                                                            if(net_name.search("custom") != -1) {
+                                                                wan_dhcp_warning_msg = "Your Internet IP address falls in the same subnet as one of your custom LAN IP addresses.";
+                                                            }
+                                                            if(net_name.search("guest") != -1) {
+                                                                wan_dhcp_warning_msg = "Your Internet IP address falls in the same subnet as the Guest LAN IP address.";
+                                                            }
+                                                            if(wan_dhcp_warning_msg != "") {
+                                                                $('#form_error_msg').text(wan_dhcp_warning_msg);
+                                                                $("#form_error_msg_placeholder").removeClass('hide');
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            </script>
+                                        <%
+                                        end
+                                    %>
+
+                                    <%
+                                    user_name = luci.http.getcookie("user_name")
+                                    root_user = luci.util.root_user(user_name)
+                                    msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+                                    %>
+
+                                    <tr>
+                                    <td><span></span></td>
+                                    <td class="network-name">
+                                    <i class="icon-cloud" style="color:#BFC5C7;"></i>&nbsp;
+                                    <% if is_vlan == '1' then %>
+                                        <!-- is vlan -->
+                                        <!-- <a data-rel="tooltip" data-original-title="<%:Configure this network...%>" href="<%=luci.dispatcher.build_url('admin/wireless/vlans')%>"> -->
+
+                                        <% if root_user or msp_disabled then %>
+                                            <a data-rel="tooltip" data-original-title="<%:Configure this network...%>" href="<%=luci.dispatcher.build_url('admin/wireless/vlans')%>">
+                                        <% else %>
+                                            <a data-rel="tooltip" href="<%=luci.dispatcher.build_url('admin/wireless/vlans')%>" onclick="return false" oncontextmenu="return false">
+                                        <% end %>
+                                        <%= acn.vlan_net_friendly_name(uci, net_name) %>
+
+                                    <% else %>
+                                        <!-- not vlan -->
+                                        <a  data-rel="tooltip" data-original-title="<%:Configure this network...%>"  href="<%=luci.dispatcher.build_url('admin/network/lan')%>"><%=friendly or ifname%></a>
+                                    <% end %> <!-- if/else vlan end -->
+                                    </td>
+
+                                    <!--  IP/network info -->
+                                    <td>
+                                        <% if is_vlan == '1' then %>
+                                        <%:Ports%>:
+                                        <%
+                                            local has_ports = false
+                                            local vlan_ports = acn.vlan_ports(uci, net_name)
+
+                                            for _, eth_port in pairs(vlan_ports) do
+                                                local eth_id
+                                                if eth_port:match("^eth.-") then
+                                                    eth_id = eth_port:match("eth(%d+%.%d+)")
+                                                end
+                                                if product.is_EAP104() then
+                                                    if eth_port:match("^lan.-") then
+                                                        eth_id = eth_port:match("lan(%d+%.%d+)")
+                                                    end
+                                                end
+                                                if has_ports then
+                                                    print(", ")
+                                                end
+                                                print(acn.eth_to_friendly_short(eth_id))
+                                                has_ports = true
+                                            end
+                                        %>
+                                        <% else %>
+                                            <!-- not vlan -->
+                                           <%= ip or '-' %> <%if ip and ip_mode then print(' (' .. acn.friendly_proto(ip_mode) .. ')') end %>
+                                                <br/>
+                                                <%:Netmask%>: <%=netmask or translate('N/A')%>
+
+                                        <% end %> <!-- if/else vlan end -->
+
+                                    </td>
+
+                                    <td><%
+                                        local disabled_output = '<i class="icon-ban-circle"></i>&nbsp; Disabled'
+                                        local relay_enable = uci:get('dhcp', 'dhcprelay', 'enabled') or ''
+
+                                        if relay_enable == '' or relay_enable == '1' then
+                                            print(disabled_output)
+                                        else
+                                            if uci:get('dhcp', net_name, 'interface') then
+                                                local ignore = acn.cursor():get('dhcp', net_name, 'ignore')
+
+                                                if ignore == '1' then
+                                                    print(disabled_output)
+                                                else
+                                                    print('<span style="color:#69aa46"><i class="icon-ok-circle"></i> &nbsp;</span>' .. translate("Enabled"))
+                                                end
+                                            else
+                                                print(disabled_output)
+                                            end
+                                        end %>
+                                    </td>
+
+                                    <td>
+                                        <%
+                                        local is_first = true
+                                        local has_ports= false
+                                        if ports then
+                                            table.sort(ports)
+                                        end
+                                        for k, port in ipairs(ports) do
+                                            local entry = acn.iface_member_label(port)
+
+                                            if not entry then
+
+                                                if not port:match("bat[%d]") then
+                                                    if is_vlan ~= '1' and not port:match(product.wifi_prefix .. "[%d,%p]+w%d+") then
+                                                        print(port .. " ")
+                                                        has_ports = true
+                                                    end
+                                                end
+                                            else
+                                                lc_enabled = (uci:get("wireless", entry['logical_name'], "local_configurable") == "1")
+                                                local msp_local_config = luci.util.msp_local_config(msp_disabled, lc_enabled)
+
+                                                if root_user or msp_local_config then
+                                                    if not is_first then
+                                                        print("&nbsp;&nbsp;")
+                                                    end
+
+                                                    luci.template.render('cbi/bridge_member_tag',
+                                                                        {iface = entry})
+                                                    is_first = false
+                                                    has_ports = true
+                                                end
+                                            end
+                                        end
+
+                                        if not has_ports then
+                                            print("<i>(No interfaces are members of this network)</i>")
+                                        end
+                                        %>
+                                    </td>
+                                    </tr>
+                                <%
+                                    end
+                                end
+                            end
+
+                            %>
+                            </tbody>
+                        </table>
+
+                            <% if not has_entries  then
+                                print("<i>(No local networks)</i>")
+                            end
+                            %>
+                    </div>
+
+                </div>
+            </div>
+          </div>
+        </div> <!-- end span8/Local Networks -->
+    </div>
+
+    <div class="row-fluid" style="padding-top:15px">
+        <button type="button" style="margin-right: 10px;" class="btn btn-success btn-action"  onclick="{ refresh_arp(); $('#arp_modal').modal();}">
+            <%:View ARP Table%>
+        </button>
+
+        <button type="button" class="btn btn-success btn-action"  onclick="{ refresh_dhcp(); $('#dhcp_modal').modal();}">
+            <%:View DHCP Leases%>
+        </button>
+    </div>
+<%
+local supports_l2tp = product.supports_l2tp()
+if supports_l2tp then
+%>
+    <h3 class="main-header"> <%:VPN%></h3>
+    <div class="row-fluid">
+        <div class="span12">
+            <div class="widget-box transparent major-widget">
+
+                <div class="widget-body">
+                    <div class="widget-body-inner">
+                        <div class="row-fluid">
+                            <table class="table network-table table-bordered margin-bottom-0 footable">
+
+                                <thead>
+                                    <tr>
+                                        <th data-class="expand"><span></span></th>
+                                        <th data-hide="phone"><%:Status%></th>
+                                        <th style='min-width:100px' data-hide="phone"><%:More Info%></th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="">
+                                    <tr>
+                                        <!-- expandable footable button -->
+                                        <td></td>
+                                        <td>
+                                            <% if disabled == '0' then %>
+                                                <span style="color:#69aa46"><i class="icon-ok-circle"></i> &nbsp;</span><%:Enabled%>
+                                            <% else %>
+                                               <i class="icon-ban-circle"></i>&nbsp; <%:Disabled%>
+                                            <% end %>
+                                        </td>
+
+                                        <td>
+                                            <% if disabled == "0" then  %>
+                                                <div class=" <%=alert_class%>">
+                                                    <%=message%>
+                                                </div>
+                                            <% else %>
+                                                <%=message%>
+                                            <% end %>
+                                        </td>
+                                    </tr>
+                                </tbody>
+
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<% end %>
+</div>

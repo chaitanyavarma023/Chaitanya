@@ -1,0 +1,3 @@
+<a href='<%=luci.dispatcher.build_url(iface['link']) .. (iface['url_params'] or  '')%>'
+<% if not wrap then%>style='white-space:nowrap'<%end%>
+  class='<%=iface['label-class']%> bridge_member'><i class='<%=iface['icon-class']%>'></i>&nbsp;<%=iface['friendly_short']%></a>&nbsp;

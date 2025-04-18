@@ -1,0 +1,13 @@
+Package: freeradius3-mod-eap-peap
+Version: 3_0_21-2
+Depends: libc, freeradius3-mod-eap
+Source: feeds/packages/net/freeradius3
+SourceName: freeradius3-mod-eap-peap
+License: GPL-2.0
+LicenseFiles: COPYRIGHT LICENSE
+Section: net
+SourceDateEpoch: 1734663430
+CPE-ID: cpe:/a:freeradius:freeradius
+Architecture: arm_cortex-a7
+Installed-Size: 10312
+Description:  EAP/PEAP module

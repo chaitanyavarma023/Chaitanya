@@ -1,0 +1,6 @@
+/etc/init.d/stunnel
+/etc/stunnel/stunnel.conf.tmpl
+/usr/bin/stunnel
+/usr/lib/stunnel/libstunnel.so
+/etc/config/stunnel
+/etc/stunnel/stunnel.conf

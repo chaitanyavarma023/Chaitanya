@@ -1,0 +1,48 @@
+<%
+
+  acn = acn or require("luci.acn.util")
+
+  logical_inet_src = logical_inet_src or acn.ifname_to_logical(self.map.uci:get('network', wan_network, 'inet_src') or '')
+%>
+<input type="hidden" 
+name="<%=self.logical_name%>_reset_inet_src"
+id="<%=self.logical_name%>_reset_inet_src"
+ value="0" />
+<%
+  if logical_inet_src == self.logical_name then
+%>
+ <div class="alert alert-info" id="<%=self.logical_name%>_wan_notify"
+    ><strong><i class="icon-info-sign"></i> </strong><span><%:This interface is the internet source for this product.%><a href='<%=luci.dispatcher.build_url('admin', 'network', 'internet')%>'><%:Configure Internet Settings%></a>
+   </span>
+</div>
+ <div class="alert alert-warning hidden" id="<%=self.logical_name%>_wan_change_notify"
+    ><strong><i class="icon-info-sign"></i> </strong><span>Once you save settings on this page, this radio interface will no longer be the internet source.  Ethernet Port #0 will become the new internet source.  You can change this on the <a href='<%=luci.dispatcher.build_url('admin', 'status', 'Internet')%>'><%:Internet Settings%></a> page.
+   </span>
+</div>
+
+<script type="text/javascript">
+
+/* Handle internet source */
+/* XXX TODO: combine this with ethernet port stuff */
+
+$(function(){
+
+      // Hide network behavior for the WAN iface
+      var netbe_id;
+      var capwap_id;
+      var logical_name = "<%=self.logical_name%>";
+
+      if(logical_name.indexOf('eth') >=0 || logical_name.indexOf('lan') >= 0) {
+         netbe_id = "cbi-ethernet-<%=self.logical_name%>-network_behavior";
+         capwap_id = "cbi-ethernet-<%=self.logical_name%>-CAPWAP_tunnel";
+         $("#" + netbe_id).addClass("hidden");
+      }
+      else
+         netbe_id = "cbi-wireless-<%=self.logical_name%>-network_behavior";
+
+      $("#" + netbe_id).addClass("hidden");
+   
+
+});
+</script>
+<%end%>

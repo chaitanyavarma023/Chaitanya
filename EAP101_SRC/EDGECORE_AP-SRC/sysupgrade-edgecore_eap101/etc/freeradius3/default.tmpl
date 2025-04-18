@@ -1,0 +1,124 @@
+authorize {
+	detail_log#log-comment
+	preprocess
+	chap
+	mschap
+#	digest
+#	wimax
+#	IPASS
+	suffix
+	ntdomain
+	eap
+#	unix
+#	files
+#	sql
+#	etc_smbpasswd
+#	ldap
+#	daily
+#	checkval
+#	expiration
+#	logintime
+	exec_auth
+	pap
+}
+
+
+authenticate {
+	Auth-Type PAP {
+		pap
+	}
+	Auth-Type CHAP {
+		chap
+	}
+	Auth-Type MS-CHAP {
+		mschap
+	}
+#	digest
+#	pam
+#	unix
+#	Auth-Type LDAP {
+#		ldap
+#	}
+	eap
+}
+
+preacct {
+	preprocess
+	update request {
+	  	FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0}}"
+	}
+#	acct_unique
+#	IPASS
+	suffix
+#	ntdomain
+#	files
+#	exec_preacct
+	cipacct
+}
+
+#
+#  Accounting.  Log the accounting data.
+#
+accounting {
+#	detail
+	detail_log#log-comment
+#	daily
+#	unix
+#	radutmp
+#	sradutmp
+#	main_pool
+#	sql
+#	if (noop) {
+#		ok
+#	}
+#	sql_log
+#	pgsql-voip
+#	exec_acct
+	cipacct
+	#  Filter attributes from the accounting response.
+#	attr_filter.accounting_response
+}
+
+session {
+#	radutmp
+#	sql
+}
+
+
+post-auth {
+#	main_pool
+#	sql
+#	sql_log
+#	ldap
+#	exec
+#	wimax
+	exec_reply
+	Post-Auth-Type REJECT {
+#		sql
+		attr_filter.access_reject
+	}
+}
+
+pre-proxy {
+#	attr_rewrite
+#	files
+#	pre_proxy_log
+	exec_proxy_auth
+	detail_log#log-comment
+	attr_filter.pre-proxy
+}
+
+post-proxy {
+#	post_proxy_log
+#	attr_rewrite
+#	attr_filter.post-proxy
+	eap
+        if ("%{proxy-reply:Packet-Type}" == "Access-Challenge") {
+                attr_filter.access_challenge
+        }
+	detail_log#log-comment
+	Post-Proxy-Type Fail {
+#			detail
+	}
+}
+

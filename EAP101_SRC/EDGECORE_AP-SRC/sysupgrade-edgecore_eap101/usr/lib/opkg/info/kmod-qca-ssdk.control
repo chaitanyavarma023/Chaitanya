@@ -1,0 +1,11 @@
+Package: kmod-qca-ssdk
+Version: 4.4.60-1
+Depends: kernel (=4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Provides: qca-ssdk
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ipq807x/qca-ssdk
+SourceName: kmod-qca-ssdk
+Section: kernel
+SourceDateEpoch: 1651132658
+Architecture: arm_cortex-a7
+Installed-Size: 535850
+Description:  Kernel driver for QCA SSDK

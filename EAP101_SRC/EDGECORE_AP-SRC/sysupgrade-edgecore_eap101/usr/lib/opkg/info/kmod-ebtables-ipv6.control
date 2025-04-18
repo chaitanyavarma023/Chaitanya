@@ -1,0 +1,12 @@
+Package: kmod-ebtables-ipv6
+Version: 4.4.60-1
+Depends: kernel (=4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ebtables
+Source: package/kernel/linux
+SourceName: kmod-ebtables-ipv6
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1734663204
+Architecture: arm_cortex-a7
+Installed-Size: 2030
+Description:  This option adds the IPv6 support to ebtables, which allows basic
+ IPv6 header field filtering and target support.

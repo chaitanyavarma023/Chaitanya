@@ -1,0 +1,8 @@
+/etc/init.d/prc
+/etc/capabilities/wpad.json
+/usr/sbin/prc_relay.sh
+/usr/share/acl.d/wpad_acl.json
+/lib/netifd/hostapd.sh
+/etc/init.d/wpad
+/etc/rc.button/wps
+/usr/sbin/ssdk_fdb_update.sh

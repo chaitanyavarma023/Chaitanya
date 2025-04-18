@@ -1,0 +1,11 @@
+Package: kmod-nft-bridge
+Version: 4.4.60-1
+Depends: kernel (=4.4.60-1-67fb0d677d8cb7f320ed3d092c75caba), kmod-nft-core
+Source: package/kernel/linux
+SourceName: kmod-nft-bridge
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1734663187
+Architecture: arm_cortex-a7
+Installed-Size: 5933
+Description:  Netfilter nf_tables bridge table support

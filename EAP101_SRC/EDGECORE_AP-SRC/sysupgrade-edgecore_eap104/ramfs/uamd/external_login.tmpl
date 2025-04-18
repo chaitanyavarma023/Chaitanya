@@ -1,0 +1,140 @@
+#!/usr/bin/env cgilua.cgi
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<title>Login</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="/css/bootstrap.min.css"/>
+	<link rel="stylesheet" href="/css/bootstrap-responsive.min.css"/>
+	<link rel="stylesheet" href="/css/font-awesome.min.css"/>
+	<link rel="stylesheet" href="/css/ace.min.css"/>
+	<link rel="stylesheet" href="/css/ace-responsive.min.css"/>
+	<link rel="stylesheet" href="/css/acn-default.css"/>
+	<link rel="stylesheet" href="/css/brand.css"/>
+	<script src="/javascript/jquery-1.9.1.min.js"></script>
+	<script src="/javascript/bootstrap.min.js"></script>
+	<script src="/javascript/common.js"></script>
+</head>
+
+<body class="login-layout" style="background-image: url('/img/background.png');background-repeat: no-repeat;background-attachment: fixed; background-size: cover;">
+<div class="container-fluid" id="main-container">
+<div id="main-content">
+<div id="container">
+<h2>Result</h2>
+
+<%
+function user_login(username, password, usage)
+	local handle = {}
+	local reply_str = ""
+	local auth_cmd = ""
+	local sta_ip = tostring(cgilua.servervariable("REMOTE_ADDR"))
+	local ap_ip = {}
+	local dev_mac = {}
+	local ap_mac = {}
+	local sta_mac = {}
+	local sess_timeout = 0
+	local byte_amount = 0
+	local byte_amount_4g = 0
+	local code = 0
+
+	-- Get STA MAC address
+	handle = io.popen("/sbin/arp", "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	dev_mac = reply_str:match(string.format("%%(%s%%) at ([%%:%%x]*)", sta_ip))
+	sta_mac = dev_mac and string.upper(dev_mac) or ""
+
+	-- Get AP IP/MAC addrss: TODO: Use ubus instead of this
+	handle = io.popen("ifconfig br-wan", "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	if reply_str ~= nil and string.len(reply_str) > 0 then
+		dev_mac = reply_str:match("HWaddr ([%:%x]*)")
+		ap_mac = dev_mac and string.upper(dev_mac) or ""
+		ap_ip = reply_str:match("inet addr:([%.%d]*)")
+	else
+		handle = io.popen("ifconfig eth0", "r")
+		reply_str = handle:read("*a")
+		handle:close()
+		dev_mac = reply_str:match("HWaddr ([%:%x]*)")
+		ap_mac = dev_mac and string.upper(dev_mac) or ""
+		ap_ip = reply_str:match("inet addr:([%.%d]*)")
+	end
+
+	auth_cmd = "echo 'User-Name= \"" .. username ..
+		   "\", CHAP-Password = \"" .. password ..
+		   "\", Framed-IP-Address = \"" .. sta_ip ..
+		   "\", Calling-Station-Id = \"" .. sta_mac ..
+		   "\", NAS-IP-Address = \"" .. ap_ip ..
+		   "\", ZVendor-Auth-Method = \"UAM\", " ..
+		   "Called-Station-Id = \"" .. ap_mac ..
+		   "\"' | radclient -x 127.0.0.1:1812 auth 12345678"
+
+	handle = io.popen(auth_cmd, "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	reply_str = string.gsub(reply_str, "-", "_")
+	if (string.find(reply_str, "Received Access_Accept") ~= nil) then
+		code = "2";
+		sess_timeout = reply_str:match("Session_Timeout = ([%d]*)") or 0
+		byte_amount = reply_str:match("ZVendor_Byte_Amount = ([%d]*)") or 0
+		byte_amount_4g = reply_str:match("ZVendor_Byte_Amount_4GB = ([%d]*)") or 0
+
+		usage[0] = sess_timeout
+		if (byte_amount_4g ~= 0) then
+			usage[1] = byte_amount + (1024*1024*1024*4*byte_amount_4g)
+		else
+			usage[1] = byte_amount
+		end
+	end
+
+	return code
+end
+
+function user_logout(mac)
+	local sta_ip = tostring(cgilua.servervariable("REMOTE_ADDR"))
+        local dev_mac = {}
+        local sta_mac = {}
+	local handle = {}
+	local reply_str = {}
+
+	-- Get STA MAC address
+	handle = io.popen("/sbin/arp", "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	dev_mac = reply_str:match(string.format("%%(%s%%) at ([%%:%%x]*)", sta_ip))
+	sta_mac = dev_mac and string.upper(dev_mac) or ""
+
+	os.execute("/ramfs/bin/cipgwcli logout " .. sta_mac)
+end
+
+local reply_code = 0
+local logout = 0
+local result = ""
+local usage = {0, 0}
+
+if (cgilua.POST.logout ~= nil) then
+	user_logout(cgilua.POST.mac)
+	logout = 1;
+else
+	if (cgilua.POST.username ~= nil and cgilua.POST.password ~= nil) then
+		result = "Fail"
+		reply_code = user_login(cgilua.POST.username, cgilua.POST.password, usage)
+		if (reply_code == "2") then
+			result = "Success"
+			cgilua.redirect("__EXTERNAL_SUCCESS_URL", {username=cgilua.POST.username})
+		else
+			cgilua.redirect("__EXTERNAL_FAIL_URL", {username=cgilua.POST.username})
+		end
+	end
+end
+%>
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+</div> <!-- id="container" -->
+</body>
+</html>

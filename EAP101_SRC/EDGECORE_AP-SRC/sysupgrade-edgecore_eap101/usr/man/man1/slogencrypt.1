@@ -1,0 +1,141 @@
+'\" t
+.\"     Title: slogencrypt
+.\"    Author: [see the "Author" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 09/25/2023
+.\"    Manual: The slogencrypt manual page
+.\"    Source: 4.4
+.\"  Language: English
+.\"
+.TH "SLOGENCRYPT" "1" "09/25/2023" "4\&.4" "The slogencrypt manual page"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+slogencrypt \- Encrypt existing plain text log files using the \fBsyslog\-ng\fR secure logging environment
+.SH "SYNOPSIS"
+.HP \w'\fBslogencrypt\fR\ 'u
+\fBslogencrypt\fR [options] [arguments]
+.SH "DESCRIPTION"
+.PP
+The
+\fBslogencrypt\fR
+is used to encrypt plain text log file using an existing secure logging environment\&. Using this utility, log files obtained from a previous installation of
+\fBsyslog\-ng\fR
+or another logging system can be transferred to a secure logging environment\&. The order of the log entries is preserved\&. Encrypting plain text log files using an existing secure logging environment, requires the current encryption key to be supplied in order to preserve consistency\&.
+.PP
+General call sequence:
+\fBslogencrypt \-k <key file> \-m <MAC file> <new key file> <new MAC file> <plain text log> <output file> [counter]\fR
+.SH "ARGUMENTS"
+.PP
+\fBnew key file\fR
+.RS 4
+The file that will contain the new current encryption key after successful encryption\&.
+.RE
+.PP
+\fBnew MAC file\fR
+.RS 4
+The file receiving the new current message authentication code (MAC) of the secure encrypted destination after encryption\&. In case an existing file is supplied, new entries will be appended\&.
+.RE
+.PP
+\fBinput log file\fR
+.RS 4
+The plain text log file that will be encrypted using the secure logging environment\&.
+.RE
+.PP
+\fBoutput log file\fR
+.RS 4
+The file that will contain the encrypted log entries from the supplied plain text log file after encryption\&.
+.RE
+.PP
+\fBcounter\fR
+.RS 4
+The current log entry counter of the secure encrypted destination after encryption\&. This is required if the log entries to be encrypted will be appended to an existing secure encrypted destination\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-key\-file\fR or \fB\-k\fR
+.RS 4
+The current host key from the system where the encryption will be performed\&.
+.RE
+.PP
+\fB\-\-mac\-file\fR or \fB\-m\fR
+.RS 4
+The current MAC file from the system where the encryption will be performed\&.
+.RE
+.PP
+\fB\-\-help\fR or \fB\-h\fR
+.RS 4
+Display a help message\&.
+.RE
+.SH "FILES"
+.PP
+/usr/bin/slogencrypt
+.PP
+/etc/syslog\-ng\&.conf
+.SH "SEE ALSO"
+.PP
+\fBsyslog\-ng\&.conf\fR(5)
+.PP
+\fBsecure\-logging\fR(7)
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+.PP
+For the detailed documentation of see
+\m[blue]\fB\fBThe syslog\-ng Administrator Guide\fR\fR\m[]\&\s-2\u[1]\d\s+2
+.PP
+If you experience any problems or need help with syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng mailing list\fR\fR\m[]\&\s-2\u[2]\d\s+2\&.
+.PP
+For news and notifications about of syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng blogs\fR\fR\m[]\&\s-2\u[3]\d\s+2\&.
+.PP
+For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team <secure\-logging@airbus\&.com>\&.
+.sp .5v
+.RE
+.SH "AUTHOR"
+.PP
+This manual page was written by the Airbus Secure Logging Team <secure\-logging@airbus\&.com>\&.
+.SH "COPYRIGHT"
+.SH "NOTES"
+.IP " 1." 4
+\fBThe syslog-ng Administrator Guide\fR
+.RS 4
+\%https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html
+.RE
+.IP " 2." 4
+\fBsyslog-ng mailing list\fR
+.RS 4
+\%https://lists.balabit.hu/mailman/listinfo/syslog-ng
+.RE
+.IP " 3." 4
+\fBsyslog-ng blogs\fR
+.RS 4
+\%https://syslog-ng.org/blogs/
+.RE

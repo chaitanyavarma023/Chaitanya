@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+atfpolicy=$(uci -q get atfpolicy.@defaults[0].enabled)
+
+if [ "$atfpolicy" == "1" ]; then
+    uci set atfpolicy.@defaults[0].enabled="1"
+    uci set atfpolicy.@defaults[0].vo_queue_weight="4"
+    uci set atfpolicy.@defaults[0].update_pkt_threshold="100"
+    uci set atfpolicy.@defaults[0].bulk_percent_thresh="50"
+    uci set atfpolicy.@defaults[0].prio_percent_thresh="30"
+    uci set atfpolicy.@defaults[0].weight_normal="256"
+    uci set atfpolicy.@defaults[0].weight_bulk="128"
+    uci set atfpolicy.@defaults[0].weight_prio="384"
+else
+    uci set atfpolicy.@defaults[0].enabled="0"
+    uci del atfpolicy.@defaults[0].vo_queue_weight
+    uci del atfpolicy.@defaults[0].update_pkt_threshold
+    uci del atfpolicy.@defaults[0].bulk_percent_thresh
+    uci del atfpolicy.@defaults[0].prio_percent_thresh
+    uci del atfpolicy.@defaults[0].weight_normal
+    uci del atfpolicy.@defaults[0].weight_bulk
+    uci del atfpolicy.@defaults[0].weight_prio
+fi
+
+uci commit atfpolicy
+
+exit 0

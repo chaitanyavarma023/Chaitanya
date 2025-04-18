@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+ssid_isolation() {
+    config_get ssid_isolate $1 ssid_isolate
+
+    [ -z "$ssid_isolate" ] && uci set wireless.$1.ssid_isolate='0'
+}
+
+config_load wireless
+config_foreach ssid_isolation wifi-device
+uci commit wireless
+
+exit 0

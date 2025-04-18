@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if [ "$(uci -q get network.wanvlan6)" = "" ]; then
+	uci -q batch <<-EOF
+		set network.wanvlan6='interface'
+		set network.wanvlan6.device='@wanvlan'
+		set network.wanvlan6.proto='none'
+	EOF
+fi
+
+if [ "$(uci -q get network.managementvlan6)" = "" ]; then
+	uci -q batch <<-EOF
+		set network.managementvlan6='interface'
+		set network.managementvlan6.device='@managementvlan'
+		set network.managementvlan6.proto='none'
+	EOF
+fi
+
+uci commit network
+
+exit 0

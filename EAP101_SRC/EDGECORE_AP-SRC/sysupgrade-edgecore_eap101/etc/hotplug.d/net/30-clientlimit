@@ -1,0 +1,48 @@
+#!/bin/sh
+
+check_hs20_enable() {
+	local iface="$1"
+	local iface_sections=$(uci -q show | grep $iface | awk -F'.' '{print $2}')
+
+	for section in $iface_sections; do
+		local ifname=$(uci -q get wireless.${section}.ifname)
+
+		[ "$ifname" = "$iface" ] && {
+			local hs20_en=$(uci -q get wireless.${section}.hs20)
+
+			echo $hs20_en
+			return
+		}
+	done
+
+	echo "0"
+}
+
+kill_clientlimit_wait() {
+	local iface="$1"
+
+	ps www | grep clientlimit-wait.sh | grep -v grep | while read LINE; do
+		if [ "$(echo $LINE | awk '{print $7}')" = "$iface" ]; then
+			kill "$(echo $LINE | awk '{print $1}')"
+		fi
+	done
+}
+
+[ "${INTERFACE:0:4}" == "wlan" ] || exit 0
+
+[ "$ACTION" == remove ] && {
+	kill_clientlimit_wait "$INTERFACE"
+	[ -f /tmp/run/client-limit-$INTERFACE.pid ] || return
+	kill "$(cat /tmp/run/client-limit-$INTERFACE.pid)"
+	rm "/tmp/run/client-limit-$INTERFACE.pid"
+	ubus call client-limit device_delete '{"device": "'$INTERFACE'"}'
+	exit 0
+}
+
+[ "$ACTION" == add ] && {
+	[ -f /tmp/run/client-limit-$INTERFACE.pid ] && return
+	if [ "$(check_hs20_enable $INTERFACE)" = "1" ]; then
+		/usr/libexec/clientlimit-wait.sh $INTERFACE &
+	fi
+	exit 0
+}

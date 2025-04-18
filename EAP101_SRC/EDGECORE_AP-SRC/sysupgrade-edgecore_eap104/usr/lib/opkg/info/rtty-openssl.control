@@ -1,0 +1,14 @@
+Package: rtty-openssl
+Version: 7.1.4-1
+Depends: libc, libev, libopenssl1.1
+Provides: rtty
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ucentral/rtty
+SourceName: rtty-openssl
+License: MIT
+LicenseFiles: LICENSE
+Section: utils
+SourceDateEpoch: 1622114361
+Maintainer: Jianhui Zhao <zhaojh329@gmail.com>
+Architecture: arm_cortex-a7
+Installed-Size: 17341
+Description:  Access your terminals from anywhere via the web

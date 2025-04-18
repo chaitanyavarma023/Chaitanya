@@ -1,0 +1,21 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+authen_pw() {
+    local user=$1
+    [ "$(uci -q get snmpd.$1.authen)" = "SHA" ] && uci set snmpd.$1.authen='MD5'
+}
+
+encryp_pw() {
+    local user=$1
+    [ "$(uci -q get snmpd.$1.encryp)" = "AES" ] && uci set snmpd.$1.encryp='DES'
+}
+
+config_load snmpd
+config_foreach authen_pw user
+config_foreach encryp_pw user
+
+uci commit snmpd
+
+exit 0

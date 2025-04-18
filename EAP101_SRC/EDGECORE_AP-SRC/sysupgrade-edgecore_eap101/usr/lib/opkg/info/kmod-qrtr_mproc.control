@@ -1,0 +1,11 @@
+Package: kmod-qrtr_mproc
+Version: 4.4.60-1
+Depends: kernel (=4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd)
+Source: package/kernel/linux
+SourceName: kmod-qrtr_mproc
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1734663204
+Architecture: arm_cortex-a7
+Installed-Size: 105
+Description:  Kernel configs for ath11k support specific to ipq807x and IPQ60xx

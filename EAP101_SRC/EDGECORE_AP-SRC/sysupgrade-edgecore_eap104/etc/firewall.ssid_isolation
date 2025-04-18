@@ -1,0 +1,56 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+ssid_isolation=$(uci -q get wireless.radio0.ssid_isolate)
+
+delete_ssid_isolate() {
+    ebtables -t nat -F SSID_ISOLATE_MARK
+    ebtables -t nat -X SSID_ISOLATE_MARK
+    ebtables -t nat -F SSID_ISOLATE_FILTER
+    ebtables -t nat -X SSID_ISOLATE_FILTER
+    ebtables -t nat -D PREROUTING -j SSID_ISOLATE_MARK
+    ebtables -t nat -D POSTROUTING -j SSID_ISOLATE_FILTER
+}
+
+set_ssid_isolate() {
+    ebtables -t nat -N SSID_ISOLATE_MARK
+    ebtables -t nat -P SSID_ISOLATE_MARK RETURN
+    ebtables -t nat -N SSID_ISOLATE_FILTER
+    ebtables -t nat -P SSID_ISOLATE_FILTER RETURN
+    ebtables -t nat -I PREROUTING -j SSID_ISOLATE_MARK
+    ebtables -t nat -I POSTROUTING -j SSID_ISOLATE_FILTER
+}
+
+gen_mark_id() {
+	local ifname=$1
+	local major=$(echo ${ifname##wlan} | awk -F'-' '{print $1}')
+	local minor=$(echo ${ifname##wlan} | awk -F'-' '{print $2}')
+
+	[ -z "$minor" ] && minor=0
+
+	echo $(printf "4%01d%02d" $major $minor)
+}
+
+get_ifaces() {
+	local radio_val="$1"
+	local iface_list=$(ubus -S call network.wireless status | jsonfilter -e "@.$radio_val.interfaces" | jsonfilter -e "@[*].ifname")
+
+	for in_ifname in ${iface_list}; do
+		ebtables -t nat -A SSID_ISOLATE_MARK -i $in_ifname -j mark --mark-set $(gen_mark_id $in_ifname) --mark-target CONTINUE
+		for out_ifname in ${iface_list}; do
+			if [ "$in_ifname" != "$out_ifname" ]; then
+				ebtables -t nat -A SSID_ISOLATE_FILTER -o $out_ifname --mark $(gen_mark_id $in_ifname) -j DROP
+			fi
+		done
+	done
+}
+
+delete_ssid_isolate
+
+if [ "$ssid_isolation" -eq 1 ]; then
+    set_ssid_isolate
+
+    config_load wireless
+    config_foreach get_ifaces wifi-device
+fi

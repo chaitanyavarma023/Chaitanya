@@ -1,0 +1,59 @@
+<%
+local acn_util = require "luci.acn.util"
+local first = (self.dev_id == 0)
+local last = (self.dev_id == self.num_ports -1)
+
+local active_id = -1
+if luci.http.formvalue('id')  then
+       active_id = tonumber(luci.http.formvalue('id'))
+end
+
+-- First element gets the tab container
+ if first then -%>
+
+            <div style="padding-right:10px;padding-bottom:10px">
+                <div class="tabbable tabs-above">
+                    <ul class="nav nav-tabs" id="myTab">
+                            <% for i=0, self.num_ports -1 do
+
+                                -%>
+                                <li<% if (active_id >=0 and active_id == i) or (active_id < 0 and i == 0) then %> class="active"<%- end -%>>
+                                    <a data-toggle="tab" href="#eth<%=i%>"><%= acn_util.eth_to_friendly(i) %></a>
+                                </li>
+                            <%- end %>
+                    </ul>
+                    <div class="tab-content">
+<%- end %>
+                        <div id="eth<%=self.dev_id%>" class="tab-pane <% if (active_id >=0 and active_id == self.dev_id) or (active_id < 0 and self.dev_id == 0) then %> active<%- end -%>">
+
+                        <div class='alert alert-info hidden' id='eth<%=self.dev_id%>_wan_notify'><strong><i class='icon-info-sign'></i> <span id='alert_title'></span></strong><span class='alert_msg'></span></div>
+
+                            <% local isempty = true for i, k in ipairs(self:cfgsections()) do -%>
+                                <% if self.addremove then -%>
+                                    <div class="cbi-section-remove right">
+                                        <input type="submit" name="cbi.rts.<%=self.config%>.<%=k%>" onclick="this.form.cbi_state='del-section'; return true" value="<%:Delete%>" class="cbi-button" />
+                                    </div>
+                                <%- end %>
+
+                                <%- section = k; isempty = false -%>
+
+                                <% if not self.anonymous then -%>
+                                    <h3 class="text-info"><%=section:upper()%></h3>
+                                <%- end %>
+
+                                <%+cbi/tabmenu%>
+
+                                <fieldset class="cbi-section-node<% if self.tabs then %> cbi-section-node-tabbed<% end %>" id="cbi-<%=self.config%>-<%=section%>">
+                                    <%+cbi/ucisection%>
+                                </fieldset>
+                            <%- end %>
+                        </div>
+
+    <%
+    -- Close the tab container div tags
+    if last then -%>
+
+                    </div>
+                </div>
+            </div>
+    <%- end %>

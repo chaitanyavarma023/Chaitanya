@@ -1,0 +1,10 @@
+Package: service-schedule
+Version: 1
+Depends: libc
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ec-private/cip/service-schedule
+SourceName: service-schedule
+Section: utils
+SourceDateEpoch: 1682580990
+Architecture: arm_cortex-a7
+Installed-Size: 1183
+Description:  Service Schedule for Edgecore device

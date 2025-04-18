@@ -1,0 +1,71 @@
+<%+cbi/valueheader%>
+<div>
+<a class="btn btn-small" href="<%=controller%>admin/wireless/vlans"><%:Configure VLANs%></a>
+
+<% if self.vlan_count == 0 then %>
+    <i class="icon-warning-sign red"></i>&nbsp;<%:Please create a VLAN ID before continuing!%>&nbsp;
+<% end %>
+</div>
+
+<script type="text/javascript">
+
+$(function(){
+
+    $( "#cbi" ).submit(function( event ) {
+
+        var net_behavior = document.getElementById("cbid.<%=self.iface_type%>.<%=self.iface_id%>.network_behavior");
+        var vlan_net= document.getElementById("cbid.<%=self.iface_type%>.<%=self.iface_id%>.vlan_network_name");
+
+        if(net_behavior != null && $(net_behavior).val() == 'vlan' && $(vlan_net).val() == ''  )
+        {
+            $("#form_error_msg").text("Please create a VLAN first.");
+            $("#form_error_msg_placeholder").removeClass('hide');
+
+            window.scrollTo(0, 0);
+            event.preventDefault();
+        }
+
+    });
+
+});
+
+function check_alt_radio_vlan(current_vlan){
+
+    var v = <%=#self.alt_radio_vlan%>;
+    <% for i=1, #self.alt_radio_vlan do %>
+        var x = "<%=self.alt_radio_vlan[i]%>";
+        if (current_vlan == x){
+            alert("This VLAN ID has been chosen.");
+            return;
+        }
+    <% end %>
+
+}
+
+$( "#cbid\\.<%=self.iface_type%>\\.<%=self.iface_id%>\\.vlan_network_name" ).change(function( event ) { 
+    
+    var current_id = $( this ).find(":selected").attr('id');
+    var current_vlan= $( this ).find(":selected").val();
+
+    // different vap in the same radio
+    var vlan_arr = $("select[id*='vlan_network_name']").find(":selected");
+    var vlan_id, vlan_selected;
+    for ( i = 0; i < vlan_arr.length; i++ ) {
+        vlan_id = vlan_arr.eq(i).attr('id');
+        if ( vlan_id != current_id ){   // exclude itself
+            vlan_selected = vlan_arr.eq(i).val();
+            if (current_vlan == vlan_selected){
+                alert("This VLAN ID has been chosen.");     // alert for temparate
+            }
+        }
+    }
+
+    // used vlan in another radio
+    check_alt_radio_vlan(current_vlan);
+
+});
+
+
+</script>
+<%+cbi/valuefooter%>
+

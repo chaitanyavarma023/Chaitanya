@@ -1,0 +1,241 @@
+#!/bin/sh
+
+. /usr/share/libubox/jshn.sh
+
+TC=/usr/sbin/tc
+
+ebt() {                                                        
+	echo "ebtables $*"
+	ebtables $* >/dev/null 2>&1
+	if [ $? != "0" ]; then
+		echo "append fail: ebtables $*"
+	fi
+}
+
+tcc() {                                                        
+	echo "tc $*"
+	tc $* >/dev/null 2>&1
+	if [ $? != "0" ]; then
+		echo "append fail: tc $*"
+	fi
+}
+
+gen_tcmark() {
+	local wifi=$(echo $1 | awk -F'.' '{print $1}' | sed 's/wlan//g')
+	local a=$(echo $wifi | awk -F'-' '{print $1}')
+	local b=$(echo $wifi | awk -F'-' '{print $2}')
+
+	if [ -z $b ]; then
+		b=0
+	fi
+
+	echo $(printf "4%01d%02d" $a $b)
+}
+
+tc_cleanup_wired() {
+	local eths=$1
+	if [ -z "$eths" ]; then
+		local net=$2
+		[ -z "$net" ] && net=wan
+
+		if [ -n "$(uci -q get network.bridge.type)" ]; then
+			eths=$(uci -q get network."$net"_vlan.ports)
+		else
+			eths=$(uci -q get network."$net".ifname)
+		fi
+	fi
+	if [ -n "$eths" ]; then
+		for eth in $eths; do
+			tcc qdisc show dev $eth | grep -q htb && tcc qdisc del dev $eth root
+		done
+	fi
+}
+
+tc_add_limit_wireless() {
+	local ifname=$1
+	local limit=$2
+	tcc qdisc replace dev $ifname root handle 6: htb default 99
+	tcc class replace dev $ifname parent 6:0 classid 6:99 htb rate ${limit}kbit burst 15k
+	tcc qdisc replace dev $ifname parent 6:99 handle 99: sfq perturb 10
+}
+
+tc_del_limit_wireless() {
+	local ifname=$1
+	tcc qdisc del dev $ifname parent 6:99 handle 99:
+	tcc class del dev $ifname parent 6:0 classid 6:99 
+	tcc qdisc del dev $ifname root handle 6:
+}
+
+tc_add_limit_wired() {
+	local ifname=$1
+	local tc_mark=$(gen_tcmark $ifname)
+	local limit=$2
+	local eths=$3
+	if [ -z "$eths" ]; then
+		local net=$4
+		[ -z "$net" ] && net=wan
+
+		if [ -n "$(uci -q get network.bridge.type)" ]; then
+			eths=$(uci -q get network."$net"_vlan.ports)
+		else
+			eths=$(uci -q get network."$net".ifname)
+		fi
+	fi
+	if [ -n "$eths" ]; then
+		for eth in $eths; do
+			tcc qdisc show dev $eth | grep -q htb || {
+				tcc qdisc add dev $eth root handle 6:0 htb r2q 100
+			}
+			tcc class replace dev $eth parent 6:0 classid 6:$tc_mark htb rate ${limit}kbit burst 15k
+			tcc qdisc replace dev $eth parent 6:$tc_mark handle ${tc_mark}: sfq perturb 10
+			tcc filter replace dev $eth protocol ip parent 6: prio 1 handle $tc_mark fw flowid 6:$tc_mark
+
+		done
+		ebt -t nat -A WIFI_LIMIT -i $ifname -j mark --mark-set ${tc_mark} --mark-target CONTINUE
+	fi
+}
+
+tc_del_limit_wired() {
+	local ifname=$1
+	local tc_mark=$(gen_tcmark $ifname)
+	local eths=$2
+	if [ -z "$eths" ]; then
+		local net=$3
+		[ -z "$net" ] && net=wan
+
+		if [ -n "$(uci -q get network.bridge.type)" ]; then
+			eths=$(uci -q get network."$net"_vlan.ports)
+		else
+			eths=$(uci -q get network."$net".ifname)
+		fi
+	fi
+	if [ -n "$eths" ]; then
+		for eth in $eths; do
+			ebt -t nat -D WIFI_LIMIT -i $ifname -j mark --mark-set ${tc_mark} --mark-target CONTINUE
+
+			tcc filter del dev $eth protocol ip parent 6: prio 1 handle $tc_mark fw flowid 6:$tc_mark
+			tcc qdisc del dev $eth parent 6:$tc_mark handle ${tc_mark}:
+			tcc class del dev $eth parent 6:0 classid 6:$tc_mark
+		done
+	fi
+}
+
+parse_limit() {
+	local radio radios
+
+	json_load "$(ubus call network.wireless status)"
+	json_get_keys radios
+
+	for radio in $radios; do
+		local iface ifaces
+
+		json_select $radio
+		json_select interfaces
+
+		json_get_keys ifaces
+
+		for iface in $ifaces; do
+			local ifname limit_up_enable limit_up limit_down_enable limit_down disabled
+
+			json_select $iface
+			json_get_var ifname ifname
+			if [ -n "$(echo $ifname | grep wlan | awk -F. '{print $1}')" -a -z "$(echo $ifname | awk -F. '{print $2}')" ]; then
+				json_select config
+
+				json_get_var disabled disabled
+				if [ "$disabled" = "0" ]; then
+					json_get_var dynamic_vlan dynamic_vlan
+					json_get_var limit_up_enable limit_up_enable
+					json_get_var limit_up limit_up
+
+					if [ -n "$limit_up_enable" -a "$limit_up_enable" = "1" ]; then
+						if [ -z "$limit_up" -o "$limit_up" = "0" ]; then
+							limit_up=100
+						fi
+
+						local tun= split_tun= vid= eths= net=
+						json_get_var tun tun
+						if [ "$tun" = "1" ]; then
+							json_get_var split_tun split_tun
+							if [ -z "$split_tun" -o "$split_tun" = "0" ]; then
+								json_get_var vid vid
+								[ -n "$vid" -a "$vid" != "0" ] && eths="brTun0.$vid"
+							fi
+						fi
+						if [ -z "$eths" ]; then
+							json_select network
+							json_get_values net
+							[ "$net" = "${net#vlan}" ] && net=
+							json_select ..
+						fi
+
+						if [ -n "$dynamic_vlan" ]; then
+							local dvlan_ifs=$(ls -d /sys/class/net/$ifname*)
+							for dvlan_if in $dvlan_ifs; do
+								local vid=$(echo $dvlan_if | awk -F'/' '{print $5}' | awk -F'.' '{print $2}')
+								if [ -n "$vid" ]; then
+									eths="${eths} eth0.$vid"
+									tc_add_limit_wired "$ifname".$vid "$limit_up" "$eths"
+								else
+									tc_add_limit_wired "$ifname" "$limit_up" "$eths" "$net"
+								fi
+							done
+						else
+							tc_add_limit_wired "$ifname" "$limit_up" "$eths" "$net"
+						fi
+					fi
+
+					json_get_var limit_down_enable limit_down_enable
+					json_get_var limit_down limit_down
+
+					if [ -n "$limit_down_enable" -a "$limit_down_enable" = "1" ]; then
+						if [ -z "$limit_down" -o "$limit_down" = "0" ]; then
+							limit_down=100
+						fi
+
+						if [ -n "$dynamic_vlan" ]; then
+							local dvlan_ifs=$(ls -d /sys/class/net/$ifname*)
+							for dvlan_if in $dvlan_ifs; do
+								local vid=$(echo $dvlan_if | awk -F'/' '{print $5}' | awk -F'.' '{print $2}')
+								if [ -n "$vid" ]; then
+									tc_add_limit_wireless "$ifname".$vid "$limit_down"
+								else
+									tc_add_limit_wireless "$ifname" "$limit_down"
+								fi
+							done
+						else
+							tc_add_limit_wireless "$ifname" "$limit_down"
+						fi
+					fi
+				fi
+				json_select ..
+			fi
+			json_select ..
+		done
+		json_select ..
+		json_select ..
+	done	
+}
+
+ebt_clear() {
+	ebt -t nat -D PREROUTING -j WIFI_LIMIT
+	ebt -t nat -F WIFI_LIMIT
+	ebt -t nat -X WIFI_LIMIT
+}
+
+ebt_init() {
+	ebt -t nat -N WIFI_LIMIT
+	ebt -t nat -P WIFI_LIMIT RETURN
+	ebt -t nat -I PREROUTING 1 -j WIFI_LIMIT
+}
+
+(
+	flock -x 200
+
+	ebt_clear
+	ebt_init
+	parse_limit
+
+) 200>/var/lock/firewall.wifi_limit.flock
+
+

@@ -1,0 +1,121 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2008 OpenWrt.org
+# Copyright (C) 2019 Jeffery To
+
+START=90
+USE_PROCD=1
+
+CONF_FILE="/var/etc/stunnel.conf"
+BIN="/usr/bin/stunnel"
+WIZARD_IFNAME="wlan0-1 wlan0-2 wlan1-1 wlan1-2"
+
+SCRIPT="killall stunnel"
+period=1 #hour
+_add_cron_script() {
+    (crontab -l ; echo "$1") | sort | uniq | crontab -
+}
+
+_rm_cron_script() {
+    crontab -l | grep -v "$1" |  sort | uniq | crontab -
+}
+
+add_cron_entries() {
+  cmd="* */"${period}" * * * "${SCRIPT}
+  _add_cron_script "$cmd"
+}
+
+init_var() {
+	local rf_id device
+	config_get device "$1" device
+	rf_id=${device: -1}
+	eval "[ -z \$vap$rf_id ] && vap$rf_id=0"
+}
+
+parser_conifg() {
+	local device rf_id vap_id ifname
+	local cloud_aaa=0 ssid
+	local rf vap ssl_id port ssl_port
+	local disabled
+	
+	config_get device "$1" device
+	config_get cloud_aaa "$1" cloud_aaa
+	config_get ssid $1 ssid
+	config_get disabled "$1" disabled
+
+		rf_id=${device: -1}
+		eval "vap_id=\$vap$rf_id"
+		if [ "${vap_id}" = "0" ]; then
+			ifname=wlan${rf_id}
+		else
+			ifname=wlan${rf_id}-${vap_id}
+		fi
+
+	if [ "${disabled}" = "0" ]; then
+		#21098:Binding SSID enhancement
+		/sbin/get_binding_ssid.sh "$ssid"
+		binding_status=$?
+
+		if [ "$binding_status" == "0" -o "${cloud_aaa}" = "1" ]; then
+		rf=$((rf_id+1))
+		vap=$(printf %02d ${vap_id})
+		ssl_id=$((rf+7))
+		port="8${rf}${vap}"
+		ssl_port="8${ssl_id}${vap}"
+		echo -e "[proxy_${ifname}]\nclient = no\naccept = ${ssl_port}\nconnect = ${port}\nTIMEOUTclose = 0\n\n" >> $CONF_FILE
+	fi
+	fi
+	eval "vap$rf_id=\$((vap$rf_id+1))"
+}
+
+setup_wizard() {
+	local ifname w_id vap_id s_id ssl_id port ssl_port
+	if [ "$(uci get acn.wizard.ez_setup)" = "1" ]; then
+		for ifname in $WIZARD_IFNAME
+		do
+			w_id=$(( ${ifname:4:1} + 1 ))
+			vap_id=${ifname#*-}
+			s_id=$(printf %02d ${vap_id})
+			ssl_id=$(( ${w_id} + 7 ))
+			port="8${w_id}${s_id}"
+			ssl_port="8${ssl_id}${s_id}"
+			echo -e "[proxy_${ifname}]\nclient = no\naccept = ${ssl_port}\nconnect = ${port}\nTIMEOUTclose = 0\n\n" >> $CONF_FILE
+		done
+	fi
+}
+
+create_conf_file() {
+	mkdir -p "$(dirname "$CONF_FILE")"
+	cp /etc/stunnel/stunnel.conf.tmpl $CONF_FILE
+	setup_wizard
+	config_load wireless
+	config_foreach init_var wifi-iface
+	config_foreach parser_conifg wifi-iface
+}
+
+service_triggers() {
+	procd_add_reload_trigger "network" "wireless"
+}
+
+start_service() {
+	rm -f "$CONF_FILE"
+	create_conf_file
+
+	procd_open_instance
+	procd_set_param command "$BIN"
+	procd_append_param command "$CONF_FILE"
+	procd_set_param respawn
+	procd_close_instance
+	add_cron_entries
+}
+
+reload_service() {
+	stop
+	start
+}
+
+stop_service() {
+	pid=$(cat /var/run/stunnel.pid)
+	[ -n "${pid}" ] && kill $pid
+	_rm_cron_script ${SCRIPT}
+}
+

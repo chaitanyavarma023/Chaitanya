@@ -1,0 +1,24 @@
+<%+cbi/valueheader%>
+
+<%
+local acn = require("luci.acn.util")
+local acn_uci = acn.cursor()
+local mgmt_enabled = (acn_uci:get("acn", "mgmt", "enabled") == "1")
+%>
+
+<div>
+<% if mgmt_enabled == true then %>
+    <a class="btn btn-small" id="config_openroaming" onclick="return false" oncontextmenu="return false" href="<%=controller%>admin/network/openroaming"><%:Configure OpenRoaming%></a>
+<% else %>
+    <a class="btn btn-small" id="config_openroaming" href="<%=controller%>admin/network/openroaming"><%:Configure OpenRoaming%></a>
+<% end %>
+
+<% if self.profile_count == 0 then %>
+    <i class="icon-warning-sign red"></i>&nbsp;<%:Please create a OpenRoaming profile before continuing!%>&nbsp;
+<% end %>
+</div>
+
+<script type="text/javascript">
+
+</script>
+<%+cbi/valuefooter%>

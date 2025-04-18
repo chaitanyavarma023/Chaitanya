@@ -1,0 +1,11 @@
+Package: qca-thermald-10.4
+Version: 1
+Depends: libc, libpthread
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ipq807x/qca-thermald-10.4
+SourceName: qca-thermald-10.4
+Section: utils
+SourceDateEpoch: 1616671187
+Maintainer: Qualcomm Atheros
+Architecture: arm_cortex-a7
+Installed-Size: 18014
+Description:  This package is IPQ Thermal Mitigation daemon.

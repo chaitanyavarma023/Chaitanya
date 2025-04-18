@@ -1,0 +1,24 @@
+
+<% local network = self.iface or section %>
+
+<script type="text/javascript">
+$(function(){
+
+    updateBadgeCount('<%=network%>', -2, true);
+});
+
+</script>
+<div class="hide" id="row_<%=network%>">
+
+</div>
+
+<%
+    local alias_btn_lbl = alias_btn_lbl or translate('Configure')
+
+     if not alias_hide_badge  then  
+        alias_btn_lbl = alias_btn_lbl ..  '&nbsp;<span class="badge badge-yellow" id="ip_alias_count_' .. network .. '"></span>'
+    end
+
+%>
+<a href="#" id="open_ip_aliases_<%=network%>" class="btn btn-small btn-info"  onclick="openIpAliases('<%=network%>')"  ><%=alias_btn_lbl%></a>
+<%+cbi/help_tip%>

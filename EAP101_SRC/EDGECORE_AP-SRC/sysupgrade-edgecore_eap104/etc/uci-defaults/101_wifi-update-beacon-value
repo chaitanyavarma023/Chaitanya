@@ -1,0 +1,36 @@
+#!/bin/sh
+
+. /lib/functions.sh
+cnt=0
+beacon_int=0
+
+update_beacon() {
+  radio_name="$1"
+  cnt=0
+
+  config_get beacon_int ${radio_name} beacon_int
+
+  config_load wireless
+  config_foreach get_ssid_quantity wifi-iface ${radio_name}
+
+  if [ $cnt -ge 8 -a $beacon_int -lt 500 ]; then
+    uci set wireless.$radio_name.beacon_int=500
+  elif [ $cnt -ge 4 -a $beacon_int -lt 250 ]; then
+    uci set wireless.$radio_name.beacon_int=250
+  fi
+  uci commit wireless.$radio_name
+}
+
+get_ssid_quantity() {
+  local vap="$1"
+  local radio_name="$2"
+  config_get vap_disabled $1 disabled
+  result=$(echo $vap | grep "${radio_name}")
+
+  if [ "$vap_disabled" == "0" -a "$result" != "" ]; then
+    let cnt=cnt+1
+  fi
+}
+
+config_load wireless
+config_foreach update_beacon wifi-device

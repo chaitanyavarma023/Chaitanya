@@ -1,0 +1,3 @@
+/etc/freeradius3/mods-available/exec
+/etc/freeradius3/mods-enabled/exec
+/usr/lib/freeradius3/rlm_exec.so

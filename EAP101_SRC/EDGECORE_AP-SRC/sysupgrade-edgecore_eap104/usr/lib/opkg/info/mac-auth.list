@@ -1,0 +1,3 @@
+/usr/bin/mac_authd
+/etc/init.d/mac-auth
+/usr/sbin/login.sh

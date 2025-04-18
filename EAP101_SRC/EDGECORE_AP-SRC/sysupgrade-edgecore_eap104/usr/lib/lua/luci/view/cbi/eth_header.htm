@@ -1,0 +1,30 @@
+
+<script type="text/javascript">//<![CDATA[
+    <%
+
+    acn = require('luci.acn.util')
+    product = require('luci.acn.product')
+
+    %>
+    var vpn_proto       = ""; //uci:get network.vpn.proto
+
+    var wan_logical     = "<%= acn.ifname_to_logical(acn.cursor():get('network', 'wan', 'inet_src'))%>";
+
+    var num_eth_ports   = "<%= product.num_eth_ports %>";
+
+    for(var i =0; i < num_eth_ports; i++)
+    {  
+        var eth_id     = document.getElementById("cbid.ethernet.eth" + i + ".network_behavior")
+
+        if($( eth_id ).val() == "<%=vpn_network%>")
+        {
+          if( vpn_proto == "None" )
+          {
+            $("#vpn_alert").modal();  
+          }
+        
+        }
+    }
+  
+//]]>
+</script>

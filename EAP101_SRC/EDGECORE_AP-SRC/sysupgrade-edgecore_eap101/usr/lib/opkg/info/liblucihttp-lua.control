@@ -1,0 +1,13 @@
+Package: liblucihttp-lua
+Version: 2019-07-05-a34a17d5-1
+Depends: libc, liblucihttp0, liblua5.1.5
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/luci/contrib/package/lucihttp
+SourceName: liblucihttp-lua
+License: ISC
+LicenseFiles: LICENSE
+Section: libs
+SourceDateEpoch: 1638761405
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 3232
+Description:  Lua binding for the LuCI HTTP utility library

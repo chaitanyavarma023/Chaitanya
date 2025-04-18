@@ -1,0 +1,25 @@
+global
+country DE: DFS-ETSI
+        (2400 - 2483 @ 40), (N/A, 12), (N/A)
+        (5150 - 5250 @ 80), (N/A, 14), (N/A), NO-OUTDOOR, AUTO-BW
+        (5250 - 5350 @ 80), (N/A, 13), (0 ms), NO-OUTDOOR, DFS, AUTO-BW
+        (5470 - 5725 @ 80), (N/A, 20), (0 ms), DFS
+        (5725 - 5875 @ 80), (N/A, 20), (N/A)
+        (57000 - 66000 @ 2160), (N/A, 40), (N/A)
+
+phy#1 (self-managed)
+country DE: DFS-ETSI
+        (2402 - 2482 @ 40), (N/A, 12), (N/A)
+        (5170 - 5250 @ 80), (N/A, 14), (N/A), AUTO-BW
+        (5250 - 5330 @ 80), (N/A, 13), (0 ms), DFS, AUTO-BW
+        (5490 - 5590 @ 80), (N/A, 20), (0 ms), DFS, AUTO-BW
+        (5650 - 5710 @ 60), (N/A, 20), (0 ms), DFS, AUTO-BW
+
+phy#0 (self-managed)
+country DE: DFS-ETSI
+        (2402 - 2482 @ 40), (N/A, 12), (N/A)
+        (5170 - 5250 @ 80), (N/A, 14), (N/A), AUTO-BW
+        (5250 - 5330 @ 80), (N/A, 13), (0 ms), DFS, AUTO-BW
+        (5490 - 5590 @ 80), (N/A, 20), (0 ms), DFS, AUTO-BW
+        (5650 - 5710 @ 60), (N/A, 20), (0 ms), DFS, AUTO-BW
+

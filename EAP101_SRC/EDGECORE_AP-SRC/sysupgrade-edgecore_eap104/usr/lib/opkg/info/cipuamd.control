@@ -1,0 +1,10 @@
+Package: cipuamd
+Version: 1
+Depends: libc, libevent2-7
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ec-private/cip/cipuamd
+SourceName: cipuamd
+Section: utils
+SourceDateEpoch: 1718866724
+Architecture: arm_cortex-a7
+Installed-Size: 37037
+Description:  UAM DAEMON from 4ipnet.

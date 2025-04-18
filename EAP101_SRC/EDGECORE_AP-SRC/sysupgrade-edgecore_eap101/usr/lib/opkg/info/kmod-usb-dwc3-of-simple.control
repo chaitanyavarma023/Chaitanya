@@ -1,0 +1,12 @@
+Package: kmod-usb-dwc3-of-simple
+Version: 4.4.60-1
+Depends: kernel (=4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-usb-dwc3, kmod-usb-core
+Source: package/kernel/linux
+SourceName: kmod-usb-dwc3-of-simple
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1734663204
+Architecture: arm_cortex-a7
+Installed-Size: 9127
+Description:  This driver provides generic platform glue for the integrated DesignWare
+ USB3 IP Core.

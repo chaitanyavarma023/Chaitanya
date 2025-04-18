@@ -1,0 +1,47 @@
+#!/bin/sh
+
+. /lib/functions/uci-defaults.sh
+
+board_config_update
+
+board=$(board_name)
+
+case "$board" in
+sercomm,wallaby|\
+wallys,dr6018|\
+wallys,dr6018-v4|\
+cig,wf188n|\
+cig,wf194c|\
+cig,wf194c4)
+	ucidef_set_led_netdev "wan" "WAN" "green:wan" "eth0" "tx rx link"
+        ucidef_set_led_wlan "wlan5g" "WLAN5G" "green:wifi5" "phy0tpt"
+        ucidef_set_led_wlan "wlan2g" "WLAN2G" "green:wifi2" "phy1tpt"
+	;;
+edgecore,eap101)
+        ucidef_set_led_wlan "wlan5g" "WLAN5G" "green:wifi5" "phy0tx"
+        ucidef_set_led_wlan "wlan2g" "WLAN2G" "green:wifi2" "phy1tx"
+	ucidef_set_led_netdev "lan1" "lan1" "green:lan1" "eth1" "tx rx link"
+	ucidef_set_led_netdev "lan2" "lan2" "green:lan2" "eth2" "tx rx link"
+	ucidef_set_led_netdev "wan" "WAN" "green:wan" "eth0" "tx rx link"
+	;;
+edgecore,eap102|\
+edgecore,oap103)
+        ucidef_set_led_wlan "wlan5g" "WLAN5G" "green:wifi5" "phy0tx"
+        ucidef_set_led_wlan "wlan2g" "WLAN2G" "green:wifi2" "phy1tx"
+	;;
+edgecore,eap104)
+        ucidef_set_led_wlan "wlan5g" "WLAN5G" "green:wifi5" "phy0tx"
+        ucidef_set_led_wlan "wlan2g" "WLAN2G" "green:wifi2" "phy1tx"
+	ucidef_set_led_netdev "wan" "wan" "yellow:uplink" "eth0"
+	ucidef_set_led_switch "wanspd" "wanspd" "orange:uplink" "switch0" "0x2" "0x8" "link"
+	;;
+hfcl,ion4xi|\
+hfcl,ion4xe)
+        ucidef_set_led_wlan "wlan5g" "WLAN5G" "blue:wifi5" "phy0tpt"
+        ucidef_set_led_wlan "wlan2g" "WLAN2G" "blue:wifi2" "phy1tpt"
+	;;
+esac
+
+board_config_flush
+
+exit 0

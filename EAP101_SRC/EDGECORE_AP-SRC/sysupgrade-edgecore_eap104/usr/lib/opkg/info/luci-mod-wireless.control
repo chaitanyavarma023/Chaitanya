@@ -1,0 +1,11 @@
+Package: luci-mod-wireless
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base, libiwinfo-lua, rpcd-mod-iwinfo
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ec-private/luci/modules/luci-mod-wireless
+SourceName: luci-mod-wireless
+License: Apache-2.0
+Section: luci
+SourceDateEpoch: 1734445176
+Architecture: all
+Installed-Size: 42892
+Description:  LuCI Wireless Administration

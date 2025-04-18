@@ -1,0 +1,4 @@
+/etc/hotplug.d/net/10-ecfp
+/usr/sbin/ec-fp
+/etc/init.d/ec-fp
+/usr/share/ecfp/dhcp.json

@@ -1,0 +1,52 @@
+<%
+require("uci")
+
+local dev_mac = {}
+
+local if_handle = {}
+local if_config = {}
+
+local ap_mac = {}
+local ap_ip = {}
+
+local arp_handle = {}
+local arptb_info = {}
+
+local sta_ip = {}
+local sta_mac = {}
+
+-- Get Calling-Station-Id parameter value
+
+arp_handle = io.popen("/sbin/arp", "r")
+arptb_info = arp_handle:read("*a")
+arp_handle:close()
+
+sta_ip = tostring(cgilua.servervariable("REMOTE_ADDR"))
+
+dev_mac = arptb_info:match(string.format("%%(%s%%) at ([%%:%%x]*)", sta_ip))
+sta_mac = string.upper(dev_mac)
+
+-- Get NAS-IP-Address and Called-Station-Id parameter values
+
+if_handle = io.popen("ifconfig br-wan", "r")
+if_config = if_handle:read("*a")
+if_handle:close()
+
+if if_config ~= nil and string.len(if_config) > 0 then
+    dev_mac = if_config:match("HWaddr ([%:%x]*)")
+    ap_mac = string.upper(dev_mac)
+    ap_ip = if_config:match("inet addr:([%.%d]*)")
+else
+    if_handle = io.popen("ifconfig eth0", "r")
+    if_config = if_handle:read("*a")
+    if_handle:close()
+    dev_mac = if_config:match("HWaddr ([%:%x]*)")
+    ap_mac = string.upper(dev_mac)
+    ap_ip = if_config:match("inet addr:([%.%d]*)")
+end
+%>
+<input type="hidden" name="apmac" maxlength="20" size="20" value=<%= ap_mac%> readonly>
+<input type="hidden" name="apip" maxlength="20" size="20" value=<%= ap_ip%> readonly>
+<input type="hidden" name="stamac" maxlength="20" size="20" value=<%= sta_mac%> readonly>
+<input type="hidden" name="staip" maxlength="20" size="20" value=<%= sta_ip%> readonly>
+<input type="hidden" name="authmethod" maxlength="20" size="20" value="UAM" readonly>

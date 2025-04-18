@@ -1,0 +1,114 @@
+
+<tr>
+    <%
+    local acn = require "luci.acn.util"
+    local uci = acn.cursor()
+    -- XXX TODO: We can make this reflect the running value later
+    local hs_status     = uci:get("hotspot", "hotspot", "hs_status") or '0'
+    -- XXX TODO: clean this up later...
+    local hs_running    = luci.util.exec("ps | grep chilli | grep -v grep")
+
+    hs_running = hs_running and #hs_running > 1
+
+    --luci.sys.process.list()
+
+    local hs_message = luci.i18n.translatef("The hotspot service is currently disabled.")
+    local hs_icon_class = " "
+
+    if hs_status == '1' then
+
+        if hs_running then
+            hs_icon_class = ""
+            hs_alert_class = "padding-bottom-5 green"
+            hs_message = luci.i18n.translatef("The hotspot service is running.")
+        else
+            hs_icon_class = "icon-thumbs-down"
+            hs_alert_class = "alert alert-error error-msg-visible"
+            hs_message = luci.i18n.translatef("The hotspot service is enabled but not running.")
+        end
+    end
+
+    %>
+
+    <!-- expandable footable button -->
+    <td></td>
+
+    <%
+    user_name = luci.http.getcookie("user_name")
+    root_user = luci.util.root_user(user_name)
+    msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+    %>
+
+    <!-- NAME -->
+    <td class="service-name">
+        <% if root_user or msp_disabled then %>
+            <a href="<%=luci.dispatcher.build_url('admin/network/hotspot')%>"><%:Hotspot (Chilli)%></a>
+        <% else %>
+            <a href="<%=luci.dispatcher.build_url('admin/network/hotspot')%>" onclick="return false" oncontextmenu="return false"><%:Hotspot (Chilli)%></a>
+        <% end %>
+    </td>
+
+    <!-- STATUS -->
+    <td>
+        <% if hs_status == '1' then
+        %>
+            <span style="color:#69aa46"><i class="icon-ok-circle"></i> &nbsp;</span><%:Enabled%>
+        <%else%>
+           <i class="icon-ban-circle"></i>&nbsp; <%:Disabled%>
+        <% end %>
+    </td>
+
+
+    <!-- STATUS MESSAGE + Info -->
+    <td>
+        <% if hs_status == '1' then
+        %>
+            <div class=" <%=hs_alert_class%>">
+                <%=hs_message%>
+            </div>
+        <%else%>
+            <%=hs_message%>
+        <% end %>
+
+    <!-- OTHER INFO -->
+
+        <div><%:Included interfaces%>: <span id="hotspot_members">
+
+            <%
+            local hotspot = ntm:get_interface('br-hotspot')
+            local hs_members = {}
+
+            if hotspot and hotspot:is_bridge() then
+                hs_members = hotspot:acn_ports()
+            end
+
+            local member_count = 0
+
+            for k, port in ipairs(hs_members) do
+
+                local entry = acn.iface_member_label(port)
+                member_count  = member_count + 1
+                if not entry then
+                    print(port)
+                else
+                    if not is_first then
+                         print("&nbsp;")
+                    end
+
+                    luci.template.render('cbi/bridge_member_tag', {iface = entry})
+
+                    is_first = false
+                end
+            end
+
+            if member_count == 0 then
+            %>
+                <span style='font-style:italic'><%:(no interfaces)%></span>
+            <%
+            end
+            %>
+
+            </span>
+        </div>
+    </td>
+</tr>

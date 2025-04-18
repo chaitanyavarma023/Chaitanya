@@ -1,0 +1,18 @@
+#!/bin/sh
+
+tip_mode=$(uci -q get acn.mgmt.management)
+[ ! -z $tip_mode ] && [ "$tip_mode" -eq 3 ] || {
+	exit 0
+}
+
+[ "${INTERFACE:0:4}" == "wlan" ] || exit 0
+
+[ "$ACTION" == remove ] && {
+	ratelimit deliface $INTERFACE
+	exit 0
+}
+
+[ "$ACTION" == add ] && {
+	ratelimit waitiface $INTERFACE &
+	exit 0
+}

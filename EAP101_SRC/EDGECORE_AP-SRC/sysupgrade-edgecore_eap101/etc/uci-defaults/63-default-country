@@ -1,0 +1,50 @@
+#!/bin/sh
+
+. /lib/acn/acn_functions.sh
+
+MID="$(get_MID)"
+
+ccode=
+worldwide=0
+update=0
+case $MID in
+"EAP101"*|"EAP102"*|"EAP104"*|"OAP103"*)
+	# country code is the 2nd column
+	CNAME=$(get_CNAME)
+	case $CNAME in
+	""|"WW"|"no item"*)
+		ccode="US"
+		worldwide=1
+		;;
+	"FCC"|"US")
+		ccode="US"
+		worldwide=0
+		;;
+	*)
+		ccode=$CNAME
+		worldwide=0
+		;;
+	esac
+	;;
+*);;
+esac
+
+if [ "$ccode" != "" ]; then
+	if [ $worldwide -eq 1 ]; then
+ 		if [ "$(uci -q get wireless.radio0.country)" == "" ]; then
+			update=1
+		fi
+	else
+		update=1
+	fi
+
+	if [ $update -eq 1 ]; then
+uci -q batch <<-EOF >/dev/null
+  set wireless.radio0.country='$ccode'
+  set wireless.radio1.country='$ccode'
+  commit wireless
+EOF
+	fi
+fi
+
+exit 0

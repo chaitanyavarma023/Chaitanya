@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# ignore vlan interface
+#[ -n "$(echo $INTERFACE | grep wlan | awk -F'.' '{print $2}')" ] && exit 0
+
+# ignore if not wireless interface
+#[ -z "$(echo $INTERFACE | grep wlan | awk -F'.' '{print $1}')" ] && exit 0
+
+if [ "$ACTION" == "add" ]; then
+	/bin/sh /etc/firewall.wifi_limit
+fi
+

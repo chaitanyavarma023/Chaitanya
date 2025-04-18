@@ -1,0 +1,20 @@
+#!/bin/sh
+. /lib/functions.sh
+
+check_signal_allowed() {
+	local wmm
+
+	config_get wmm $1 wmm
+	[ "$wmm" != "" ] && {
+		uci set wireless.$1.wmm=
+		changed=1
+	}
+}
+
+changed=0
+
+config_load wireless
+config_foreach check_signal_allowed wifi-iface
+[ $changed -eq 1 ] && uci commit wireless
+
+exit 0

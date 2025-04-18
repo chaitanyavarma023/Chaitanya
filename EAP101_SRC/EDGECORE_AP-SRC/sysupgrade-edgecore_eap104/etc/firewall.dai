@@ -1,0 +1,415 @@
+#!/bin/sh
+#. /lib/functions.sh
+#. /lib/functions/network.sh
+
+. /usr/share/libubox/jshn.sh
+
+#	a.make the Static ARP Inspection (SARPI) file
+#	b.send update information
+#		c.block invlaid arp packet
+#		d.monitor DHCP traffic
+#		e.make among file and monitor ARP traffic
+#	5.Start Daemon
+#	a.start ulogd
+#	b.start cipfwd
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#
+
+DAIchain="DAI_CHECK"
+DAI_LEARN="DAI_LEARN"
+DAI_FILTER="DAI_FILTER"
+DHCP_FILTER="DHCP_FILTER"
+DHCP_LEARN="DHCP_LEARN"
+PROXY_ARP="PROXY_ARP"
+ARP_FILTER="ARP_FILTER"
+ISOLATE_FILTER="ISOLATE_FILTER"
+status_file="/tmp/DAI_status"
+among_file="/tmp/DAI_among_file"
+among_rule_file="/tmp/DAI_among_rule"
+ulogd="/sbin/ulog-listener"
+cipfwd="/sbin/cipfwd"
+fwsend="/sbin/sender"
+#enhancement=`read_cipcfg bfw_dai enhancement`
+
+. /lib/functions/network.sh
+
+ebt() {
+	echo "ebtables $*"
+	ebtables $* >/dev/null 2>&1
+	if [ $? != "0" ]; then
+		echo "append fail: ebtables $*"
+	fi
+}
+
+append_filter_rule() {
+#	echo $1
+	$1
+	if [ $? != "0" ]; then
+		echo "append fail: $1"
+#	else
+#		echo "append success: $1"
+	fi
+}
+
+make_among(){
+
+	if [ ! -s "$status_file" ]; then
+		touch $status_file
+	fi
+
+	json_init
+	json_load_file $status_file
+
+	json_get_keys stas
+
+	for sta in $stas; do
+		local mac=$(echo $sta | sed -e "s/ //g" -e "s/_/:/g")
+		json_select $sta
+
+		json_get_var ip ip
+		json_get_var remote remote
+		if [ "$remote" = "1" ]; then
+			continue
+		fi
+		if [ "$ip" = "0.0.0.0" ]; then
+			echo -n "${mac}," >> ${among_file}
+		else
+			echo -n "${mac}=${ip}," >> ${among_file}
+		fi
+		json_select ..
+	done
+
+	if [ -s "$among_file" ]; then
+		echo "" >> $among_file
+		if [ "$forcedhcp_enable" = "1" -a "$arpinspection_enable" = "1" ]; then
+			# check
+			ebt -t nat -A DAI_CHECK --mamong-ether arp --mamong-vlan 1 --mamong-src-file ! ${among_file} -j DROP
+		else
+			# learn and check
+			ebt -t nat -A DAI_CHECK --mamong-ether arp --mamong-vlan 1 --mamong-src-file ! ${among_file} --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j DROP
+			# learn
+			ebt -t nat -A DAI_LEARN --mamong-ether arp --mamong-vlan 1 --mamong-src-file ! ${among_file} --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+		fi
+	else
+		if [ "$forcedhcp_enable" = "1" -a "$arpinspection_enable" = "1" ]; then
+			# check
+			ebt -t nat -A DAI_CHECK --mamong-ether arp --mamong-vlan 1 -j DROP
+		else
+			# learn and check
+			ebt -t nat -A DAI_CHECK --mamong-ether arp --mamong-vlan 1 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j DROP
+			# learn
+			ebt -t nat -A DAI_LEARN --mamong-ether arp --mamong-vlan 1 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+		fi
+
+	fi
+}
+
+stop_dai() {
+	echo "Stop DAI"
+	#kill_target=${cipfwd##*/}
+	#echo killall $kill_target
+	#killall -9 $kill_target > /dev/null 2>&1
+	#kill_target=${ulogd##*/}
+	#echo killall $kill_target
+	#killall -9 $kill_target > /dev/null 2>&1
+	rm -f $status_file
+	rm -f $among_file
+	rm -f $among_rule_file
+
+	ebt -t nat -D PREROUTING -j DAI_PRECHAIN
+	ebt -t nat -D PREROUTING -j DHCP_FILTER
+	ebt -t nat -D POSTROUTING -j DHCP_FILTER
+	ebt -t nat -D POSTROUTING -d Multicast -o wlan+ -j DDOS_MULTICAST
+	ebt -t nat -F DAI_PRECHAIN
+	ebt -t nat -X DAI_PRECHAIN
+	ebt -t nat -F DAI_FILTER
+	ebt -t nat -X DAI_FILTER
+	ebt -t nat -F DAI_CHECK
+	ebt -t nat -X DAI_CHECK
+	ebt -t nat -F DAI_PRECHECK
+	ebt -t nat -X DAI_PRECHECK
+	ebt -t nat -F DAI_LEARN
+	ebt -t nat -X DAI_LEARN
+	ebt -t nat -F DHCP_FILTER
+	ebt -t nat -X DHCP_FILTER
+	ebt -t nat -F DHCP_LEARN
+	ebt -t nat -X DHCP_LEARN
+	ebt -t nat -F DDOS_MULTICAST
+	ebt -t nat -X DDOS_MULTICAST
+
+
+	ebt -t filter -D FORWARD -p ip --ip-proto udp --ip-sport 67:68 --ip-dport 67:68 -j DHCP_FILTER
+	ebt -t filter -D FORWARD -p ARP -j DHCP_FILTER
+	ebt -t filter -D FORWARD -p ip --ip-proto udp --ip-dport 137 -j DHCP_FILTER
+	ebt -t filter -F DHCP_FILTER
+	ebt -t filter -X DHCP_FILTER
+	ebt -t filter -F DHCP_LEARN
+	ebt -t filter -X DHCP_LEARN
+}
+
+initial_dai() {
+	echo "Initial dai"
+
+	ebt -t nat -N DHCP_FILTER
+	ebt -t nat -P DHCP_FILTER RETURN
+	ebt -t nat -I PREROUTING 1 -j DHCP_FILTER
+
+	ebt -t nat -N DAI_PRECHAIN
+	ebt -t nat -P DAI_PRECHAIN RETURN
+	ebt -t nat -A PREROUTING -j DAI_PRECHAIN
+
+	ebt -t nat -I POSTROUTING 1 -j DHCP_FILTER
+
+	ebt -t nat -N DDOS_MULTICAST
+	ebt -t nat -P DDOS_MULTICAST RETURN
+	ebt -t nat -I POSTROUTING 1 -d Multicast -o wlan+ -j DDOS_MULTICAST
+
+	ebt -t nat -N DAI_FILTER
+	ebt -t nat -P DAI_FILTER RETURN
+
+	ebt -t nat -N DAI_LEARN
+	ebt -t nat -P DAI_LEARN RETURN
+
+	ebt -t nat -N DHCP_LEARN
+	ebt -t nat -P DHCP_LEARN RETURN
+
+	ebt -t nat -A DHCP_FILTER -p ip --ip-proto udp --ip-sport 67:68 --ip-dport 67:68 -j DHCP_LEARN
+	ebt -t nat -A DHCP_FILTER -p ARP -i eth+ -j RETURN
+	ebt -t nat -A DHCP_FILTER -p ARP -j DHCP_LEARN
+	ebt -t nat -A DHCP_FILTER -p ip --ip-proto udp --ip-dport 137 -j DHCP_LEARN
+
+	ebt -t nat -A DAI_PRECHAIN -p ip --ip-proto udp --ip-sport 67:68 --ip-dport 67:68 -j DAI_FILTER
+	ebt -t nat -A DAI_PRECHAIN -p ARP -j DAI_FILTER
+	ebt -t nat -A DAI_PRECHAIN -p ip --ip-proto udp --ip-dport 137 -j DAI_FILTER
+
+	ebt -t nat -N DAI_CHECK
+	ebt -t nat -P DAI_CHECK RETURN
+
+	ebt -t nat -N DAI_PRECHECK
+	ebt -t nat -P DAI_PRECHECK RETURN
+	ebt -t nat -A DAI_PRECHECK -j DAI_CHECK
+
+	ebt -t nat -A DHCP_LEARN -p ip --ip-proto udp --ip-sport 67:68 --ip-dport 67:68 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+	ebt -t nat -A DHCP_LEARN -p ARP --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+	ebt -t nat -A DHCP_LEARN -p ip --ip-proto udp --ip-dport 137 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+
+	ebt -t nat -A DDOS_MULTICAST --limit 100/s --limit-burst 100 -j RETURN
+	ebt -t nat -A DDOS_MULTICAST -j DROP
+
+
+	ebt -t filter -N DHCP_FILTER
+	ebt -t filter -P DHCP_FILTER RETURN
+
+	ebt -t filter -N DHCP_LEARN
+	ebt -t filter -P DHCP_LEARN RETURN
+
+	ebt -t filter -I FORWARD 1 -p ip --ip-proto udp --ip-dport 137 -j DHCP_FILTER
+	ebt -t filter -I FORWARD 1 -p ARP -j DHCP_FILTER
+	ebt -t filter -I FORWARD 1 -p ip --ip-proto udp --ip-sport 67:68 --ip-dport 67:68 -j DHCP_FILTER
+	ebt -t filter -A DHCP_FILTER -p ip --ip-proto udp --ip-sport 67:68 --ip-dport 67:68 -j DHCP_LEARN
+	ebt -t filter -A DHCP_FILTER -p ARP -i eth+ -j RETURN
+	ebt -t filter -A DHCP_FILTER -p ARP -j DHCP_LEARN
+	ebt -t filter -A DHCP_FILTER -p ip --ip-proto udp --ip-dport 137 -j DHCP_LEARN
+	ebt -t filter -A DHCP_LEARN -p ip --ip-proto udp --ip-sport 67 --ip-dport 68 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+	ebt -t filter -A DHCP_LEARN -p ARP --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+	ebt -t filter -A DHCP_LEARN -p ip --ip-proto udp --ip-dport 137 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+#	ebt -t filter -A FORWARD -p ip --ip-proto udp --ip-sport 67:68 --ip-dport 67:68 -j DHCP_FILTER
+}
+
+# wifi?_? to ath??
+wifi2ath()
+{
+	wifi=$1
+	a="${wifi:5:1}"
+	b="${wifi:7:1}"
+	let "b--"
+	if [ "$b" == "0" ]; then
+		c=$a
+	else
+		c=$a-$b
+	fi
+	echo "wlan$c"
+}
+
+interface_control()	 {
+	echo "Setup Interface"
+	active_vaps=$(uci show wireless | grep "\.disabled='0'" | grep "_" | awk -F"." '{print $2}')
+	# make rule to redirect the packet which source interface is untrust interface
+	tag=""
+	for vap in $active_vaps; do
+		if [ "$(uci get wireless.$vap.mode)" == 'ap' ]; then
+			iface=$(wifi2ath $vap)
+			vapnetwork=$(uci get wireless.$vap.network)
+			case "$vapnetwork" in
+			wan|vlan*)
+				# ap rule
+#				ebt -t filter -A ARP_FILTER -o $iface -j DROP
+				ebt -t nat -A DAI_FILTER -i $iface -j DAI_PRECHECK
+				if [ "$forcedhcp_enable" = "1" -a "$arpinspection_enable" = "1" -o "$dhcpsnooping_enable" = "1" ]; then
+					ebt -t filter -A DHCP_FILTER -o $iface -j DHCP_LEARN
+				fi
+
+				# wds rule
+				if [ "$forcedhcp_enable" = "0" -a "$arpinspection_enable" = "1" ]; then
+					ebt -t nat -A DAI_FILTER -i $iface -j DAI_LEARN
+				fi
+
+				vid=$(uci get network.$vapnetwork.ifname | awk -F"." '{print $2}')
+				if [ "$vid" != "" ]; then
+					[ "$tag" != "" ]&& tag=${tag},${vid}
+					[ "$tag" = "" ]&& tag=${vid}
+				fi
+				;;
+			esac
+		fi
+	done
+	if [ "$tag" != "" ]; then
+		ebt -t nat -A DAI_PRECHAIN -p 802_1q  --mvlan-encap ipv4 --mvlan-id ${tag} --mvlan-ip-proto udp --mvlan-ip-sport 67:68 --mvlan-ip-dport 67:68 -j DAI_FILTER
+		ebt -t nat -A DAI_PRECHAIN -p 802_1q  --mvlan-encap arp --mvlan-id ${tag} -j DAI_FILTER
+	fi
+}
+
+dhcp_snooping() {
+	#	3.dhcp snooping
+	if [ "$dhcpsnooping_enable" = "1" ]; then
+		echo "Start DHCP snooping"
+	#		a.block invlaid dhcp packet
+		ebt -t nat -I DAI_PRECHECK --cipfw ! --cipfw-dhcp -j DROP
+
+	#		b.block rogue dhcp server
+		i=0
+		dhcp_server_addr=""
+		while [ -n "$(uci get firewall.@trustdhcpserver[$i])" ]; do
+			dhcp_server_mac=$(uci get firewall.@trustdhcpserver[$i].mac)
+			dhcp_server_ip=$(uci get firewall.@trustdhcpserver[$i].ip)
+			if [ -n "$dhcp_server_ip" -a -n "$dhcp_server_mac" ]; then
+				dhcp_server_addr="${dhcp_server_addr}${dhcp_server_mac}=${dhcp_server_ip},"
+			fi
+			let "i++"
+		done
+
+		if [ -n "$dhcp_server_addr" ]; then
+			ebt -t filter -A DHCP_LEARN --mamong-ether ip --mamong-ip-proto udp --mamong-ip-sport 67 --mamong-ip-dport 68 --mamong-vlan 1 --mamong-src ! ${dhcp_server_addr} -j DROP
+		fi
+	fi
+}
+
+arp_inspection() {
+	#	4.arp inspection
+	if [ "$arpinspection_enable" = "1" ]; then
+		echo "Start ARP inspection"
+
+		#	a.make the Static ARP Inspection (SARPI) file
+		if [ "$statictrust_enable" = "1" ]; then
+			echo "Start statictrust"
+
+			json_init
+
+			i=0
+			while [ -n "$(uci get firewall.@statictrust[$i])" ]; do
+				pstate=$(uci get firewall.@statictrust[$i].state)
+				if [ "${pstate}" = "1" ]; then
+					# prepare status_file
+					pmac=$(uci get firewall.@statictrust[$i].mac)
+					pip=$(uci get firewall.@statictrust[$i].ip)
+					if [ "$pip" = "" ]; then
+						pip="0.0.0.0"
+					fi
+
+					ttl=`date +%s`
+					let "ttl+=3600"
+					json_add_object $(echo $pmac | tr '[a-z]' '[A-Z]')
+					json_add_string "ip" ${pip}
+					json_add_boolean "static" 1
+					json_add_int "timestamp" ${ttl}
+					json_close_object
+#					echo "${pip} ${pmac} S -1" >> ${status_file}
+			# b.send update information
+					[ "$trustlistbroadcast_enable" = "1" ] && "$fwsend" "${pip}" "${pmac}" "${ttl}" "${dev_name}" "$lanmac"
+				fi
+				let "i++"
+			done
+			json_dump >> ${status_file}
+		fi
+
+		# c.block invlaid arp packet
+		ebt -t nat -I DAI_PRECHECK --cipfw ! --cipfw-arp -j DROP
+
+		# d.monitor DHCP traffic
+#	ebt -t nat -A DAI_CHECK -p ip --ip-proto udp --ip-sport 67 --ip-dport 68 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+#	ebt -t nat -A DAI_CHECK -p 802_1q --mvlan-encap ipv4 --mvlan-ip-proto udp --mvlan-ip-sport 67 --mvlan-ip-dport 68 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+#		if [ "$forcedhcp_enable" = "1" ]; then
+#			ebt -t filter -A DHCP_LEARN -p ip --ip-proto udp --ip-sport 67 --ip-dport 68 --ulog --ulog-nlgroup 3 --ulog-cprange 0 -j CONTINUE
+#		fi
+
+		# e.make among and monitor ARP traffic
+		make_among
+
+		if [ "$trustlistbroadcast_enable" = "1" ]; then
+			enhancement_flag=1
+		else
+			enhancement_flag=0
+		fi
+
+		if [ "$forcedhcp_enable" = "1" ]; then
+			fdhcp_flag=1
+		else
+			fdhcp_flag=0
+		fi
+
+	#	5.start daemon
+		#	* a start ulogd
+		#		$1: nlgroup number default:3
+		#		$2: udp port
+		#		$3: Debug flag	1:debug 2:dump packet others: disable
+		#
+		#	* b start cipfwd
+			#		$1: udp port
+		#		$2: roaming_flag	1:enable 0:disable
+		#		$3: device_name ex: Cip-Ap1
+		#		$4: Mac Address mac address of lan
+		#		$5: force dhcp	1:enable 0:disable
+		#		$6: Debug flag	1:debug 2:dump packet others: disable
+		#${ulogd} 3 12346 &
+		#${cipfwd} 12346 $enhancement_flag "$dev_name" "$lanmac" "$fdhcp_flag" &
+		# /etc/init.d/cipfwd restart
+	fi
+}
+
+start_dai()
+{
+	echo "Starting L2 firewall: DAI .."
+
+#	lanmac="$(ifconfig br-lan | awk '/HWaddr/{print $5}')"
+
+	local lan_dev
+	network_get_physdev lan_dev "lan"
+	lanmac="$(cat /sys/devices/virtual/net/$lan_dev/address)"
+	dhcpsnooping_enable="$(uci get firewall.@dai[0].dhcpsnooping_enable)" #dhcpsnooping_enable
+	arpinspection_enable="$(uci get firewall.@dai[0].arpinspection_enable)" #arpinspection_enable
+	forcedhcp_enable="$(uci get firewall.@dai[0].forcedhcp_enable)" #forcedhcp_enable
+	trustlistbroadcast_enable="$(uci get firewall.@dai[0].trustlistbroadcast_enable)" #
+	statictrust_enable="$(uci get firewall.@dai[0].statictrust_enable)" #
+	dev_name="$(uci get system.@system[0].hostname)"
+
+	initial_dai
+	interface_control
+
+	if [ "${dhcpsnooping_enable}" = "1" -o "${arpinspection_enable}" = "1" ]; then
+		dhcp_snooping
+		arp_inspection
+	fi
+}
+
+#(
+#	 flock -x 200
+	/etc/init.d/cipfwd stop
+	kill_target=${cipfwd##*/}
+	killall -9 $kill_target > /dev/null 2>&1
+
+	stop_dai
+	start_dai
+	/etc/init.d/cipfwd start
+
+#) 200>/var/lock/firewall.dai.flock

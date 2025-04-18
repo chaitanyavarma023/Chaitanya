@@ -1,0 +1,24 @@
+#!/bin/sh
+. /lib/functions.sh
+
+set_wpa_disable_eapol_key_retries() {
+    local vap_device
+    local encryption_val
+
+    config_get vap_device $1 device
+    config_get encryption_val $1 encryption
+
+    if [ `echo $1 | grep -c "$vap_device"` -gt 0 ]; then
+        case "$encryption_val" in
+            "wpa+"* | "wpa2+"* | "wpa3"* )
+                uci set wireless.$1.wpa_disable_eapol_key_retries=1
+            ;;
+        esac
+    fi
+}
+
+config_load wireless
+config_foreach set_wpa_disable_eapol_key_retries wifi-iface
+uci commit wireless
+
+exit 0

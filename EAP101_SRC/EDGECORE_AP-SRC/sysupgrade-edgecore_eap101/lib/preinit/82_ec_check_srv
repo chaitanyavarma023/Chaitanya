@@ -1,0 +1,7 @@
+. /lib/acn/acn_functions.sh
+
+enable_disable_services() {
+	switch_services
+}
+
+boot_hook_add preinit_main enable_disable_services

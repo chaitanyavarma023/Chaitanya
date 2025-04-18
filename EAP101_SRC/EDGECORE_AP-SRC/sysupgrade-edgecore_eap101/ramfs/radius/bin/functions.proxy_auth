@@ -1,0 +1,105 @@
+#!/bin/sh
+
+[ -z "${_common_flag}" ] && . /ramfs/radius/bin/functions.common
+
+get_nas_port_id()
+{
+    echo "Controlled"
+}
+
+get_service_type() #args: mgmtid
+{
+    echo $(< "/db/subscriber/mgmt/${1}/radius/service_type")
+}
+
+get_nas_id()
+{
+    local nas_id mgmt_index sz_id vlan_id callingid sz_if client_if
+    mgmt_index="$1"
+    sz_id="$2"
+    vlan_id="$3"
+    callingid="$4"
+
+    # get nas-id from PLM or Tunnel PLM
+    sz_if=`< "/db/vlan/${sz_id}/if"`
+    client_if="$(/usr/sbin/brctl findmac ${sz_if} "${callingid}" | awk 'END{print $1}')"
+
+    # get nas-id from Tunnel PLM
+    [ -f /db/tunportmap/${client_if}/nas_id ] && nas_id=`< "/db/tunportmap/${client_if}/nas_id"`
+
+    # get nas-id from PLM
+    if [ -z "${nas_id}" ]; then
+        if [ `< "/tmp/status/portmap"` == "1" ]; then
+            [ -z ${vlan_id} ] && vlan_id="${client_if#*.}"
+            [ -f /db/portmap/${vlan_id}/nas_id ] && nas_id=`< "/db/portmap/${vlan_id}/nas_id"`
+        fi
+    fi
+
+    # get nas-id from MGMT
+    if [ -z "${nas_id}" ]; then
+        nas_id=`< "/db/subscriber/mgmt/${mgmt_index}/radius/nas_id"`
+    fi
+    if [ -z "${nas_id}" ]; then
+        nas_id="`get_calledid`"
+    fi
+
+    echo "${nas_id}"
+}
+
+get_wispr_location_idname()
+{
+    local sz_id vid callingid sz_if client_if location_id location_name auth_method
+    sz_id="$1"
+    vid="$2"
+    callingid="$3"
+    auth_method="$4"
+
+    if [ "${auth_method}" = "remotevpn" ]; then
+        v_getvalue location_id "/db/ikev2/location_id"
+        v_getvalue location_name "/db/ikev2/location_name"
+    else
+        v_getvalue sz_if "/db/vlan/${sz_id}/if"
+        client_if="$(/usr/sbin/brctl findmac ${sz_if} "${callingid}" | awk 'END{print $1}')"
+
+        #here find no client_if
+        # get location id from Tunnel PLM
+        v_getvalue location_id "/db/tunportmap/${client_if}/room_number"
+        # get location name from Tunnel PLM
+        v_getvalue location_name "/db/tunportmap/${client_if}/remark"
+
+
+        # get location id from pptp
+        [ -z "${location_id}" ] && [ "${auth_method}" = "PPTP" ] && v_getvalue location_id "/db/pptp/location_id"
+
+        # get location id from PLM
+        if [ -z "${location_id}" ]; then
+            if [ `< "/tmp/status/portmap"` == "1" ]; then
+                [ -z ${vid} ] && vid="${client_if#*.}"
+                v_getvalue location_id "/db/portmap/${vid}/room_number"
+            fi
+        fi
+
+        # get location name from pptp
+        if [ -z "${location_name}" ]; then
+            [ "${auth_method}" = "PPTP" ] && v_getvalue location_name "/db/pptp/location_name"
+        fi
+        # get location id from sz
+        if [ -z "${location_id}" ]; then
+            v_getvalue location_id "/db/sz/${sz_id}/location_id"
+        fi
+
+        # get location name from PLM
+        if [ -z "${location_name}" ]; then
+            if [ `< "/tmp/status/portmap"` == "1" ]; then
+                [ -z ${vid} ] && vid="${client_if#*.}"
+                v_getvalue location_name "/db/portmap/${vid}/remark"
+            fi
+        fi
+
+        # get location name from sz
+        if [ -z "${location_name}" ]; then
+            v_getvalue location_name "/db/sz/${sz_id}/location_name"
+        fi
+    fi
+    echo "${location_id}|${location_name}"
+}

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [ "$(uci -q get lldp.settings)" = "" ]; then
+	touch /etc/config/lldp
+	uci set lldp.settings='lldp'
+        uci set lldp.settings.enabled='0'
+        uci set lldp.settings.tx_interval='30'
+        uci set lldp.settings.tx_hold='4'
+        uci commit lldp
+fi
+
+exit 0

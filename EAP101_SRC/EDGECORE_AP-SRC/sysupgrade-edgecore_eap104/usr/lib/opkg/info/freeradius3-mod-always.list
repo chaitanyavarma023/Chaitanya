@@ -1,0 +1,3 @@
+/etc/freeradius3/mods-enabled/always
+/etc/freeradius3/mods-available/always
+/usr/lib/freeradius3/rlm_always.so

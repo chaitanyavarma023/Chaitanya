@@ -1,0 +1,6 @@
+/etc/freeradius3/mods-enabled/eap
+/etc/freeradius3/mods-available/eap
+/usr/lib/freeradius3/rlm_eap.so
+/etc/freeradius3/sites-available/inner-tunnel
+/etc/freeradius3/policy.d/eap
+/etc/freeradius3/sites-enabled/inner-tunnel

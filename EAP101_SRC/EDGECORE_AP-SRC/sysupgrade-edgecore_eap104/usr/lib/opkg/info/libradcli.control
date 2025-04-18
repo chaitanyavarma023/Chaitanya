@@ -1,0 +1,11 @@
+Package: libradcli
+Version: 1.2.11-1
+Depends: libc, libnettle8
+Source: feeds/packages/libs/libradcli
+SourceName: libradcli
+Section: libs
+SourceDateEpoch: 1711276820
+Maintainer: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Architecture: arm_cortex-a7
+Installed-Size: 22830
+Description:  A library for radius clients

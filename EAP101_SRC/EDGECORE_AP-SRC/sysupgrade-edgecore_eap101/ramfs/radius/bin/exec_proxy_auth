@@ -1,0 +1,42 @@
+#!/bin/sh
+. /ramfs/radius/bin/functions.common
+v_muse username "$1" "${USER_NAME}"
+
+# example: Called-Station-Id = "02-1F-D4-05-9E-3D:SPLIT"
+v_trim called_station_id "${CALLED_STATION_ID}"
+client_mac=$(echo "${CALLING_STATION_ID}" | sed 's/"//g;s/:/-/g' | tr 'a-z' 'A-Z')
+
+if [ "${fake_calledid}" = "" ]; then
+    wan_mac=$(uci -q get network.wan.clientid)
+    if [ "${wan_mac}" = "" ]; then
+	wan_interface=$(uci -q get network.wan.inet_src)
+	[ "${wan_interface}" = "" ] && wan_interface="eth0"
+	wan_mac=$(ifconfig ${wan_interface} 2>/dev/null | grep HWaddr | awk '{print $5}')
+    fi
+    fake_calledid=${wan_mac//:/-}
+fi
+
+v_trim fake_nas_port "${NAS_PORT}"
+if [ "${fake_nas_port}" = "" ]; then
+    fake_nas_port=0
+fi
+
+# get ACN related attributes
+acn_enabled=$(uci -q get acn.mgmt.enabled)
+if [ "${acn_enabled}" = "1" ]; then
+    acn_login="$(uci -q get acn.register.login)"
+    acn_pass="$(uci -q get acn.register.pass)"
+    acn_pass="$(echo -n ${acn_pass} | openssl dgst -sha256 | awk '{print $2}')"
+
+    dump "ZVendor-Register-Id" "${acn_login}" ":="
+    dump "ZVendor-Register-Password" "${acn_pass}" ":="
+fi
+
+if [ -z "${ACCT_STATUS_TYPE}" -a  -z "${ZVENDOR_AUTH_METHOD}" ]; then
+    # UAM and roaming will hook by the trigger code
+    dump "ZVendor-Auth-Method" "EAP" ":="
+fi
+
+dump "Calling-Station-Id" "${client_mac}" ":="
+dump "Called-Station-Id" "${fake_calledid}" ":="
+dump "NAS-Port" "${fake_nas_port}" ":="

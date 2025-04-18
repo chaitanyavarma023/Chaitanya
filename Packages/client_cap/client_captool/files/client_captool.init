@@ -1,0 +1,82 @@
+
+#!/bin/sh /etc/rc.common
+
+USE_PROCD=1
+START=10
+STOP=90
+
+start_service() {
+    deauth=$(uci get client_cap.attack_detection.deauth_detect)
+    disass=$(uci get client_cap.attack_detection.disassoc_detect)
+    rts=$(uci get client_cap.attack_detection.rts_abuse)
+    cts=$(uci get client_cap.attack_detection.cts_abuse)
+    auth=$(uci get client_cap.attack_detection.auth_detect)
+    assoc=$(uci get client_cap.attack_detection.assoc_detect)
+    fata=$(uci get client_cap.attack_detection.fata_jack_detect)
+    omerta=$(uci get client_cap.attack_detection.omerta_detect)
+    power_save=$(uci get client_cap.attack_detection.power_save_detect) 
+    apflood=$(uci get client_cap.attack_detection.apflood_detect )
+    malframe_asso=$(uci get client_cap.attack_detection.malframe_asso_detect)
+    block_ack=$(uci get client_cap.attack_detection.block_ack_detect)
+    mal_auth=$(uci get client_cap.attack_detection.mal_auth_detect)
+    mode=$(uci get client_cap.attack_detection.mode)
+    if [ "$deauth" -eq 0 ] && [ "$disass" -eq 0 ] && [ "$rts" -eq 0 ] && [ "$cts" -eq 0 ] && [ "$auth" -eq 0 ] && [ "$assoc" -eq 0 ] && [ "$fata" -eq 0 ] && [ "$omerta" -eq 0 ] && [ "$power_save" -eq 0 ] && [ "$apflood" -eq 0 ] && [ "$malframe_asso" -eq 0 ] && [ "$block_ack" -eq 0 ] && [ "$mal_auth" -eq 0 ]; then
+        exit
+    fi
+
+	#mode 1 for overley mode
+	if [ $mode  == 1 ]; then
+		procd_open_instance
+		procd_set_param command client_captool phy1 mon01
+		procd_set_param respawn ${respawn_threshold:-60} ${respawn_timeout:-5} ${respawn_retry:-512}
+		procd_set_param pidfile "/var/run/client_captool0.pid"
+		procd_set_param stderr 0
+		procd_set_param stdout 0
+		procd_close_instance
+		procd_open_instance
+		procd_set_param command client_captool phy0 mon11
+		procd_set_param respawn ${respawn_threshold:-60} ${respawn_timeout:-5} ${respawn_retry:-512}
+		procd_set_param pidfile "/var/run/client_captool1.pid"
+		procd_set_param stderr 0
+		procd_set_param stdout 0
+		procd_close_instance
+	fi
+
+	#mode 2 for monitor mode
+	if [ $mode ==  2 ]; then
+		procd_open_instance
+		procd_set_param command monitor_tool phy1 mon01
+		procd_set_param respawn ${respawn_threshold:-60} ${respawn_timeout:-5} ${respawn_retry:-512}
+		procd_set_param pidfile "/var/run/monitor_tool0.pid"
+		procd_set_param stderr 0
+		procd_set_param stdout 0
+		procd_close_instance
+		procd_open_instance
+		procd_set_param command monitor_tool  phy0 mon11
+		procd_set_param respawn ${respawn_threshold:-60} ${respawn_timeout:-5} ${respawn_retry:-512}
+		procd_set_param pidfile "/var/run/monitor_tool1.pid"
+		procd_set_param stderr 0
+		procd_set_param stdout 0
+		procd_close_instance
+	fi
+}
+
+stop_service() {
+  pid0=$(cat /var/run/client_captool0.pid)
+  pid1=$(cat /var/run/client_captool1.pid)
+  kill -SIGINT $pid0
+  kill -SIGINT $pid1
+  sleep 2
+  kill -9 $pid0 >/dev/null 2>&1
+  kill -9 $pid1 >/dev/null 2>&1
+  sleep 1
+  pid0=$(cat /var/run/monitor_tool0.pid)
+  pid1=$(cat /var/run/monitor_tool1.pid)
+  kill -SIGINT $pid0
+  kill -SIGINT $pid1
+  sleep 2
+  kill -9 $pid0 >/dev/null 2>&1
+  kill -9 $pid1 >/dev/null 2>&1
+  sleep 1
+}
+

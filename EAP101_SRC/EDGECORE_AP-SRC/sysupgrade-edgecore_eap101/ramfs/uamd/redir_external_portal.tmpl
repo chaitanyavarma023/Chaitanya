@@ -1,0 +1,31 @@
+#!/usr/bin/env cgilua.cgi
+<%
+function user_check()
+	local handle = {}
+	local reply_str = ""
+	local auth_cmd = ""
+	local sta_ip = tostring(cgilua.servervariable("REMOTE_ADDR"))
+	local dev_mac = {}
+	local sta_mac = {}
+	local code = 0
+
+	-- Get STA MAC address
+	handle = io.popen("/sbin/arp", "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	dev_mac = reply_str:match(string.format("%%(%s%%) at ([%%:%%x]*)", sta_ip))
+	sta_mac = dev_mac and string.upper(dev_mac) or ""
+
+	auth_cmd = "/ramfs/bin/cipgwcli newmac " .. sta_mac .. " \"\""
+
+	os.execute(auth_cmd)
+
+	return code
+
+end
+
+local reply_code = 0
+
+reply_code = user_check()
+cgilua.redirect("__EXTERNAL_LOGIN_URL")
+%>

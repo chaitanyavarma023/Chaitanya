@@ -1,0 +1,35 @@
+<%+cbi/valueheader%>
+<table>
+<tr>
+    <td style="width:210px">
+        <div id="<%=self.slider_id%>" class="slider" ></div>
+    </td>
+    <td>&nbsp;&nbsp;&nbsp;</td>
+    <td>
+
+        <% if self.input_type == 'select' then %>
+               <select class="cbi-input-select" style="width:150px" onchange="cbi_d_update(this.id)"<%= attr("id", cbid) .. attr("name", cbid) .. ifattr(self.size, "size") %>>
+                    <% for i, key in pairs(self.keylist) do -%>
+                        <option id="cbi-<%=self.config.."-"..section.."-"..self.option.."-"..key%>"<%= attr("value", key) .. ifattr(tostring(self:cfgvalue(section) or self.default) == key, "selected", "selected") %>><%=striptags(self.vallist[i])%></option>
+                    <%- end %>
+                </select>
+
+        <% else %>
+            <input title="<%=self.description%>" style="width:60px" type="<%=self.password and 'password" class="cbi-input-password' or 'text" class="ace-tooltip' %>" onchange="cbi_d_update(this.id)"<%=
+        attr("name", cbid) .. attr("id", cbid) .. attr("value", self:cfgvalue(section) or self.default) ..
+        ifattr(self.size, "size") .. ifattr(self.placeholder, "placeholder")%> />
+
+        <%end %>
+    </td>
+</tr>
+</table>
+
+    <% if self.datatype then -%>
+    <script type="text/javascript">
+      $( function(){
+        cbi_validate_field('<%=cbid%>', <%=tostring(((self.optional or self.rmempty) and not self.cond_optional and not self.force_required) == true)%>, '<%=self.datatype%>');
+        });
+    </script>
+    <% end -%>
+
+<%+cbi/valuefooter%>

@@ -1,0 +1,108 @@
+<? # -*- mode: shell-script -*-
+# Copyright (C) 2009-2012 David Bird (Coova Technologies) <support@coova.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+. ./config.sh
+
+wi_anchor_enabled="`uci -q get addon.wianchor.enabled`"
+if [ "$wi_anchor_enabled" == "1" ]; then
+  timestamp="`date +%s`"
+  url="`uci -q get addon.wianchor.bindingUrl`"
+
+  if [ "$FORM_id_type" == "guest" ]; then
+    [ -n "$FORM_guest_name" -a -n "$FORM_guest_phone" ] && {
+      curl -k -d '{"timestamp": '$timestamp', "type": "1", "uid": "'$FORM_guest_name'", "phone": "'$FORM_guest_phone'", "client_mac": "'$FORM_phone_mac'", "os_type": "'$FORM_os_type'"}' $url --connect-timeout 5 -m 5 &
+    }
+  else
+    [ -n "$FORM_emp_num" -a -n "$FORM_phone_mac" ] && {
+      curl -k -d '{"timestamp": '$timestamp', "type": "0", "uid": "'$FORM_emp_num'", "phone": "", "client_mac": "'$FORM_phone_mac'", "os_type": "'$FORM_os_type'"}' $url  --connect-timeout 5 -m 5 &
+    }
+  fi
+fi
+
+if [ -n "$FORM_username" -a -n "$COOVA_CHALLENGE" ]
+then
+    http_header
+    dologin
+else
+    if [ -e "splash.chi" ]
+    then
+        http_redirect "/www/splash.chi"
+    fi
+
+    http_header
+    case "$FORM_res" in
+        success)
+            url=$FORM_redirurl
+            url=${url:-$FORM_userurl}
+
+            if [ "$HS_CUSTOM_EASYSETUP" == "0" ]; then
+                header "<meta http-equiv=\"refresh\" content=\"5;url=${url}\"/>" " onload=\"resizebody();\""
+                uamfile "login_success" 1
+            else
+                http_redirect "${url}"
+            fi
+            footer
+        exit
+        ;;
+        already)
+            url=$FORM_redirurl
+        listen_ip=$(uci get hotspot.hotspot.network)
+            https_on=$(uci get hotspot.hotspot.hs_https)
+
+            if [ $https_on == "1" ]; then
+                https_domain=$(uci get hotspot.hotspot.hs_https_domain)
+                url="https://"$https_domain":4990/www/status.chi"
+            else
+                url="http://"$listen_ip":4990/www/status.chi"
+            fi
+
+            header "<meta http-equiv=\"refresh\" content=\"0;url=${url}\"/>" " onload=\"resizebody();\""
+    #       uamfile "login_success" 1
+            footer
+        exit
+        ;;
+    esac
+
+    if [ "$HS_CUSTOM_EASYSETUP" == "0" ]; then
+        header "<meta charset=\"utf-8\"/>" " onload='resizebody();document.getElementById(\"username\").focus();'"
+        uamfile "login" 1
+    fi
+
+    if [ "$FORM_res" =  "failed" ]
+    then
+        if [ -n "$FORM_reply" ]
+        then
+            error "$FORM_reply"
+        else
+            error "Username and/or password was not valid"
+        fi
+    fi
+    if [ "$HS_CUSTOM_EASYSETUP" == "0" ]; then
+        loginform
+        uamfile "login_footer" 1
+    fi
+    [ "$HS_REG_MODE" = "self" ] && uamfile "login_register" 1
+    [ "$HS_USE_MAP" = "on" ] && uamfile "login_map" 1
+
+    if [ "$HS_CUSTOM_EASYSETUP" == "0" ]; then
+        footer
+    else
+        dologin_auto
+    fi
+
+fi
+
+?>

@@ -1,0 +1,47 @@
+#!/bin/sh
+
+. /lib/acn/acn_functions.sh
+
+if [ "$1" == "reg" -a "$2" == "get" ]; then
+	CNAME=`acc hw get Model | cut -d'=' -f2 | awk -F '-' '{print toupper($2)}'`
+	MID=`acc hw get product_name | cut -d'=' -f2 | cut -d'-' -f1`
+
+	iw_reg_file_="/etc/fake_iw_reg/$MID/iw_reg_"
+
+	if [ "$CNAME" == "" -o "$CNAME" == "WW" ]; then
+
+		cert=$(get_TxPowerCert_info)
+
+		iw_reg_file="${iw_reg_file_}${cert}"
+
+		if [ ! -s "$iw_reg_file" ]; then
+		  iw_reg_file="${iw_reg_file_}FCC"
+		fi
+
+		cat ${iw_reg_file}
+
+	else
+		#let country code be the first priority to set mainly certification
+		#no matter wireless.radiox.country is set(prevent from cloud push country to change mainly certification)
+		case $CNAME in
+		"FCC"|"US")
+			cat /etc/fake_iw_reg/$MID/"iw_reg_FCC"
+			;;
+		"IN")
+			cat /etc/fake_iw_reg/$MID/"iw_reg_IN"
+			;;
+		"JP")
+			cat /etc/fake_iw_reg/$MID/"iw_reg_JP"
+			;;
+		"TH")
+			cat /etc/fake_iw_reg/$MID/"iw_reg_TH"
+			;;
+		*)
+			#others use US/FCC setting
+			cat /etc/fake_iw_reg/$MID/"iw_reg_FCC"
+			;;
+		esac
+	fi
+else
+	iw_origin $@
+fi

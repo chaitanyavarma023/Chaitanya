@@ -1,0 +1,12 @@
+Package: jshn
+Version: 2021-08-19-c86a894e-2
+Depends: libc, libjson-c5, libubox20210819, libblobmsg-json20210819
+Source: package/libs/libubox
+SourceName: jshn
+License: ISC
+Section: utils
+SourceDateEpoch: 1734663225
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7
+Installed-Size: 6354
+Description:  Library for parsing and generating JSON from shell scripts

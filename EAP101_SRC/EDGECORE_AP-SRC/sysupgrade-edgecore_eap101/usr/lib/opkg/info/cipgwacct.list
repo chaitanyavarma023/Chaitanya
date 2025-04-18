@@ -1,0 +1,8 @@
+/ramfs/bin/hostapd_8021x.sh
+/ramfs/bin/cipgwcli
+/ramfs/bin/cipgwnlsrv
+/ramfs/bin/cipgwNewIP.sh
+/ramfs/bin/cipgwsrv
+/usr/lib/libcipgwacct.so
+/etc/init.d/cipgwnlsrv
+/etc/init.d/cipgwsrv

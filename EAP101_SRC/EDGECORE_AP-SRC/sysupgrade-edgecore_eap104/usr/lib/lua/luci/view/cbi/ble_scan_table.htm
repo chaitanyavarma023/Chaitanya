@@ -1,0 +1,42 @@
+<% 
+
+local product = require "luci.acn.product"
+local utl = require "luci.util"
+local uci = require "luci.model.uci".cursor()
+luci.dispatcher.context.plain_page = true
+local isEmpty = true
+local lines = content:lines()
+%>
+
+<table width="100%" class="table table-hover">
+<tr style="text-align:center;background-color:#CCC">
+<th><%:MAC Address%></th>
+<th><%:Signal%></th>
+<th><%:Type%></th>
+</tr>
+<% for line in lines do
+    isEmpty = false
+    local mac, rssi, data, mfr=string.match(line, "(%S+) (%S+) (%S+) (%S+)")
+    mac = string.sub(mac, string.find(mac, "=")+1)
+    rssi = string.sub(rssi, string.find(rssi, "=")+1)
+    mfr = string.sub(mfr, string.find(mfr, "=")+1)
+%>
+<tr>
+    <td>
+        <%=mac%>
+    </td>
+
+    <td>
+        <%=rssi%>
+    </td>
+
+    <td>
+        <%=mfr%>
+    </td>
+</tr>
+<%end%>
+</table>
+
+<%if isEmpty then %>
+    <span style="font-style:itallic">(No scan results)</span>
+<%end%>

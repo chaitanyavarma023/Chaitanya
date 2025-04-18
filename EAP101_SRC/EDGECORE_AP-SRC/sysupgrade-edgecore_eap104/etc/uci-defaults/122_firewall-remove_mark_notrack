@@ -1,0 +1,19 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+remove_rule() {
+  local section="$1"
+
+  config_get target $section target
+  if [ "$target" == "MARK" -o "$target" == "NOTRACK" ]; then
+    uci_remove firewall $section
+  fi
+}
+
+config_load firewall
+config_foreach remove_rule rule
+
+uci_commit firewall
+
+exit 0

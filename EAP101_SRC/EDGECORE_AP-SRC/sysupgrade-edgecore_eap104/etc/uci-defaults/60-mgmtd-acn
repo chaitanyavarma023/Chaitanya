@@ -1,0 +1,19 @@
+#!/bin/sh
+if [ ! -f /etc/config/acn ]; then
+> /etc/config/acn
+hostname=$(acc hw get product_name | cut -d= -f2 | awk -F'-' '{print $1}')
+uci batch <<-EOF
+    set acn.mgmt=acn
+    set acn.mgmt.enabled=1
+    set acn.mgmt.management=1
+    set acn.mgmt.loglevel=info
+    set acn.mgmt.syslog_level='7'
+    set acn.register=register
+    set acn.register.state=0
+    set acn.register.url=https://regsvc.ignitenet.com/register
+    set acn.settings=settings
+    set acn.settings.name='$hostname'
+    commit acn
+EOF
+fi
+exit 0

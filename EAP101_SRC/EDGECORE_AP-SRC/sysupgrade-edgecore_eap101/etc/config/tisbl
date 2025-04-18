@@ -1,0 +1,14 @@
+config tisbl 'tisbl'
+    option firmware '/etc/tifirmware/ble5_host_test_sdk6_bd9.bin'
+    option firmware_zigbee '/etc/tifirmware/znp_bd9.bin'
+    option tty '/dev/ttyMSM1'	# for EAP101 board
+#    option tty '/dev/ttyACM0'	# for virtualbox openwrt 19.07 with TI CC26X2R launchpad
+    option tichip '2652'
+    option baudrate '115200'
+    option resetpin '79'
+    option backdoorpin '34' 	#EAP101-R1
+#    option backdoorpin '67'	#EAP101-R0A-HW-modification
+    option command 'ibeacon-broadcaster.sh E20A39F473F54BC4A12F17D1AD07A961 100 1 200' #ibeacon-broadcaster.sh UUID MAJOR MINOR PWR
+#    option command 'blescan.sh' #ble device scan
+#    option command 'ti-hosttest2net.sh' #connect to remote btool
+    option wdt_enabled '0'

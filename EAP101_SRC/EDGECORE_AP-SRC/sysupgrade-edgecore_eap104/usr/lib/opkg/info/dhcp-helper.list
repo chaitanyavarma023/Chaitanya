@@ -1,0 +1,3 @@
+/usr/sbin/mkcfg-dhcp-helper.lua
+/etc/init.d/dhcp_helper
+/usr/sbin/dhcp-helper

@@ -1,0 +1,4 @@
+/usr/sbin/firstcontact
+/etc/uci-defaults/zzz-firstcontact
+/etc/init.d/firstcontact
+/usr/share/ucentral/firstcontact.uc

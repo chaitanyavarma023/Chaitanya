@@ -1,0 +1,30 @@
+. /lib/functions.sh
+. /lib/acn/acn_functions.sh
+
+restore_config_keep_mac() {
+	local section="$1"
+	local name=$(uci -q get network."${section}".name)
+	case $name in
+		eth0|eth1|lan1|lan2|lan3|lan4)
+			local art_mac=$(get_acc_info $name)
+			local mac=$(uci -q get network."${section}".macaddr)
+
+			if [ "$mac" != "$art_mac" ]; then
+				uci set network.${section}.macaddr="$art_mac"
+			fi
+			;;
+	esac
+}
+
+enable_104_mac_check() {
+	local model=$(cat /etc/edgecore_release | grep PRODUCT)
+
+	if [ -n "$(echo $model | grep EAP104)" ]; then
+		config_load network
+		config_foreach restore_config_keep_mac 'device'
+	fi
+
+	uci commit network
+}
+
+boot_hook_add preinit_main enable_104_mac_check

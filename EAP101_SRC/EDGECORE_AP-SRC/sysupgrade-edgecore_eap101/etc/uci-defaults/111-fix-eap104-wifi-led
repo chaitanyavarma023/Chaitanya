@@ -1,0 +1,14 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+board=$(board_name)
+
+case $board in
+edgecore,eap104)
+	uci set system.led_wlan2g.trigger=phy1tx
+	uci set system.led_wlan5g.trigger=phy0tx
+	;;
+esac
+

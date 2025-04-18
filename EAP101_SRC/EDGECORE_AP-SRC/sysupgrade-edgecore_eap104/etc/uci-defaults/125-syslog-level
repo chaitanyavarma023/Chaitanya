@@ -1,0 +1,11 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+# set Syslog level to '7', i.e. 'Info' if missing in previous version
+if [ "$(uci -q get acn.mgmt.syslog_level)" == "" ]; then
+    uci set acn.mgmt.syslog_level='7'
+    uci commit acn
+fi
+
+exit 0

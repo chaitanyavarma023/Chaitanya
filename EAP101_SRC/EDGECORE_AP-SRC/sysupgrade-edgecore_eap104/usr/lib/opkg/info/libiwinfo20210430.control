@@ -1,0 +1,15 @@
+Package: libiwinfo20210430
+Version: 2021-06-09-c0414642-2.1
+Depends: libc, libnl-tiny1, libuci20130104, libubus20210809, libiwinfo-data
+Provides: libiwinfo
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/wifi-ax/iwinfo
+SourceName: libiwinfo
+License: GPL-2.0
+Section: libs
+SourceDateEpoch: 1690514510
+ABIVersion: 20210430
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 26647
+Description:  Wireless information library with simplified API for nl80211
+ and wext driver interfaces.

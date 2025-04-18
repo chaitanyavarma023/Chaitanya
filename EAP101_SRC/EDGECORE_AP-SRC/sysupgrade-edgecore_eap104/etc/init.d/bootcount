@@ -1,0 +1,51 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+boot() {
+	case "$(board_name)" in
+	edgecore,eap101|\
+	edgecore,eap102|\
+	edgecore,oap103|\
+	edgecore,eap104)
+		fw_setenv bootcount 0
+		fw_setenv changed 0
+
+		fw_printenv | sort > /var/uboot_env.tmp
+
+		touch /var/uboot_env.data.tmp
+
+		while read -r line
+		do
+			local key="${line%%=*}"
+			local value="${line#*=}"
+
+			case ${key} in
+			active|bootcount)
+				;;
+			*)
+				echo "${key} ${value}" >> /var/uboot_env.data.tmp
+				;;
+			esac
+		done < /var/uboot_env.tmp
+
+		rm -f /var/uboot_env.tmp
+
+		[ "$(diff /var/uboot_env.data.tmp /etc/uboot_env.data)" != "" ] && {
+			echo "uboot environment parameters are lost and reverted by using backup." >> /var/log/uboot_env.log
+
+			diff /var/uboot_env.data.tmp /etc/uboot_env.data > /var/log/uboot_env.diff
+
+			fw_setenv -s /etc/uboot_env.data
+		} || {
+			echo "uboot environment parameters are the same as backup." >> /var/log/uboot_env.log
+
+			[ -f /var/log/uboot_env.diff ] && {
+				rm -f /var/log/uboot_env.diff
+			}
+		}
+
+		rm -f /var/uboot_env.data.tmp
+		;;
+	esac
+}

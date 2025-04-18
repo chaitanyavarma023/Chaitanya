@@ -1,0 +1,58 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+USE_PROCD=1
+
+SCRIPT="/usr/sbin/service_schedule.sh"
+cmd="0 * * * * "${SCRIPT}
+add_cron=0
+
+_add_cron_script() {
+    (crontab -l ; echo "$1") | sort | uniq | crontab -
+}
+
+_rm_cron_script() {
+    crontab -l | grep -v "$1" |  sort | uniq | crontab -
+}
+
+check_service_schedule(){
+    local service_schedule
+    config_get service_schedule $1 service_schedule
+    if [ -n "$service_schedule" -a $service_schedule -gt 0 ]; then
+        add_cron=1
+    fi
+}
+
+init_cron() {
+    config_load wireless
+    config_foreach check_service_schedule wifi-iface
+
+    if [ "$add_cron" = "1" ]; then
+        _add_cron_script "$cmd"
+    else
+        _rm_cron_script $SCRIPT
+    fi
+}
+
+service_running() {
+	ifname=$(uci -P /var/state get wireless._phy0.aplist |awk '{printf $1}')
+	if [ -n "$ifname"  ]; then
+		ubus -t 90 wait_for hostapd.$ifname
+		echo "$?" > /tmp/.service_schedule
+	fi
+	sleep 3
+	$SCRIPT
+}
+
+service_triggers() {
+	procd_add_reload_trigger "wireless"
+}
+
+start_service() {
+	init_cron
+}
+
+stop_service() {
+        _rm_cron_script $SCRIPT
+}
+

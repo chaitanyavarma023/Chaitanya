@@ -1,0 +1,7 @@
+<input type="hidden" name="<%=self.logical_name%>_set_inet_src" id="<%=self.logical_name%>_set_inet_src"
+ value="0" />
+
+<div class="alert alert-warning hidden" id="<%=self.logical_name%>_wan_sta_notify"
+    ><strong><i class="icon-info-sign"></i> </strong><span>We're changing the internet source of the device to this wireless interface. If you need to change it, please go to the <a href='<%=luci.dispatcher.build_url('admin', 'network', 'internet')%>'><%:Internet Settings%></a> page.
+   </span>
+</div>

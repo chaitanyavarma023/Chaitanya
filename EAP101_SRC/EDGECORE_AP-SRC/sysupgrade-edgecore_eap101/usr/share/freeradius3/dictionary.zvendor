@@ -1,0 +1,22 @@
+# ZVendor Attributes
+# uncomment following VENDOR and ATTRIBUTE lines to activate volume quota control
+
+VENDOR		ZVendor				259
+
+ATTRIBUTE	ZVendor-Byte-Amount       	10	integer		ZVendor
+ATTRIBUTE	ZVendor-MaxByteIn         	11	integer		ZVendor
+ATTRIBUTE	ZVendor-MaxByteOut        	12	integer		ZVendor
+ATTRIBUTE	ZVendor-Byte-Amount-4GB   	20	integer		ZVendor
+ATTRIBUTE	ZVendor-MaxByteIn-4GB     	21	integer		ZVendor
+ATTRIBUTE	ZVendor-MaxByteOut-4GB    	22	integer		ZVendor
+ATTRIBUTE	ZVendor-Http-User-Agent		31	string		ZVendor
+ATTRIBUTE	ZVendor-Auth-Method		32	string		ZVendor
+ATTRIBUTE	ZVendor-Current-VLAN-ID		33	integer		ZVendor
+ATTRIBUTE	ZVendor-Current-Location-ID	34	string		ZVendor
+ATTRIBUTE	ZVendor-Service-Zone-Name	35	string		ZVendor
+ATTRIBUTE       ZVendor-Group                   36      integer         ZVendor
+ATTRIBUTE	ZVendor-Current-AC-ID		37	string		Zvendor
+ATTRIBUTE	ZVendor-Admin-Group		38	integer		ZVendor
+ATTRIBUTE	ZVendor-NAT-IP-Address		39	ipaddr		ZVendor
+ATTRIBUTE	ZVendor-Register-Id		40	string		ZVendor
+ATTRIBUTE	ZVendor-Register-Password	41	string		ZVendor

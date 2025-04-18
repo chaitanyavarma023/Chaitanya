@@ -1,0 +1,372 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+. /lib/functions/network.sh
+
+UAM_VAP_GRP="0x0001"
+UAM_TUN_GRP="0x0002"
+UAM_IF_GRP_MASK="0x00ff"
+UAM_VAP_GRP_PASS="0x0101"
+UAM_VAP_GRP_DENY="0x0201"
+
+DNAT_MAC_FILE="/tmp/capwap/split_tunnel_mac"
+BUILD_RULES_FILE="/tmp/capwap/split_tunnel_rule"
+CIPFWD_LOCK="/var/lock/DAI_status_lock"
+SPL_IPSET_BAK="/tmp/spl_ipset.bak"
+AC_FAILOVER="/tmp/capwap/ac_failover"
+
+MAX_RF_NO=$(uci show wireless | grep "radio.=wifi-device$" | wc -l)
+MAX_VAP_NO=16
+
+config_load wireless
+
+get_rf_headstr()
+{
+	local rfidx=$1
+	echo "wlan${rfidx}+"
+}
+
+clear_dnat_fdb()
+{
+	local dnat_mac=
+	local mac_head=
+	local mac_tail=
+	local mac_head_decimal=
+	local rfno=0
+	local sz=0
+	local bridge=
+	local vif disabled tun split_tun vid split_sz
+
+	if [ -f "${DNAT_MAC_FILE}" ]; then
+		read dnat_mac < ${DNAT_MAC_FILE}
+	else
+		return
+	fi
+
+	while [ ${rfno} -lt ${MAX_RF_NO} ]; do
+		for i in $(seq 1 ${MAX_VAP_NO}); do
+			vif=radio${rfno}_${i}
+			config_get disabled "$vif" disabled
+			[ -z "${disabled}" ] && break
+			config_get tun "$vif" tun
+			config_get split_tun "$vif" split_tun
+			config_get vid "$vif" vid
+			config_get split_sz "$vif" split_sz
+			config_get network "$vif" network
+			#bridge="br-${network}"
+			network_get_physdev bridge ${network}
+			[ -z "${bridge}" ] && continue
+			if [ "${tun}" = "1" -a "${split_tun}" = "1" ]; then
+				# For compatibility, the MAC use old method when service zone number < 9
+				sz=$((split_sz%1000))
+				if [ ${sz} -lt 9 ]; then
+					mac_head="${dnat_mac%%:*}"
+					mac_tail="${dnat_mac#*:}"
+					mac_head_decimal=$(printf "%u" "0x${mac_head}")
+					mac_head=$(printf "%02x" "$((mac_head_decimal+sz*4))")
+				else
+					mac_head="${dnat_mac%%:*}"
+					mac_tail="${dnat_mac#*:*:}"
+					mac_head=$(printf "${mac_head}:%02x" "${sz}")
+				fi
+
+				if [ -f /sys/class/net/${bridge}/brif/brTun0.${split_sz}/state ]; then
+					# Remove the fdb entry with is_static=0 & age=1(sec)
+					brctl addmac ${bridge} brTun0.${split_sz} "${mac_head}:${mac_tail}" 0
+					brctl setmacage ${bridge} "${mac_head}:${mac_tail}" 1
+				fi
+			fi
+		done
+		rfno=$((rfno+1))
+	done
+}
+
+# The fd value should not be larger than 1023 which is got from ulimit -n
+# , or it needs to set the value via ulimit.
+FD_NUM=200
+
+set_dnat_mac()
+{
+	local dnat_mac=$1
+	local mac_head=
+	local mac_tail=
+	local mac_head_decimal=
+	local rfno=0
+	local sz=0
+	local bridge=
+	local vif disabled tun split_tun vid ifname split_sz
+	local is_bvlan=$(uci -q get network.bridge.type)
+
+	# Remove old static dnat_mac fdb entry first
+	clear_dnat_fdb
+
+	if [ -n "${dnat_mac}" ]; then
+		echo -n ${dnat_mac} > ${DNAT_MAC_FILE}
+	elif [ -f "${DNAT_MAC_FILE}" ]; then
+		read dnat_mac < ${DNAT_MAC_FILE}
+	else
+		logger "dnat_mac is NULL"
+		exit 1
+	fi
+
+	(
+	# Assign $FD_NUM as fd number for file
+		eval 'exec '$FD_NUM'>"$CIPFWD_LOCK"'
+		flock -x "$FD_NUM"
+		# Set chain RR
+		ebtables -t nat -F RR
+		ebtables -t nat -F RRDNAT
+		ebtables -t nat -A RR -p IPv4 --ip-proto udp --ip-dport 67 -j RETURN
+		ebtables -t nat -A RR -p ARP -j RETURN
+		ebtables -t nat -A RR -p IPv4 --match-set WALL_IF dst,src -j RETURN
+		# Ralink 802.1x daemon needs to receive EAPOL start packet from bridge to trigger 802.1X auth
+		ebtables -t nat -A RR -p 802_1X -j RETURN
+		ebtables -t nat -A RR -j RRDNAT
+	)
+
+	while [ ${rfno} -lt ${MAX_RF_NO} ]; do
+		for i in $(seq 1 ${MAX_VAP_NO}); do
+			vif=radio${rfno}_${i}
+			config_get disabled "$vif" disabled
+			[ "${disabled}" != "0" ] && continue
+			config_get tun "$vif" tun
+			config_get split_tun "$vif" split_tun
+			config_get vid "$vif" vid
+			config_get split_sz "$vif" split_sz
+			config_get network "$vif" network
+			#bridge="br-${network}"
+			network_get_physdev bridge ${network}
+			[ -z "${bridge}" ] && continue
+			config_get ifname "$vif" ifname
+			if [ "${tun}" = "1" -a "${split_tun}" = "1" ]; then
+				config_get external_radius "$vif" external_radius
+				vconfig add brTun0 ${split_sz}
+				ip link set vlan${split_sz} name brTun0.${split_sz}
+				ifconfig brTun0.${split_sz} up
+				if [ -n "${is_bvlan}" ]; then
+					ubus call network.interface.${network} add_device '{"name":"brTun0.'${split_sz}'"}'
+				else
+					brctl addif ${bridge} brTun0.${split_sz}
+				fi
+				ip link set ${ifname} group ${UAM_VAP_GRP_DENY}
+				ip link set brTun0.${split_sz} group ${UAM_TUN_GRP}
+				iwpriv ${ifname} proxyarp 1
+				# For compatibility, the MAC use old method when service zone number < 9
+				sz=$((split_sz%1000))
+				if [ ${sz} -lt 9 ]; then
+					mac_head="${dnat_mac%%:*}"
+					mac_tail="${dnat_mac#*:}"
+					mac_head_decimal=$(printf "%u" "0x${mac_head}")
+					mac_head=$(printf "%02x" "$((mac_head_decimal+sz*4))")
+				else
+					mac_head="${dnat_mac%%:*}"
+					mac_tail="${dnat_mac#*:*:}"
+					mac_head=$(printf "${mac_head}:%02x" "${sz}")
+				fi
+				(
+					eval 'exec '$FD_NUM'>"$CIPFWD_LOCK"'
+					flock -x "$FD_NUM"
+					if [ "$external_radius" = "1" ]; then
+						ebtables -t nat -A RRDNAT -i ${ifname} -p IPv4 --ip-proto tcp --ip-dport 443 -j DROP
+						ebtables -t nat -A RRDNAT -i ${ifname} -p IPv4 --ip-proto tcp --ip-dport 80 -j DROP
+					fi
+					ebtables -t nat -A RRDNAT -i ${ifname} -j dnat --to-dst "${mac_head}:${mac_tail}" --dnat-target ACCEPT
+				)
+				# Add dnat_mac to bridge fdb with is_static=1
+				brctl addmac ${bridge} brTun0.${split_sz} "${mac_head}:${mac_tail}" 1
+				ifconfig brTun0.${split_sz} up
+			fi
+		done
+		rfno=$((rfno+1))
+	done
+}
+
+set_ebt_rules()
+{
+	if [ -f "${BUILD_RULES_FILE}" ]; then
+		return
+	fi
+	# ipset
+	ipset create online_user hash:mac
+	ipset create 8021x_split_tunnel hash:mac
+	ipset create logout_ip_list hash:ip
+	ipset create WALL_IF hash:net,iface
+
+	# PREROUTING, chain RR
+	(
+		eval 'exec '$FD_NUM'>"$CIPFWD_LOCK"'
+		flock -x "$FD_NUM"
+		ebtables -t nat -N RR
+		ebtables -t nat -P RR RETURN
+		ebtables -t nat -A RR -p IPv4 --ip-proto udp --ip-dport 67 -j RETURN
+		ebtables -t nat -A RR -p ARP --arp-op Request -j RETURN
+		ebtables -t nat -A RR -j DROP
+		ebtables -t nat -N RRDNAT
+		ebtables -t nat -P RRDNAT DROP
+		ebtables -t nat -A PREROUTING --devgroup-in ! ${UAM_VAP_GRP}/${UAM_IF_GRP_MASK} -j ACCEPT
+		ebtables -t nat -A PREROUTING -p IPv6 --ip6-proto udp --ip6-dport 53 --match-set ! 8021x_split_tunnel src -j DROP
+		ebtables -t nat -A PREROUTING -p IPv4 --ip-proto udp --ip-dport 53 --match-set ! 8021x_split_tunnel src -j RRDNAT
+		ebtables -t nat -A PREROUTING -p IPv4 --match-set logout_ip_list dst -j RRDNAT
+		ebtables -t nat -A PREROUTING -i wlan+ --match-set ! online_user src -j RR
+
+		# POSTROUTING, chain SR
+		ebtables -t nat -N SR
+		ebtables -t nat -P SR DROP
+		ebtables -t nat -A SR -p ARP --arp-op Reply -j RETURN
+		ebtables -t nat -A SR -p IPv4 --ip-proto udp --ip-dport 53 -j RETURN
+		ebtables -t nat -A SR -p IPv4 --ip-proto tcp --ip-dport 80 -j RETURN
+		ebtables -t nat -A SR -p IPv4 --ip-proto tcp --ip-dport 443 -j RETURN
+		ebtables -t nat -A POSTROUTING --devgroup-out ${UAM_TUN_GRP} -j SR
+
+		# FORWARD
+		ebtables -t filter -I FORWARD --devgroup-in ! ${UAM_TUN_GRP} --devgroup-out ! ${UAM_TUN_GRP} -j CONTINUE
+		ebtables -t filter -I FORWARD --devgroup-in   ${UAM_TUN_GRP} --devgroup-out ! ${UAM_VAP_GRP}/${UAM_IF_GRP_MASK} -j DROP
+		ebtables -t filter -I FORWARD --devgroup-in ! ${UAM_VAP_GRP}/${UAM_IF_GRP_MASK} --devgroup-out   ${UAM_TUN_GRP} -j DROP
+	)
+	touch ${BUILD_RULES_FILE}
+	#/sbin/QosUserSrv $MAX_RF_NO &
+}
+
+split_tun_start()
+{
+	local isbooting="$1"
+	local rfno=0
+	local split_tun_vap=0
+	local vif disabled tun split_tun
+
+	while [ ${rfno} -lt ${MAX_RF_NO} ]; do
+		for i in $(seq 1 ${MAX_VAP_NO}); do
+			vif=radio${rfno}_${i}
+			config_get disabled "$vif" disabled
+			[ -z "${disabled}" ] && continue
+			config_get tun "$vif" tun
+			config_get split_tun "$vif" split_tun
+			if [ "${tun}" = "1" -a "${split_tun}" = "1" ]; then
+				[ "${split_tun_vap}" -eq "0" ] && set_ebt_rules
+				# Set interfaces group when setup vlan bridge in rc.bridge
+				split_tun_vap=$((split_tun_vap+1))
+				[ "${split_tun_vap}" -ge "1" ] && break
+			fi
+		done
+		rfno=$((rfno+1))
+	done
+}
+
+split_tun_stop()
+{
+	# Unset ebt_rules & ipset
+	(
+		eval 'exec '$FD_NUM'>"$CIPFWD_LOCK"'
+		flock -x "$FD_NUM"
+		ebtables -t nat -L RR > /dev/null 2>&1
+		if [ "$?" = "0" ]; then
+			# PREROUTING
+			ebtables -t nat -D PREROUTING --devgroup-in ! ${UAM_VAP_GRP}/${UAM_IF_GRP_MASK} -j ACCEPT
+			ebtables -t nat -D PREROUTING -p IPv6 --ip6-proto udp --ip6-dport 53 --match-set ! 8021x_split_tunnel src -j DROP
+			ebtables -t nat -D PREROUTING -p IPv4 --ip-proto udp --ip-dport 53 --match-set ! 8021x_split_tunnel src -j RRDNAT
+			ebtables -t nat -D PREROUTING -p IPv4 --match-set logout_ip_list dst -j RRDNAT
+			ebtables -t nat -D PREROUTING -i wlan --match-set ! online_user src -j RR
+			ebtables -t nat -X RR
+			ebtables -t nat -X RRDNAT
+
+			# POSTROUTING
+			ebtables -t nat -D POSTROUTING --devgroup-out ${UAM_TUN_GRP} -j SR
+			ebtables -t nat -X SR
+
+			# FORWARD
+			ebtables -t filter -D FORWARD --devgroup-in ! ${UAM_TUN_GRP} --devgroup-out ! ${UAM_TUN_GRP} -j ACCEPT
+			ebtables -t filter -D FORWARD --devgroup-in   ${UAM_TUN_GRP} --devgroup-out ! ${UAM_VAP_GRP}/${UAM_IF_GRP_MASK} -j DROP
+			ebtables -t filter -D FORWARD --devgroup-in ! ${UAM_VAP_GRP}/${UAM_IF_GRP_MASK} --devgroup-out   ${UAM_TUN_GRP} -j DROP
+
+			# ipset
+			ipset destroy online_user
+			ipset destroy 8021x_split_tunnel
+			ipset destroy logout_ip_list
+			ipset destroy WALL_IF
+			modprobe -r ip_set_hash_mac ip_set_hash_ip ip_set_hash_netiface ip_set xt_set > /dev/null 2>&1
+		fi
+	)
+	rm -f ${BUILD_RULES_FILE}
+
+	# Reset interfaces group to 0
+	for grp in ${UAM_VAP_GRP_DENY} ${UAM_VAP_GRP_PASS} ${UAM_TUN_GRP}; do
+		ifs=$(ip li show group $grp | grep state | cut -d':' -f 2 | cut -d'@' -f 1)
+		[ -z "$ifs" ] && continue
+		for iface in $ifs; do
+			ip link set $iface group 0
+		done
+	done
+}
+
+kick_sta_other_rf()
+{
+	local rfname="${1##*ath}"
+	local sta_mac1="0x$2 0x$3 0x$4 0x$5 0x$6 0x$7"
+	local sta_mac2="$2:$3:$4:$5:$6:$7"
+	local rfidx="${rfname:0:1}"
+	local rfno=0
+	local iface
+
+	while [ ${rfno} -lt ${MAX_RF_NO} ]; do
+		if [ "${rfno}" != "${rfidx}" ]; then
+			iface=$(iwpriv wifi${rfno} sta_get_iface ${sta_mac1} | cut -d ':' -f 2)
+			if [ "$iface" != "N/A" ]; then
+				iwpriv ${iface} kickmac ${sta_mac2} > /dev/null 2>&1
+			fi
+		fi
+		rfno=$((rfno+1))
+	done
+}
+
+backup_status()
+{
+	# Backup ipset entries
+	ipset save logout_ip_list | sed '1d' > ${SPL_IPSET_BAK}
+	ipset save WALL_IF | sed '1d' >> ${SPL_IPSET_BAK}
+}
+
+restore_status()
+{
+	# Restore ipset entries
+	if [ -f ${SPL_IPSET_BAK} ]; then
+		ipset restore < ${SPL_IPSET_BAK}
+		rm ${SPL_IPSET_BAK}
+	fi
+}
+
+split_tun_usage()
+{
+	echo "Usage : [start/stop/restart/set_dnat_mac/kick_sta_other_rf/set_ac_failover]"
+}
+
+cmd="$1"
+case "$cmd" in
+	'start')
+	shift
+	split_tun_start $*
+	;;
+	'stop')
+	shift
+	split_tun_stop $*
+	;;
+	'restart')
+	shift
+	backup_status $*
+	split_tun_stop $*
+	split_tun_start $*
+	restore_status $*
+	set_dnat_mac
+	;;
+	'set_dnat_mac')
+	shift
+	set_dnat_mac $*
+	;;
+	'kick_sta_other_rf')
+	shift
+	kick_sta_other_rf $*
+	;;
+	*)
+	split_tun_usage "$0"
+	;;
+esac

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+reset_btn_enable=$(uci -q get acn.settings.reset_btn_enable)
+
+if [ "$reset_btn_enable" == "" ]; then
+    uci set acn.settings.reset_btn_enable="1"
+    uci commit acn
+fi
+
+led_enable=$(uci -q get system.@system[0].led_enable)
+
+if [ "$led_enable" == "" ]; then
+    uci set system.@system[0].led_enable="1"
+    uci commit system
+fi

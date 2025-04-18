@@ -1,0 +1,26 @@
+global
+country JP: DFS-JP
+    (2402 - 2482 @ 40), (N/A, 13), (N/A)
+    (2474 - 2494 @ 20), (N/A, 13), (N/A), NO-OFDM
+    (4910 - 4990 @ 40), (N/A, 11), (N/A)
+    (5170 - 5250 @ 80), (N/A, 11), (N/A), AUTO-BW
+    (5250 - 5330 @ 80), (N/A, 12), (0 ms), DFS, AUTO-BW
+    (5490 - 5710 @ 80), (N/A, 18), (0 ms), DFS
+    (57000 - 66000 @ 2160), (N/A, 10), (N/A)
+
+phy#1 (self-managed)
+country JP: DFS-JP
+    (2402 - 2482 @ 40), (N/A, 13), (N/A)
+    (5170 - 5250 @ 80), (N/A, 11), (N/A), NO-OUTDOOR, AUTO-BW
+    (5250 - 5330 @ 80), (N/A, 12), (0 ms), NO-OUTDOOR, DFS, AUTO-BW
+    (5490 - 5650 @ 80), (N/A, 19), (0 ms), DFS, AUTO-BW
+    (5650 - 5730 @ 80), (N/A, 18), (0 ms), DFS, AUTO-BW
+
+phy#0 (self-managed)
+country JP: DFS-JP
+    (2402 - 2482 @ 40), (N/A, 13), (N/A)
+    (5170 - 5250 @ 80), (N/A, 11), (N/A), NO-OUTDOOR, AUTO-BW
+    (5250 - 5330 @ 80), (N/A, 12), (0 ms), NO-OUTDOOR, DFS, AUTO-BW
+    (5490 - 5650 @ 80), (N/A, 19), (0 ms), DFS, AUTO-BW
+    (5650 - 5730 @ 80), (N/A, 18), (0 ms), DFS, AUTO-BW
+

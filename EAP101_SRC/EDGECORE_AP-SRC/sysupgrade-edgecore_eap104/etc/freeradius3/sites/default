@@ -1,0 +1,54 @@
+authorize {
+  preprocess
+  chap
+  mschap
+  suffix
+  eap
+  exec_auth
+  pap
+}
+
+
+authenticate {
+  Auth-Type PAP {
+    pap
+  }
+  Auth-Type CHAP {
+    chap
+  }
+  Auth-Type MS-CHAP {
+    mschap
+  }
+  eap
+}
+
+preacct {
+  preprocess
+  update request {
+      FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0}}"
+  }
+    update control {
+        Proxy-To-Realm := AcctServer
+    }
+  suffix
+}
+
+post-auth {
+  exec_reply
+  Post-Auth-Type REJECT {
+    attr_filter.access_reject
+  }
+}
+
+pre-proxy {
+  exec_proxy_auth
+  attr_filter.pre-proxy
+}
+
+post-proxy {
+  eap
+  Post-Proxy-Type Fail {
+    attr_filter.access_reject
+  }
+}
+

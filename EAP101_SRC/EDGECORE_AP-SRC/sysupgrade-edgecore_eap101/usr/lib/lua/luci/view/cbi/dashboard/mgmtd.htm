@@ -1,0 +1,152 @@
+<% 
+--[[
+MGMTD_STATUS_CONNECTED    = "CONNECTED"         everything is okay
+MGMTD_STATUS_DISCONNECTED = "DISCONNECTED"      connection to tigase lost/unsuccessful
+MGMTD_STATUS_UNREGISTERED = "UNREGISTERED"      register state is 0
+MGMTD_STATUS_REG_FAILED   = "REG_FAILED"        failed to register: not allowed, cannot reach server, etc...
+MGMTD_STATUS_OTHER        = "OTHER"             other running failure?
+]]--
+local brand =  require("luci.acn.brand")
+local product = require "luci.acn.product"
+
+local fs  = require "nixio.fs"
+local acn = require "luci.acn.util"
+local uci = acn.cursor()
+
+local enabled = uci:get("acn", "mgmt", "enabled") or "0"
+
+local running = luci.util.exec("ps | grep mgmt | grep -v grep")
+
+running = running and #running > 1
+
+local file_status, status_detail  = fs.readfile("/tmp/mgmtd_status") or ""
+
+--luci.sys.process.list()
+
+local message       = ""
+local icon_class    = "icon-ban-circle disabled-icon"
+local state         = "disabled"
+
+local icon_classes = "ok"
+
+
+%>
+<tr>
+
+<!-- expandable footable button -->
+<td></td>
+
+<%
+user_name = luci.http.getcookie("user_name")
+root_user = luci.util.root_user(user_name)
+msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+%>
+
+<!-- NAME -->
+<td class="service-name">
+    <% if root_user or msp_disabled then %>
+        <a href="<%=luci.dispatcher.build_url('admin/system/system')%>"><%=product.company_name()%> <%:Cloud Agent Status%> </a>
+    <% else %>
+        <a href="<%=luci.dispatcher.build_url('admin/system/system')%>" onclick="return false" oncontextmenu="return false"><%=product.company_name()%> <%:Cloud Agent Status%> </a>
+    <% end %>
+</td>
+
+
+<!-- STATUS -->
+<td>
+    <% if enabled == '1' then
+    %>
+        <span style="color:#69aa46"><i class="icon-ok-circle"></i> &nbsp;</span><%:Enabled%>
+    <%else%>
+       <i class="icon-ban-circle"></i>&nbsp; <%:Disabled%>
+    <% end %>
+</td>
+
+<!-- STATUS MESSAGE -->
+<td>
+
+    <%
+    local cloud_controller_url = uci:get("acn", "mgmt", "controller_url") or brand.controller_url
+    -- XXX TODO: translate this stuff
+    if enabled == "1" then
+
+        if running then
+
+            -- Status should never be empty!
+
+            if file_status == "" then
+                state = "error"
+                message = translate("The cloud agent (mgmtd) is running but status is unknown. (missing file)")
+            else
+                if file_status:find(" ") then
+                    file_status, status_detail = file_status:match("([%w,_%a]+) (.+)")
+                end
+                -- #8183: remove newline character
+                file_status = file_status:gsub("\n", "")
+
+                if file_status == "CONNECTED" then
+                    state = "ok"
+                    message = luci.i18n.translatef("The cloud agent (mgmtd) is running and connected to the <a href='%s' target='_blank'>%s Cloud Controller</a>.", cloud_controller_url, product.company_name())
+
+                elseif file_status == "DISCONNECTED" then
+                    state = "error"
+                    message = luci.i18n.translatef("The cloud agent (mgmtd) is not currently able to connect to the <a href='%s' target='_blank'>%s Cloud Controller</a>.", cloud_controller_url, product.company_name())
+
+                elseif file_status == "UNREGISTERED" then
+                    state = "error"
+                    message = luci.i18n.translatef("The cloud agent (mgmtd) is running, but this device has not yet successfully registered on the <a href='%s' target='_blank'>%s Cloud Controller</a>.", cloud_controller_url, product.company_name())
+
+                elseif file_status == "REG_FAILED" then
+                    state = "error"
+                    message = translate("The cloud agent (mgmtd) is running, but has encountered an error at registration.")
+
+                elseif file_status == "DNS_UNRESOLVED" then
+                    state = "error"
+                    message = translate("The cloud agent (mgmtd) is running, but has encountered DNS issues and cannot contact the cloud server.")
+                else
+                    -- file_status == "OTHER" then
+                    state = "error"
+                    message = translate("The cloud agent (mgmtd) is running, but has encountered some system errors.")
+
+                end
+
+                if status_detail  and #status_detail > 0 then
+                      status_detail = status_detail.gsub(status_detail, 'log ','<a href="' .. luci.dispatcher.build_url('admin','system','syslog') .. '">log</a>')
+                      message = message  .. "<br\>Detail: " .. status_detail
+                end
+            end
+
+        else
+            state = "error"
+            message = luci.i18n.translatef("The cloud agent (mgmtd) service is enabled but not running.")
+        end
+
+    else
+        -- were disabled
+        if root_user or msp_disabled then
+            message = luci.i18n.translatef("The cloud agent (mgmtd) service is currently disabled.")
+                .. luci.i18n.translatef("Go to <a href='%s'>system settings</a> to enable it.", luci.dispatcher.build_url('admin','system','system'))
+        else
+            message = "The cloud agent (mgmtd) is currently disabled."
+        end
+    end
+
+    if state == "ok" then
+        icon_class = " "
+        alert_class = "green"
+    elseif state == "error" then
+        icon_class = "icon-thumbs-down"
+        alert_class = "alert alert-error error-msg-visible"
+    end
+
+    %>
+    <% if enabled == "1" then  %>
+        <div class=" <%=alert_class%>">
+            <%=message%>
+        </div>
+    <%else%>
+        <%=message%>
+    <% end %>
+</td>
+
+</tr>

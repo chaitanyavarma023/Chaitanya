@@ -1,0 +1,17 @@
+<%
+local acn = require "luci.acn.util"
+uci = acn.cursor()
+user_name = luci.http.getcookie("user_name")
+root_user = luci.util.root_user(user_name)
+msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+%>
+
+<% if root_user or msp_disabled then %>
+  <a href='<%=luci.dispatcher.build_url(iface['link']) .. (iface['url_params'] or  '')%>'
+  <% if not wrap then%>style='white-space:nowrap'<%end%>
+    class='<%=iface['label-class']%> bridge_member'><i class='<%=iface['icon-class']%>'></i>&nbsp;<%=iface['friendly_short']%></a>&nbsp;
+<% else %>
+    <a href='<%=luci.dispatcher.build_url(iface['link']) .. (iface['url_params'] or  '')%>' onclick="return false" oncontextmenu="return false"
+    <% if not wrap then%>style='white-space:nowrap'<%end%>
+      class='<%=iface['label-class']%> bridge_member'><i class='<%=iface['icon-class']%>'></i>&nbsp;<%=iface['friendly_short']%></a>&nbsp;
+<% end %>

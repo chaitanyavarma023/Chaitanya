@@ -1,0 +1,10 @@
+'use strict';'require baseclass';'require fs';'require network';'require uci'
+function renderbox(ifc,ipv6){if(!ipv6){var dev=ifc.getL3Device(),active=(dev&&ifc.getProtocol()!='none'),addrs=ifc.getIPAddrs()||[],dnssrv=ifc.getDNSAddrs()||[],uptime=ifc.getUptime(),networkSections=uci.sections('network'),inet_src=null;for(var i=0;i<networkSections.length;i++){var networkSection=networkSections[i];if(ifc.sid==networkSection['.name']){inet_src=networkSection.inet_src;}else if(ifc.sid=='wanvlan'&&networkSection['.name']=='wan'){inet_src=networkSection.inet_src;}}
+return[_('Internet Status'),ifc.isUp?E('b',_('Internet connection is up!')):E('em',_('No Internet connection')),_('Internet Source'),dev?E('span',{'style':'text-transform:uppercase'},_('%s'.format(inet_src))):'-',_('IP Address'),addrs[0],_('Mode'),ifc.getI18n()||E('em',_('Not connected')),_('Netmask'),dev?ifc.getNetmask():'-',_('Gateway'),ifc.getGatewayAddr()||'0.0.0.0',_('DNS'),dnssrv[0]];}
+else if(ipv6){var addrs_ipv6=ifc.getIP6Addrs()||[];return[_('IPv6 Address'),addrs_ipv6[0],];}}
+return baseclass.extend({title:_('Internet Info'),load:function(){return Promise.all([network.getWANNetworks(),network.getWAN6Networks(),uci.load('network')]);},render:function(data){var wan_nets=data[0],wan6_nets=data[1];var netstatus=E('div',{'class':'table'});if(wan_nets.length>0){for(var i=0;i<wan_nets.length;i++)
+var net_fields_wan=renderbox(wan_nets[i],false);print_renderbox(net_fields_wan);}
+if(wan6_nets.length>0){for(var i=0;i<wan6_nets.length;i++)
+var net_fields_wan6=renderbox(wan6_nets[i],true);print_renderbox(net_fields_wan6);}
+function print_renderbox(net_fields){for(var i=0;i<net_fields.length;i+=2){netstatus.appendChild(E('div',{'class':'tr'},[E('div',{'class':'td left','width':'33%'},[net_fields[i]]),E('div',{'class':'td left'},[(net_fields[i+1]!=null)?net_fields[i+1]:'?'])]));}}
+return E([netstatus]);}});

@@ -1,0 +1,178 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+OLD_RESOLVCONF_AUTO="/tmp/resolv.conf.auto"
+NEW_RPCD_UBUS_SOCK="/var/run/ubus/ubus.sock"
+NEW_BRIDGE_NAME="bridge"
+
+ETH_ADDR="$(fw_printenv ethaddr|awk -F'=' '{print $2}')"
+ETH1_ADDR="$(fw_printenv eth1addr|awk -F'=' '{print $2}')"
+
+LAN_VID="1"
+WAN_VID="2"
+HOTSPOT_VID="3"
+GUEST_VID="4"
+VLAN_VID="5"
+
+model=$(cat /etc/board.json |jsonfilter -e '@.model.name')
+
+if [ -n "$(echo $model | grep EAP101)" ]; then
+	vlan_start=$(($VLAN_VID-4))
+fi
+if [ -n "$(echo $model | grep EAP102)" ]; then
+	vlan_start=$(($VLAN_VID-3))
+fi
+if [ -n "$(echo $model | grep EAP104)" ]; then
+	vlan_start=$(($VLAN_VID-6))
+fi
+
+tmpfile="$(mktemp)"
+
+check_resolvconf_auto() {
+	local resolvconf="$(uci -q get dhcp.@dnsmasq[0].resolvfile)"
+
+	if [ "$resolvconf" != "$OLD_RESOLVCONF_AUTO" ]; then
+		echo "set dhcp.@dnsmasq[0].resolvfile='$OLD_RESOLVCONF_AUTO'" >> $tmpfile
+	fi
+}
+
+check_rpcd_ubus_sock() {
+	local rpcd_ubus="$(uci -q get rpcd.@rpcd[0].socket)"
+
+	if [ "$rpcd_ubus" != "$NEW_RPCD_UBUS_SOCK" ]; then
+		echo "set rpcd.@rpcd[0].socket='$NEW_RPCD_UBUS_SOCK'" >> $tmpfile
+	fi
+}
+
+check_mesh_mtu() {
+	if [ "$(uci -q get network.bat0_hardif_mesh0.mtu)" != "1536" ]; then
+		echo "set network.bat0_hardif_mesh0.mtu='1536'" >> $tmpfile
+	fi
+}
+
+add_single_bridge() {
+	echo "set network.$NEW_BRIDGE_NAME=device" >> $tmpfile
+	echo "set network.$NEW_BRIDGE_NAME.type=bridge" >> $tmpfile
+	echo "set network.$NEW_BRIDGE_NAME.name='$NEW_BRIDGE_NAME'" >> $tmpfile
+}
+
+reconf_iface() {
+	local section="$1"
+	local vlan_id="$2"
+	local ports="$3"
+	local bvlan_section="${section}_vlan"
+
+	echo "set network.$bvlan_section=bridge-vlan" >> $tmpfile
+	echo "set network.$bvlan_section.device='$NEW_BRIDGE_NAME'" >> $tmpfile
+	echo "set network.$bvlan_section.vlan='$vlan_id'" >> $tmpfile
+
+	if [ -n "$ports" ]; then
+		echo "set network.$bvlan_section.ports='$ports'" >> $tmpfile
+	fi
+}
+
+mv_bridge_to_bridge_vlan() {
+	local section="$1"
+	local type=$(uci -q get network."${section}".type)
+	local ifname=$(uci -q get network."${section}".ifname)
+
+	#echo $section
+	case "$section" in
+		lan)
+			if [ -n "$type" ]; then
+				echo "del network.${section}.type" >> $tmpfile
+			fi
+
+			if [ -n "$ifname" ]; then
+				echo "del network.${section}.ifname" >> $tmpfile
+			fi
+			echo "set network.${section}.device='${NEW_BRIDGE_NAME}.${LAN_VID}'" >> $tmpfile
+
+			reconf_iface $section ${LAN_VID} "$ifname"
+
+			if [ -z "$(uci -q get network.${section}.macaddr)" ]; then
+				echo "set network.${section}.macaddr='${ETH1_ADDR}'" >> $tmpfile
+			fi
+			;;
+		wan)
+			if [ -n $type ]; then
+				echo "del network.${section}.type" >> $tmpfile
+			fi
+
+			if [ -n "$ifname" ]; then
+				echo "del network.${section}.ifname" >> $tmpfile
+			fi
+			echo "set network.${section}.device='${NEW_BRIDGE_NAME}.${WAN_VID}'" >> $tmpfile
+
+			reconf_iface $section ${WAN_VID} "$ifname"
+
+			if [ -z "$(uci -q get network.${section}.macaddr)" ]; then
+				echo "set network.${section}.macaddr='${ETH_ADDR}'" >> $tmpfile
+			fi
+			;;
+		wan6)
+			if [ -n "$ifname" ]; then
+				echo "del network.${section}.ifname" >> $tmpfile
+			fi
+
+			echo "set network.${section}.device='@wan'" >> $tmpfile
+			echo "set network.${section}.reqaddress='try'" >> $tmpfile
+			echo "set network.${section}.reqprefix='0'" >> $tmpfile
+			echo "set network.${section}.soltimeout='120'" >> $tmpfile
+			;;
+		hotspot)
+			if [ -n $type ]; then
+				echo "del network.${section}.type" >> $tmpfile
+			fi
+
+			if [ -n "$ifname" ]; then
+				echo "del network.${section}.ifname" >> $tmpfile
+			fi
+			echo "set network.${section}.device='${NEW_BRIDGE_NAME}.${HOTSPOT_VID}'" >> $tmpfile
+
+			reconf_iface $section ${HOTSPOT_VID} "$ifname"
+			;;
+		guest)
+			if [ -n $type ]; then
+				echo "del network.${section}.type" >> $tmpfile
+			fi
+
+			if [ -n "$ifname" ]; then
+				echo "del network.${section}.ifname" >> $tmpfile
+			fi
+			echo "set network.${section}.device='${NEW_BRIDGE_NAME}.${GUEST_VID}'" >> $tmpfile
+
+			reconf_iface $section ${GUEST_VID} $ifname
+			;;
+		vlan*)
+			local vlan_id
+			vlan_id=$((${section:4:5} + $vlan_start))
+			echo $vlan_id
+			if [ -n $type ]; then
+				echo "del network.${section}.type" >> $tmpfile
+			fi
+
+			if [ -n "$ifname" ]; then
+				echo "del network.${section}.ifname" >> $tmpfile
+			fi
+			echo "set network.${section}.device='${NEW_BRIDGE_NAME}.${vlan_id}'" >> $tmpfile
+
+			reconf_iface $section ${vlan_id} "$ifname"
+			;;
+	esac
+}
+
+check_resolvconf_auto
+check_rpcd_ubus_sock
+check_mesh_mtu
+
+#if [ -z "$(uci -q show network.$NEW_BRIDGE_NAME)" ]; then
+#	add_single_bridge
+#	config_load network
+#	config_foreach mv_bridge_to_bridge_vlan 'interface'
+#fi
+
+uci -q -f $tmpfile batch
+uci commit
+rm -f $tmpfile

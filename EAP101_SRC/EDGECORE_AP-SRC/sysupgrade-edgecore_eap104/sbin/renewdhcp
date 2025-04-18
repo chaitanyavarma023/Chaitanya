@@ -1,0 +1,15 @@
+DEV1=`uci -q get network.wan.inet_src`
+DEV2=`uci -q get network.wan.type`
+
+if [ -n "$(uci -q get network.bridge.type)" ]; then
+    wan_dev=$(uci -q get network.wan.device)
+    DEV3=`cat /var/run/udhcpc-${wan_dev}.pid`
+else
+    if [ "$DEV2" == "bridge" ]; then
+        DEV3=`cat /var/run/udhcpc-br-wan.pid`
+    else
+        DEV3=`cat /var/run/udhcpc-$DEV1.pid`
+    fi
+fi
+
+kill -SIGUSR1 $DEV3

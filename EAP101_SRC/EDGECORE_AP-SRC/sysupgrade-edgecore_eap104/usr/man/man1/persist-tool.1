@@ -1,0 +1,273 @@
+'\" t
+.\"     Title: persist-tool
+.\"    Author: [see the "Author" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 09/25/2023
+.\"    Manual: The persist-tool tool manual page
+.\"    Source: 4.4
+.\"  Language: English
+.\"
+.TH "PERSIST\-TOOL" "1" "09/25/2023" "4\&.4" "The persist-tool tool manual p"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+persist-tool \- Display the content of the persist file
+.SH "SYNOPSIS"
+.HP \w'\fBpersist\-tool\fR\ 'u
+\fBpersist\-tool\fR [command] [options]
+.SH "DESCRIPTION"
+.PP
+NOTE: The persist\-tool application is distributed with the syslog\-ng system logging application, and is usually part of the syslog\-ng package\&. The latest version of the syslog\-ng application is available at the
+\m[blue]\fBofficial syslog\-ng website\fR\m[]\&\s-2\u[1]\d\s+2\&.
+.PP
+This manual page is only an abstract, for the complete documentation of syslog\-ng, see the
+\m[blue]\fB\fBThe syslog\-ng Administrator Guide\fR\fR\m[]\&\s-2\u[2]\d\s+2\&.
+.PP
+The
+\fBpersist\-tool\fR
+application is a utility that can be used to dump the content of the persist file, and manipulate its content\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+.PP
+Persist\-tool is a special tool for syslog\-ng experts\&. Do use the tool unless you know exactly what you are doing\&. Misconfiguring it will result in irrecoverable damage to the persist file, without any warning\&.
+.sp .5v
+.RE
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+.PP
+Limitations:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The persist\-state functions can be used only with syslog\-ng PE 5 LTS style persist file (SLP4)\&. Older persist files are not supported\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Wildcard characters are not supported in file/directory names\&.
+.RE
+.sp .5v
+.RE
+.SH "THE DUMP COMMAND"
+.HP \w'\fBdump\fR\ 'u
+\fBdump\fR [options] [persist_file]
+.PP
+Use the
+\fBdump\fR
+command to print the current content of the persist file in JSON format to the console\&.
+.PP
+The
+\fBdump\fR
+command has the following options:
+.PP
+\fB\-\-help\fR or \fB\-?\fR
+.RS 4
+Display a brief help message\&.
+.RE
+.PP
+Example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+persist\-tool dump /usr/local/var/syslog\-ng\&.persist
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+The output looks like:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+run_id = { "value": "00 00 00 00 0C 00 00 00 " }
+host_id = { "value": "00 00 00 00 5F 49 2F 01 " }
+.fi
+.if n \{\
+.RE
+.\}
+.SH "THE ADD COMMAND"
+.HP \w'\fBadd\fR\ 'u
+\fBadd\fR [options] [input_file]
+.PP
+Use the
+\fBadd\fR
+command to add or modify a specified state\-entry in the persist file\&. The state\-entry should be in the same format as the
+\fBdump\fR
+command displays it\&. If the given state\-entry already exists, it will be updated\&. Otherwise, a new value will be added\&. If the given persist state is invalid, it will be skipped\&.
+.PP
+To use the
+\fBadd\fR
+command: use
+\fBpersist\-tool dump\fR
+to print the content of the current persist file, and redirect it to a file\&. Edit the content of this file\&. Use
+\fBpersist\-tool add\fR
+with this file to modify the persist\&.
+.PP
+The
+\fBadd\fR
+command has the following options:
+.PP
+\fB\-\-help\fR or \fB\-?\fR
+.RS 4
+Display a brief help message\&.
+.RE
+.PP
+\fB\-\-output\-dir=<directory>\fR or \fB\-o\fR
+.RS 4
+Required parameter\&. The directory where the persist file is located at\&. The name of the persist file stored in this directory must be
+syslog\-ng\&.persist\&.
+.RE
+.PP
+Example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+/usr/local/bin/persist\-tool add dump_persist \-o \&.
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+The valid output looks like:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+log_reader_curpos(Application)      OK
+affile_sd_curpos(/var/aaa\&.txt)        OK
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+The invalid output looks like:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+log_reader_curpos(Application)      OK
+wrong
+        FAILED (error: Invalid entry syntax)
+affile_sd_curpos(/var/aaa\&.txt)        OK
+.fi
+.if n \{\
+.RE
+.\}
+.SH "FILES"
+.PP
+/usr/local/bin/persist\-tool
+.SH "SEE ALSO"
+.PP
+\fBsyslog\-ng\&.conf\fR(5)
+.PP
+\fBsyslog\-ng\fR(8)
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+.PP
+For the detailed documentation of see
+\m[blue]\fB\fBThe 4\&.4 Administrator Guide\fR\fR\m[]\&\s-2\u[3]\d\s+2
+.PP
+If you experience any problems or need help with syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng mailing list\fR\fR\m[]\&\s-2\u[4]\d\s+2\&.
+.PP
+For news and notifications about of syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng blogs\fR\fR\m[]\&\s-2\u[5]\d\s+2\&.
+.sp .5v
+.RE
+.SH "AUTHOR"
+.PP
+This manual page was written by the Balabit Documentation Team <documentation@balabit\&.com>\&.
+.SH "COPYRIGHT"
+.SH "NOTES"
+.IP " 1." 4
+official syslog-ng website
+.RS 4
+\%https://www.balabit.com/log-management
+.RE
+.IP " 2." 4
+\fBThe syslog-ng Administrator Guide\fR
+.RS 4
+\%https://www.balabit.com/support/documentation/
+.RE
+.IP " 3." 4
+\fBThe  4.4 Administrator Guide\fR
+.RS 4
+\%https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html
+.RE
+.IP " 4." 4
+\fBsyslog-ng mailing list\fR
+.RS 4
+\%https://lists.balabit.hu/mailman/listinfo/syslog-ng
+.RE
+.IP " 5." 4
+\fBsyslog-ng blogs\fR
+.RS 4
+\%https://syslog-ng.org/blogs/
+.RE

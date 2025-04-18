@@ -1,0 +1,7 @@
+DEFAULT
+	User-Name =* ANY,
+	State =* ANY,
+	EAP-Message =* ANY,
+	Message-Authenticator =* ANY,
+	Reply-Message =* ANY,
+	Proxy-State =* ANY

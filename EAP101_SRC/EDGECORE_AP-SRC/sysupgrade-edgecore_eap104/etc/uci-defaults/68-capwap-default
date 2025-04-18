@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ "$(uci -q get acn.capwap)" == "" ]; then
+	uci set acn.capwap='capwap'
+	uci set acn.capwap.state='1'
+	uci set acn.capwap.dns_srv='0'
+	uci set acn.capwap.dhcp_opt='1'
+	uci set acn.capwap.broadcast='0'
+	uci set acn.capwap.multicast='0'
+	uci set acn.capwap.unicast='0'
+	uci commit acn.capwap
+fi
+exit 0

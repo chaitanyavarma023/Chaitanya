@@ -1,0 +1,22 @@
+
+Check 802.11K support on both AP and client
+AP sends beacon frames where you can check 802.11K NR support on RM caps 
+
+Probe responce also one where you can check.
+
+Enable 802.11K 
+use wpa2/3 for SSID
+Disable 802.11w 
+
+set below options on /etc/config/wireless
+
+option ieee80211k '1'
+option rrm_neighbor_report '1'
+rrm '1'
+
+start monitoring on channel of AP  where client connected 
+
+Reduce the txpower of the AP to force client to req NR.
+
+check action frames for NR req and NR responce.
+

@@ -1,0 +1,12 @@
+Package: kmod-nf-conntrack-netlink
+Version: 4.4.60-1
+Depends: kernel (=4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-nfnetlink, kmod-ipt-conntrack
+Source: package/kernel/linux
+SourceName: kmod-nf-conntrack-netlink
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1734663204
+Architecture: arm_cortex-a7
+Installed-Size: 15146
+Description:  Kernel modules support for a netlink-based connection tracking
+ userspace interface

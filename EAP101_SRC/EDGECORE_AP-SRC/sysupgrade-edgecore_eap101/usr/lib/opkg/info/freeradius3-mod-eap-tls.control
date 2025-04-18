@@ -1,0 +1,13 @@
+Package: freeradius3-mod-eap-tls
+Version: 3_0_21-2
+Depends: libc, freeradius3-mod-eap
+Source: feeds/packages/net/freeradius3
+SourceName: freeradius3-mod-eap-tls
+License: GPL-2.0
+LicenseFiles: COPYRIGHT LICENSE
+Section: net
+SourceDateEpoch: 1734663466
+CPE-ID: cpe:/a:freeradius:freeradius
+Architecture: arm_cortex-a7
+Installed-Size: 3122
+Description:  EAP/TLS module

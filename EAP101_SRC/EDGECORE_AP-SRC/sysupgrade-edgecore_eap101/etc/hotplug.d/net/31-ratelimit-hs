@@ -1,0 +1,22 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+check_hs_enable() {
+    config_get network "$1" network
+    config_get ifname "$1" ifname
+
+    [ "$ifname" = "$INTERFACE" ] && {
+        [ "$network" == "hotspot" ] && {
+            ethtool -K $INTERFACE gso off gro off tso off 2>/dev/null
+        }
+    }
+}
+
+[ "${INTERFACE:0:4}" == "wlan" ] || exit 0
+
+[ "$ACTION" == add ] && {
+    config_load wireless
+    config_foreach check_hs_enable wifi-iface
+	exit 0
+}

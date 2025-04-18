@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ "$(uci -q get network.wan.inet_src)" == "" ]; then
+	uci set network.wan.inet_src='eth0'
+	uci commit network.wan
+fi
+
+exit 0

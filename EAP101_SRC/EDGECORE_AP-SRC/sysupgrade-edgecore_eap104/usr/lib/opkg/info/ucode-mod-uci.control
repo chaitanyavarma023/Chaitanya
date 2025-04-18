@@ -1,0 +1,12 @@
+Package: ucode-mod-uci
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, ucode, libuci20130104
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ucentral/ucode
+SourceName: ucode-mod-uci
+License: ISC
+Section: utils
+SourceDateEpoch: 1695897051
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 6514
+Description:  The uci module allows templates to read and modify uci configuration.

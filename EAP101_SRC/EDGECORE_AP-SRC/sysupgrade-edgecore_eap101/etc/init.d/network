@@ -1,0 +1,580 @@
+#!/bin/sh /etc/rc.common
+
+START=20
+STOP=90
+
+USE_PROCD=1
+hash_val=""
+flag_authport_enable=
+
+set_rf_isolate(){
+
+   ebtables -t filter -N ISOLATE_FILTER
+   ebtables -t filter -P ISOLATE_FILTER  RETURN
+   ebtables -t filter -I FORWARD -i wlan1+ -o wlan0+ -j ISOLATE_FILTER
+   ebtables -t filter -I FORWARD -i wlan0+ -o wlan1+ -j ISOLATE_FILTER
+   ebtables -t filter -A ISOLATE_FILTER   -i wlan0+ -o wlan1+ -j DROP
+   ebtables -t filter -A ISOLATE_FILTER   -i wlan1+ -o wlan0+ -j DROP
+}
+
+delete_rf_isolate(){
+
+   ebtables -t filter -D ISOLATE_FILTER   -i wlan0+ -o wlan1+ -j DROP
+   ebtables -t filter -D ISOLATE_FILTER   -i wlan1+ -o wlan0+ -j DROP
+   ebtables -t filter -X ISOLATE_FILTER
+   ebtables -t filter -D FORWARD -i wlan1+ -o wlan0+ -j ISOLATE_FILTER
+   ebtables -t filter -D FORWARD -i wlan0+ -o wlan1+ -j ISOLATE_FILTER
+}
+
+wi_anchor_hashMAC() {
+	ap_mac="$1"
+	DATE=$(date +"%Y%m%d")
+	_hash_val="$(echo -n $ap_mac$(date +"%Y%m%d") | md5sum | awk '{print $1}')"
+	hash_val_1=$(expr substr "$_hash_val" 1 4)
+	hash_val_2=$(echo "$_hash_val" | grep -o '....$')
+	hash_val="${hash_val_1}${hash_val_2}"
+}
+
+wi_anchor_custom_gui() {
+	wianchor_status="`uci -q get addon.wianchor.enabled`"
+	[ "${wianchor_status}" == "1" ] && {
+		customGUIDIR="/tmp/"
+		customGUITAR="${customGUIDIR}wi_anchor_GUI.tar.gz"
+		customGUIHtml="${customGUIDIR}wi_anchor.htm"
+		customGUILOGO="${customGUIDIR}wi_anchor_logo.png"
+
+		bindingGUIUrl="`uci -q get addon.wianchor.bindingGUIUrl`"
+		bindingGUIMd5="`uci -q get addon.wianchor.bindingGUIMd5`"
+		[ -n "${bindingGUIUrl}" -a -n "${bindingGUIMd5}" ] && {
+			#verify binding GUI is updated or not
+			[ -f "/tmp/.bindingGUIMd5" ] && {
+				ori_md5="`cat /tmp/.bindingGUIMd5`"
+				if [ "$bindingGUIMd5" == "$ori_md5" ]; then
+					return
+				fi
+			}
+
+			mkdir -p ${customGUIDIR}
+			ap_mac="`sed s/://g /sys/class/net/eth0/address`"
+			wi_anchor_hashMAC "$ap_mac"
+			curl -k -X POST -H 'Content-Type: application/json' -d '{"ap_mac":"'$ap_mac'", "hash":"'$hash_val'"}' $bindingGUIUrl -o ${customGUITAR} --connect-timeout 5 -m 5 -s
+
+			[ -f "$customGUITAR" ] && {
+				#verify md5
+				new_file_md5="`md5sum $customGUITAR | awk '{print $1}'`"
+				if [ "$bindingGUIMd5" == "$new_file_md5" ]; then
+					tar zxvf ${customGUITAR} -C ${customGUIDIR}
+					chmod 664 ${customGUIDIR}wi_anchor* >/dev/null 2>&1
+					[ -f "${customGUIHtml}" ] && mv ${customGUIHtml} /usr/lib/lua/luci/view/admin_status/
+					[ -f "${customGUILOGO}" ] && mv ${customGUILOGO} /www/luci-static/ec/img/ALOGO.png
+					echo "$bindingGUIMd5" > /tmp/.bindingGUIMd5
+				fi
+			}
+		}
+		rm -rf ${customGUIDIR}wi_anchor*
+	}
+}
+
+DEF_DELAY="10"
+DEF_NETWORK="wan"
+NETWORK_CFG_FILE="/etc/config/network"
+
+dhcprelay_enabled="$(uci -q get dhcp.dhcprelay.enabled)"
+dhcprelay_br="br-dhcprelay"
+
+init_switch() {
+	setup_switch() { return 0; }
+
+	include /lib/network
+	setup_switch
+}
+
+dhcp_relay_network_setup_for_wifi() {
+	local vif="$1"
+
+	[ "${vif}" != "wmesh" -a "${dhcprelay_enabled}" = "1" ] && {
+		[ "$(uci -q get wireless.${vif}.disabled)" = "1" ] && return 0
+		local network="$(uci -q get wireless.${vif}.network)"
+		local vlan_dev="$(uci -q get network.${network}_vlan.device)"
+		local vlan_port="$(uci -q get wireless.${vif}.ifname)"
+
+		[ "${vlan_dev}" = "" ] && {
+			vlan_dev="${DEF_NETWORK}"
+		}
+
+		[ "${vlan_dev}" != "" -a "${vlan_port}" != "" ] && {
+			local check_wif_timeout=0
+
+			while [ "$(ifconfig ${vlan_port} | grep "UP")" = "" ]
+			do
+				[ "${check_wif_timeout}" -lt "${DEF_DELAY}" ] && {
+					sleep 1
+
+					check_wif_timeout=$((check_wif_timeout + 1))
+				} || {
+					break
+				}
+			done
+
+# For debug
+#			echo "vlan_port=${vlan_port} -- check_wif_timeout=${check_wif_timeout}" >> /var/log/network.log
+# ---------
+
+			[ "${check_wif_timeout}" -lt "${DEF_DELAY}" ] && {
+				nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" vlan type arp accept
+				nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" ether type arp accept
+				nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" udp dport bootps drop
+				nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" ether daddr ff:ff:ff:ff:ff:ff drop
+			}
+		}
+	}
+}
+
+dhcp_relay_network_setup_for_eth() {
+	local network="$1"
+
+	case "${network}" in
+	bat0 | bat0_hardif_mesh0)
+		;;
+	hotspot | hotspot_tunnel)
+		;;
+	loopback | cf)
+		;;
+	managementvlan | managementvlan6)
+		;;
+	wan | wan6)
+		;;
+	wanvlan | wanvlan6)
+		;;
+	*)
+		[ "${dhcprelay_enabled}" = "1" ] && {
+			local vlan_dev="$(uci -q get network.${network}_vlan.device)"
+			local vlan_ports="$(uci -q get network.${network}_vlan.ports)"
+
+			[ "${vlan_dev}" = "" ] && {
+				vlan_dev="${DEF_NETWORK}"
+			}
+
+			[ "${vlan_ports}" = "" ] && {
+				vlan_ports="$(uci -q get network.${network}.ifname)"
+			}
+
+			[ "${vlan_dev}" != "" -a "${vlan_ports}" != "" ] && {
+				local inet_src="$(uci -q get network.${DEF_NETWORK}.inet_src)"
+				local mesh_if="bat"
+
+				for vlan_port in ${vlan_ports}
+				do
+					if [ "$(echo ${vlan_port} | grep ${inet_src})" = "" -a "$(echo ${vlan_port} | grep ${mesh_if})" = "" ]; then
+						nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" vlan type arp accept
+						nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" ether type arp accept
+						nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" udp dport bootps drop
+						nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${vlan_port}" ether daddr ff:ff:ff:ff:ff:ff drop
+					fi
+				done
+			}
+		}
+		;;
+	esac
+}
+
+dhcp_relay_network_setup() {
+	local network="$1"
+
+	case "${network}" in
+	bat0 | bat0_hardif_mesh0)
+		;;
+	hotspot | hotspot_tunnel)
+		;;
+	loopback | cf)
+		;;
+	managementvlan | managementvlan6)
+		;;
+	wan | wan6)
+		;;
+	wanvlan | wanvlan6)
+		;;
+	*)
+		local vlan_prefix="$(echo ${network} | sed s/vlan/vlan\ / | awk '{print $1}')"
+
+		[ "${vlan_prefix}" = "vlan" -a "${dhcprelay_enabled}" = "1" ] && {
+			local net_dev=""
+			local vlan_dev="$(uci -q get network.${network}_vlan.device)"
+			local vlan_ports=""
+
+			[ "${vlan_dev}" != "" ] && {
+				net_dev="$(uci -q get network.${network}.device)"
+
+				[ "${net_dev}" != "" ] && {
+					ip link set dev ${net_dev} master ${dhcprelay_br}
+
+					nft add rule bridge br-${vlan_dev} dhcprelay-forward iif "${net_dev}" drop
+					nft add rule bridge br-${vlan_dev} dhcprelay-forward oif "${net_dev}" drop
+
+					nft add rule bridge br-${vlan_dev} dhcprelay-output oif "${net_dev}" udp dport bootpc accept
+					nft add rule bridge br-${vlan_dev} dhcprelay-output oif "${net_dev}" drop
+				}
+			} || {
+				vlan_dev="${DEF_NETWORK}"
+				vlan_ports="$(uci -q get network.${network}.ifname)"
+
+				[ "${vlan_ports}" != "" ] && {
+					local inet_src="$(uci -q get network.${DEF_NETWORK}.inet_src)"
+					local mesh_if="bat"
+
+					for vlan_port in ${vlan_ports}
+					do
+						if [ "$(echo ${vlan_port} | grep ${inet_src})" != "" -o "$(echo ${vlan_port} | grep ${mesh_if})" != "" ]; then
+							nft add rule bridge br-${vlan_dev} dhcprelay-output oif "${vlan_port}" udp dport bootpc drop
+						fi
+					done
+				}
+			}
+		}
+		;;
+	esac
+}
+
+dhcp_relay_network_release() {
+	local network="$1"
+
+        case "${network}" in
+	bat0 | bat0_hardif_mesh0)
+		;;
+	hotspot | hotspot_tunnel)
+		;;
+	loopback | cf)
+		;;
+	managementvlan | managementvlan6)
+		;;
+	wan | wan6)
+		;;
+	wanvlan | wanvlan6)
+		;;
+	*)
+		local vlan_prefix="$(echo ${network} | sed s/vlan/vlan\ / | awk '{print $1}')"
+
+		[ "${vlan_prefix}" = "vlan" ] && {
+			local net_dev="$(uci -q get network.${network}.device)"
+			local vlan_dev="$(uci -q get network.${network}_vlan.device)"
+
+			[ "${net_dev}" != "" -a "${vlan_dev}" != "" ] && {
+				ip link set dev ${net_dev} nomaster
+			}
+		}
+		;;
+	esac
+}
+
+dhcp_relay_network_init() {
+	local network="$1"
+
+	[ "${network}" = "wan" ] && {
+		local vlan_dev="$(uci -q get network.${network}_vlan.device)"
+
+		[ "${vlan_dev}" = "" ] && {
+			vlan_dev="${DEF_NETWORK}"
+		}
+
+		[ "$(nft list ruleset)" != "" ] && {
+			nft delete table bridge br-${vlan_dev}
+		}
+
+		[ "${dhcprelay_enabled}" = "1" ] && {
+			if [ "${vlan_dev}" != "${DEF_NETWORK}" ]; then
+				ip link add name ${dhcprelay_br} type bridge
+				ip link set dev ${dhcprelay_br} up
+			fi
+
+			nft add table bridge br-${vlan_dev}
+			nft add chain bridge br-${vlan_dev} dhcprelay-forward { type filter hook forward priority 0 \; }
+			nft add chain bridge br-${vlan_dev} dhcprelay-output { type filter hook output priority 0 \; }
+		}
+	}
+}
+
+dhcp_relay_start() {
+	config_load network
+	config_foreach dhcp_relay_network_init interface
+	config_load wireless
+	config_foreach dhcp_relay_network_setup_for_wifi wifi-iface
+	config_load network
+	config_foreach dhcp_relay_network_setup_for_eth interface
+	config_load network
+	config_foreach dhcp_relay_network_setup interface
+}
+
+dhcp_relay_stop() {
+	config_load network
+	config_foreach dhcp_relay_network_release interface
+
+	[ "$(ifconfig ${dhcprelay_br})" != "" ] && {
+		ip link del ${dhcprelay_br}
+	}
+}
+
+dhcp_client_restart() {
+	local dhcpc_net_dev="$(uci -q get network.${DEF_NETWORK}.device)"
+
+	killall -SIGUSR2 udhcpc
+	killall -SIGUSR1 udhcpc
+
+	ifconfig ${dhcpc_net_dev} down
+	sleep 1
+	ifconfig ${dhcpc_net_dev} up
+}
+
+set_u8021p() {
+	local vlan_sections="$(cat ${NETWORK_CFG_FILE} | grep -r \'vlan | awk -F\' '{print $2}' | grep "_" | awk '{printf "%s ", $1}')"
+
+	for vlan_section in ${vlan_sections}; do
+		local vlan_ports="$(uci get network.${vlan_section}.ports)"
+		local u8021p="$(uci get network.${vlan_section}.u8021p)"
+
+		if [ -n "${u8021p}" ]; then
+			for vlan_port in ${vlan_ports}; do
+				for i in 0 1 2 3; do
+					vconfig set_egress_map ${vlan_port} $i ${u8021p}
+				done
+			done
+		fi
+	done
+}
+
+radiusd_restart() {
+	local vif="$1"
+	cloud_aaa_enabled=$(uci -q get wireless.${vif}.cloud_aaa)
+
+	[ "${flag_authport_enable}" == "1" ] || {
+		if [ "${cloud_aaa_enabled}" == "1" ]; then
+			flag_authport_enable=1
+			[ -f /etc/init.d/radiusd ] && /etc/init.d/radiusd restart
+		else
+			flag_authport_enable=0
+			[ -f /etc/init.d/radiusd ] && /etc/init.d/radiusd stop
+		fi
+	}
+}
+
+check_cloud_aaa() {
+	config_load wireless
+	config_foreach radiusd_restart wifi-iface
+}
+
+start_service() {
+#	echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
+#	ebtables -t nat -D PREROUTING -p ipv6 -j DROP >/dev/null 2>&1
+#	ebtables -t nat -A PREROUTING -p ipv6 -j DROP >/dev/null 2>&1
+	local controller_mode=$(uci -q get acn.mgmt.management)
+
+	init_switch
+
+	# power on again eth2
+	ssdk_sh port poweron set 3
+
+	# start radiusd if authport enabled
+	check_cloud_aaa
+
+	[ "$controller_mode" -ne 3 ] && {
+		local rf_control=$(uci -q get wireless.radio0.rf_isolate)
+
+		delete_rf_isolate >/dev/null 2>&1
+		[ "$rf_control" -eq 1 ] && set_rf_isolate
+	}
+
+	procd_open_instance
+	procd_set_param command /sbin/netifd
+	procd_set_param respawn
+	procd_set_param watch network.interface
+	[ -e /proc/sys/kernel/core_pattern ] && {
+		procd_set_param limits core="unlimited"
+	}
+	procd_close_instance
+
+	touch /tmp/wifi_flag
+}
+
+reload_service() {
+	local rv=0
+	local controller_mode=$(uci -q get acn.mgmt.management)
+
+	[ "$controller_mode" -ne 3 ] && {
+		dhcp_relay_stop
+		wi_anchor_custom_gui
+	}
+	init_switch
+	ubus call network reload || rv=1
+	/sbin/wifi reload_legacy
+
+	[ "$controller_mode" -ne 3 ] && {
+		local rf_control=$(uci -q get wireless.radio0.rf_isolate)
+
+		delete_rf_isolate >/dev/null 2>&1
+		[ "$rf_control" -eq 1 ] && set_rf_isolate
+
+		set_u8021p
+
+		dhcp_client_restart
+
+		dhcp_relay_start
+
+		# start radiusd if authport enabled
+		check_cloud_aaa
+
+		[ -f /etc/init.d/cipgwsrv ] && /etc/init.d/cipgwsrv restart
+		[ -f /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq reload
+		[ -f /etc/init.d/firewall ] && /etc/init.d/firewall reload
+		[ -f /etc/init.d/cipuamd ] && /etc/init.d/cipuamd restart
+		[ -f /etc/init.d/capwap ] && /etc/init.d/capwap restart
+		[ -f /etc/init.d/snmpd ] && /etc/init.d/snmpd restart
+		[ -f /etc/init.d/lldpd ] && /etc/init.d/lldpd restart
+		[ -f /etc/init.d/prc ] && /etc/init.d/prc restart
+		[ -f /etc/init.d/dhcp_helper ] && /etc/init.d/dhcp_helper restart
+		[ -f /etc/init.d/wifischedule ] && /etc/init.d/wifischedule reload
+	}
+
+	touch /tmp/wifi_flag
+
+	return $rv
+}
+
+service_running() {
+	local controller_mode=$(uci -q get acn.mgmt.management)
+
+	[ "$controller_mode" -ne 3 ] && {
+		set_u8021p
+
+		dhcp_client_restart
+
+		dhcp_relay_start
+
+		[ -f /etc/init.d/dhcp_helper ] && /etc/init.d/dhcp_helper restart
+	}
+}
+
+stop_service() {
+	local controller_mode=$(uci -q get acn.mgmt.management)
+
+	[ "$controller_mode" -ne 3 ] && {
+		dhcp_relay_stop
+		wi_anchor_custom_gui
+	}
+	/sbin/wifi down
+	ifdown -a
+	if [ "$(board_name)" = "edgecore,eap104" ]; then
+		sleep 5
+	else
+		sleep 1
+	fi
+}
+
+validate_atm_bridge_section()
+{
+	uci_validate_section network "atm-bridge" "${1}" \
+		'unit:uinteger:0' \
+		'vci:range(32, 65535):35' \
+		'vpi:range(0, 255):8' \
+		'atmdev:uinteger:0' \
+		'encaps:or("llc", "vc"):llc' \
+		'payload:or("bridged", "routed"):bridged'
+}
+
+validate_route_section()
+{
+	uci_validate_section network route "${1}" \
+		'interface:string' \
+		'target:cidr4' \
+		'netmask:netmask4' \
+		'gateway:ip4addr' \
+		'metric:uinteger' \
+		'mtu:uinteger' \
+		'table:or(range(0,65535),string)'
+}
+
+validate_route6_section()
+{
+	uci_validate_section network route6 "${1}" \
+		'interface:string' \
+		'target:cidr6' \
+		'gateway:ip6addr' \
+		'metric:uinteger' \
+		'mtu:uinteger' \
+		'table:or(range(0,65535),string)'
+}
+
+validate_rule_section()
+{
+	uci_validate_section network rule "${1}" \
+		'in:string' \
+		'out:string' \
+		'src:cidr4' \
+		'dest:cidr4' \
+		'tos:range(0,31)' \
+		'mark:string' \
+		'invert:bool' \
+		'lookup:or(range(0,65535),string)' \
+		'goto:range(0,65535)' \
+		'action:or("prohibit", "unreachable", "blackhole", "throw")'
+}
+
+validate_rule6_section()
+{
+	uci_validate_section network rule6 "${1}" \
+		'in:string' \
+		'out:string' \
+		'src:cidr6' \
+		'dest:cidr6' \
+		'tos:range(0,31)' \
+		'mark:string' \
+		'invert:bool' \
+		'lookup:or(range(0,65535),string)' \
+		'goto:range(0,65535)' \
+		'action:or("prohibit", "unreachable", "blackhole", "throw")'
+}
+
+validate_switch_section()
+{
+	uci_validate_section network switch "${1}" \
+		'name:string' \
+		'enable:bool' \
+		'enable_vlan:bool' \
+		'reset:bool' \
+		'ar8xxx_mib_poll_interval:uinteger' \
+		'ar8xxx_mib_type:range(0,1)'
+}
+
+validate_switch_vlan()
+{
+	uci_validate_section network switch_vlan "${1}" \
+		'device:string' \
+		'vlan:uinteger' \
+		'ports:list(ports)'
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger addon dhcp hotspot20 hotspot
+	if [ "$(uci_get acn wizard ez_setup)" = "0" ]; then
+		procd_add_reload_trigger wireless
+		procd_add_restart_trigger network
+	fi
+
+	procd_open_validate
+	validate_atm_bridge_section
+	validate_route_section
+	[ -e /proc/sys/net/ipv6 ] && validate_route6_section
+	validate_rule_section
+	[ -e /proc/sys/net/ipv6 ] && validate_rule6_section
+	validate_switch_section
+	validate_switch_vlan
+	procd_close_validate
+}
+
+shutdown() {
+	ifdown -a
+	if [ "$(board_name)" = "edgecore,eap104" ]; then
+		sleep 5
+	else
+		sleep 1
+	fi
+}

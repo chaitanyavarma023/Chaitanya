@@ -1,0 +1,16 @@
+#!/bin/sh
+
+tip_mode=$(uci -q get acn.mgmt.management)
+[ ! -z $tip_mode ] && [ "$tip_mode" -eq 3 ] || {
+	exit 0
+}
+
+[ -d /etc/config-shadow/ ] && exit 0
+
+uci commit
+
+cp -r /etc/config/ /etc/config-shadow/
+rm /etc/config/network
+cp /rom/etc/config/uhttpd /rom/etc/config/firewall /rom/etc/config/dhcp /rom/etc/config/dropbear /etc/config
+config_generate
+reload_config

@@ -1,0 +1,122 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+migrated_profile_idx=1
+
+delete_hotspot20_wireless() {
+  section="$1"
+
+  uci -q delete wireless.${section}.iw_enabled
+  uci -q delete wireless.${section}.anqp_domain_id
+  uci -q delete wireless.${section}.iw_internet
+  uci -q delete wireless.${section}.iw_access_network_type
+  uci -q delete wireless.${section}.hessid
+  uci -q delete wireless.${section}.iw_venue_group
+  uci -q delete wireless.${section}.iw_venue_type
+  uci -q delete wireless.${section}.iw_venue_name
+  uci -q delete wireless.${section}.iw_venue_url
+  uci -q delete wireless.${section}.network_auth_type
+  uci -q delete wireless.${section}.iw_roaming_consortium
+  uci -q delete wireless.${section}.iw_ipaddr_type_availability
+  uci -q delete wireless.${section}.iw_ipaddr_ipv4_type_availability
+  uci -q delete wireless.${section}.iw_ipaddr_ipv6_type_availability
+  uci -q delete wireless.${section}.iw_nai_realm
+  uci -q delete wireless.${section}.iw_domain_name
+  uci -q delete wireless.${section}.iw_anqp_3gpp_cell_net
+  uci -q delete wireless.${section}.hs20_oper_friendly_name
+  uci -q delete wireless.${section}.hs20_operating_class
+}
+
+migrate_hotspot20() {
+  section="$1"
+
+  if [ "$section" != "wmesh" ]; then
+    config_get hs20 ${section} hs20
+    config_get hs20_profile ${section} hs20_profile
+    config_get iw_enabled ${section} iw_enabled "1"
+    config_get anqp_domain_id ${section} anqp_domain_id "88"
+    config_get iw_internet ${section} iw_internet "0"
+    config_get iw_access_network_type ${section} iw_access_network_type
+    config_get iw_hessid ${section} hessid
+    config_get iw_venue_group ${section} iw_venue_group
+    config_get iw_venue_type ${section} iw_venue_type
+    config_get iw_venue_name ${section} iw_venue_name
+    config_get iw_venue_url ${section} iw_venue_url
+    config_get network_auth_type ${section} network_auth_type
+    config_get iw_roaming_consortium ${section} iw_roaming_consortium
+    config_get iw_ipaddr_type_availability ${section} iw_ipaddr_type_availability
+    config_get iw_ipaddr_ipv4_type_availability ${section} iw_ipaddr_ipv4_type_availability
+    config_get iw_ipaddr_ipv6_type_availability ${section} iw_ipaddr_ipv6_type_availability
+    config_get iw_nai_realm ${section} iw_nai_realm
+    config_get iw_domain_name ${section} iw_domain_name
+    config_get iw_anqp_3gpp_cell_net ${section} iw_anqp_3gpp_cell_net
+    config_get hs20_oper_friendly_name ${section} hs20_oper_friendly_name
+    config_get hs20_operating_class ${section} hs20_operating_class "5173"
+
+    # delete from /etc/config/wireless
+    delete_hotspot20_wireless ${section}
+
+    # migrate to /etc/config/hotspot20
+    profile_name="migrate_profile_${migrated_profile_idx}"
+    [ "${hs20}" == "1" -a "${hs20_profile}" == "" ] && {
+      [ -z "$iw_hessid" ] && {
+        iw_hessid=$(cat /sys/class/net/eth0/address | tr 'a-z' 'A-Z')
+      } || {
+        iw_hessid=$(echo $iw_hessid | tr '[a-z]' '[A-Z]')
+		    [ ${iw_hessid} == "FF:FF:FF:FF:FF:FF" ] && iw_hessid=$(cat /sys/class/net/eth0/address | tr '[a-z]' '[A-Z]')
+      }
+
+      uci add hotspot20 profile
+      uci set hotspot20.@profile[-1].name=${profile_name}
+      uci set hotspot20.@profile[-1].iw_enabled=${iw_enabled}
+      uci set hotspot20.@profile[-1].anqp_domain_id=${anqp_domain_id}
+      uci set hotspot20.@profile[-1].iw_internet=${iw_internet}
+      uci set hotspot20.@profile[-1].iw_access_network_type=${iw_access_network_type}
+      uci set hotspot20.@profile[-1].iw_hessid=${iw_hessid}
+      uci set hotspot20.@profile[-1].iw_venue_group=${iw_venue_group}
+      uci set hotspot20.@profile[-1].iw_venue_type=${iw_venue_type}
+      uci set hotspot20.@profile[-1].network_auth_type=${network_auth_type}
+      uci set hotspot20.@profile[-1].iw_ipaddr_type_availability=${iw_ipaddr_type_availability}
+      uci set hotspot20.@profile[-1].iw_ipaddr_ipv4_type_availability=${iw_ipaddr_ipv4_type_availability}
+      uci set hotspot20.@profile[-1].iw_ipaddr_ipv6_type_availability=${iw_ipaddr_ipv6_type_availability}
+      uci set hotspot20.@profile[-1].iw_anqp_3gpp_cell_net=${iw_anqp_3gpp_cell_net}
+      uci set hotspot20.@profile[-1].hs20_operating_class=${hs20_operating_class}
+
+      for _val in $iw_venue_name; do
+        uci add_list hotspot20.@profile[-1].iw_venue_name="${_val}"
+      done
+
+      for _val in $iw_venue_url; do
+        uci add_list hotspot20.@profile[-1].iw_venue_url="${_val}"
+      done
+
+      for _val in $iw_roaming_consortium; do
+        uci add_list hotspot20.@profile[-1].iw_roaming_consortium="${_val}"
+      done
+
+      for _val in $iw_nai_realm; do
+        uci add_list hotspot20.@profile[-1].iw_nai_realm="${_val}"
+      done
+
+      for _val in $iw_domain_name; do
+        uci add_list hotspot20.@profile[-1].iw_domain_name="${_val}"
+      done
+
+      uci add_list hotspot20.@profile[-1].hs20_oper_friendly_name="${hs20_oper_friendly_name}"
+
+      # set profile name in the /etc/config/wireless
+      uci set wireless.${section}.hs20_profile="${profile_name}"
+
+      migrated_profile_idx=$(($migrated_profile_idx+1))
+    }
+
+  fi
+}
+
+config_load wireless
+config_foreach migrate_hotspot20 wifi-iface
+uci commit hotspot20
+uci commit wireless
+
+exit 0

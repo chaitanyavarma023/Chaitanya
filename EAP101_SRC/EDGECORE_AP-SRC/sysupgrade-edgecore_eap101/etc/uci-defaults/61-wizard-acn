@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ "$(uci -q get acn.wizard)" != "ui" ]; then
+uci -q batch <<-EOF >/dev/null
+  set acn.wizard=ui
+  set acn.wizard.enabled='1'
+  commit acn.wizard
+EOF
+fi
+
+exit 0

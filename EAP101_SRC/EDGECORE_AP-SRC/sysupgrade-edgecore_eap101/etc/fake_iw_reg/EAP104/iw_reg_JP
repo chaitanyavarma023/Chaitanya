@@ -1,0 +1,32 @@
+global
+country JP: DFS-JP
+    (2402 - 2482 @ 40), (N/A, 17), (N/A)
+    (4910 - 4990 @ 40), (N/A, 14), (N/A)
+    (5170 - 5250 @ 80), (N/A, 15), (N/A), AUTO-BW
+    (5170 - 5250 @ 160), (N/A, 10), (N/A), AUTO-BW
+    (5250 - 5330 @ 80), (N/A, 12), (0 ms), DFS, AUTO-BW
+    (5250 - 5330 @ 160), (N/A, 10), (0 ms), DFS, AUTO-BW
+    (5490 - 5730 @ 80), (N/A, 19), (0 ms), DFS
+    (5490 - 5730 @ 160), (N/A, 18), (0 ms), DFS, AUTO-BW
+    (57000 - 66000 @ 2160), (N/A, 10), (N/A)
+
+phy#1 (self-managed)
+country JP: DFS-JP
+    (2402 - 2482 @ 40), (N/A, 17), (N/A)
+    (5170 - 5250 @ 80), (N/A, 15), (N/A), NO-OUTDOOR, AUTO-BW
+    (5170 - 5250 @ 160), (N/A, 10), (N/A), NO-OUTDOOR, AUTO-BW
+    (5250 - 5330 @ 80), (N/A, 12), (0 ms), NO-OUTDOOR, DFS, AUTO-BW
+    (5250 - 5330 @ 160), (N/A, 10), (0 ms), NO-OUTDOOR, DFS, AUTO-BW
+    (5490 - 5730 @ 80), (N/A, 19), (0 ms), DFS, AUTO-BW
+    (5490 - 5730 @ 160), (N/A, 18), (0 ms), DFS, AUTO-BW
+
+phy#0 (self-managed)
+country JP: DFS-JP
+    (2402 - 2482 @ 40), (N/A, 17), (N/A)
+    (5170 - 5250 @ 80), (N/A, 15), (N/A), NO-OUTDOOR, AUTO-BW
+    (5170 - 5250 @ 160), (N/A, 10), (N/A), NO-OUTDOOR, AUTO-BW
+    (5250 - 5330 @ 80), (N/A, 12), (0 ms), NO-OUTDOOR, DFS, AUTO-BW
+    (5250 - 5330 @ 160), (N/A, 10), (0 ms), NO-OUTDOOR, DFS, AUTO-BW
+    (5490 - 5730 @ 80), (N/A, 19), (0 ms), DFS, AUTO-BW
+    (5490 - 5730 @ 160), (N/A, 18), (0 ms), DFS, AUTO-BW
+

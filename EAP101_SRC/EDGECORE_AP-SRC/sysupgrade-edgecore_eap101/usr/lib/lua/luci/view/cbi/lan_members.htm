@@ -1,0 +1,12 @@
+<%-
+local empty = true
+
+if section ~= nil or network ~= nil then
+	for n, iface in ipairs(acn.network_members(section or network)) do
+	    empty = false
+	 -%>
+	  <% luci.template.render('cbi/bridge_member_tag', {iface = iface})%>
+	<%end-%>
+<% end %>
+
+<% if empty then %><%:(None)%><%end%>

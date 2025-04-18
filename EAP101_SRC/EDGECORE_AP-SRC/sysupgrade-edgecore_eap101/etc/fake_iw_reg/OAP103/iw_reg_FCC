@@ -1,0 +1,18 @@
+global
+country US: DFS-FCC
+	(2402 - 2472 @ 40), (N/A, 20), (N/A)
+	(5170 - 5250 @ 80), (N/A, 21), (N/A), AUTO-BW
+	(5735 - 5835 @ 80), (6, 26), (N/A), AUTO-BW
+	(57240 - 71000 @ 2160), (N/A, 40), (N/A)
+
+phy#1 (self-managed)
+country US: DFS-FCC
+	(2402 - 2472 @ 40), (6, 20), (N/A)
+	(5170 - 5250 @ 80), (6, 21), (N/A), AUTO-BW
+	(5735 - 5835 @ 80), (6, 26), (N/A), AUTO-BW
+
+phy#0 (self-managed)
+country US: DFS-FCC
+	(2402 - 2472 @ 40), (6, 20), (N/A)
+	(5170 - 5250 @ 80), (6, 21), (N/A), AUTO-BW
+	(5735 - 5835 @ 80), (6, 26), (N/A), AUTO-BW

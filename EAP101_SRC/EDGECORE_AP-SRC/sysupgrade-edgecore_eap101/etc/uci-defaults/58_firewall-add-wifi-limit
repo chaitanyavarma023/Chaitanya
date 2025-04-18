@@ -1,0 +1,31 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+check_limit_include() {
+	local path
+
+	config_get path $1 path
+	if [ "$path" == "/etc/firewall.wifi_limit" ]; then
+		uci_remove firewall $1
+	fi
+}
+
+add_firewall_wifi_limit() {
+	config_load firewall
+	config_foreach check_limit_include include
+
+	uci -q batch <<-EOF
+	delete firewall.wifi_limit
+	set firewall.wifi_limit=include
+	set firewall.wifi_limit.path='/etc/firewall.wifi_limit'
+	set firewall.wifi_limit.reload='1'
+	set firewall.wifi_limit.type='script'
+	EOF
+
+	uci_commit firewall
+}
+
+add_firewall_wifi_limit
+
+exit 0

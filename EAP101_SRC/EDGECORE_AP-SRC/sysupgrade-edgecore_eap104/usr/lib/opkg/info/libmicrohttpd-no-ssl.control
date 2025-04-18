@@ -1,0 +1,14 @@
+Package: libmicrohttpd-no-ssl
+Version: 0.9.71-1
+Depends: libc
+Provides: libmicrohttpd
+Source: feeds/packages/libs/libmicrohttpd
+SourceName: libmicrohttpd-no-ssl
+License: LGPL-2.1-or-later
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1711276820
+Maintainer: Alexander Couzens <lynxis@fe80.eu>
+Architecture: arm_cortex-a7
+Installed-Size: 48247
+Description:  GNU libmicrohttpd is a library that runs an HTTP server.

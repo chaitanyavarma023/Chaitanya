@@ -1,0 +1,22 @@
+
+<input title="<%=self.description%>" type="<%=self.password and 'password" class="cbi-input-password' or 'text" class="ace-tooltip' %>"
+        <%=self.custom%>   <% if self.datatype then write(' data-rel="tooltip" ') end -%>
+        onchange="cbi_d_update(this.id)"<%=
+		attr("name", cbid) .. attr("id", cbid) .. attr("value", self:cfgvalue(section) or self.default) ..
+		ifattr(self.size, "size") .. ifattr(self.placeholder, "placeholder")%> 
+		<% if self.is_disabled then write('disabled=disabled style="background-color:#eee"') end %> 
+		/>
+	<span class="lbl"></span>
+    <% if self.force_required or self.datatype then -%>
+    <script type="text/javascript">
+       
+        <% if self.datatype or self.force_required then -%>
+        $(function(){ 
+
+        cbi_validate_field('<%=cbid%>', <%=tostring(((self.optional or self.rmempty) and not self.cond_optional and not self.force_required) == true)%>, '<%=self.datatype%>');
+        
+        });
+
+        <%- end %>
+    </script>
+    <% end -%>

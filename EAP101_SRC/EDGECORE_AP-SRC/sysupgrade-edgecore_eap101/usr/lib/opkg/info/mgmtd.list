@@ -1,0 +1,9 @@
+/etc/certs/xmpp.ca
+/etc/certs/regsvc.ca
+/etc/uci-defaults/60-mgmtd-acn
+/etc/init.d/mgmt
+/usr/sbin/mgmtd-netcap.sh
+/usr/sbin/mgmtd
+/lib/upgrade/keep.d/mgmtd
+/etc/certs/upl.ca
+/etc/certs/ignite.ca

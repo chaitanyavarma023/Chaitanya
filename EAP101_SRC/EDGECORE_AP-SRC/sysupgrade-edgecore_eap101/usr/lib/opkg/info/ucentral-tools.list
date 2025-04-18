@@ -1,0 +1,6 @@
+/etc/radcli/dictionary
+/usr/sbin/dhcpdiscover
+/usr/sbin/radiusprobe
+/usr/sbin/dnsprobe
+/usr/sbin/ip-collide
+/etc/hotplug.d/iface/90-ip-collide

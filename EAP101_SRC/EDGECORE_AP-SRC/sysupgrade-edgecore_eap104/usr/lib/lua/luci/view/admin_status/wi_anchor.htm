@@ -1,0 +1,330 @@
+<%
+	local acn_status = require "luci.acn.status"
+	local fw_ver = acn_status.version()
+%>
+<html>
+<head>
+  <title>Smart Indoor Location Solution</title>
+  <meta content="no-cache" http-equiv="Cache-control">
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="no-cache" http-equiv="Pragma">
+  <meta content="width=device-width,height=device-height,initial-scale=1.0" name="viewport">
+  <style>
+  p {
+    color: #333;
+    font: 400 0.8em verdana, arial, sans-serif;
+  }
+
+  table {
+    margin: auto;
+  }
+
+  td {
+    color: #333;
+    font: 400 0.8em verdana, arial, sans-serif;
+    padding: 6px;
+  }
+
+  li {
+    color: #333;
+    font: 400 0.8em verdana, arial, sans-serif;
+    padding: 3px 0 3px 0;
+  }
+
+  h1 {
+    color: #F89829;
+    font-size: 150%;
+    font-weight: normal;
+  }
+
+  input {
+    padding: 3px;
+  }
+
+  #login, #contact, #register, #map {
+    padding-bottom: 15px;
+    width: 80%;
+    margin: auto;
+  }
+
+  #map {
+    width: 100%;
+  }
+
+  #login_form, #contact_form, #register_form {
+    text-align: center;
+    margin: auto;
+  }
+
+  #header {
+    width: 90%;
+    margin: auto;
+    height: auto;
+    /*line-height: 80px;*/
+    vertical-align: center;
+    text-align: middle;
+    /*font-family: 'Century Gothic';*/
+  }
+
+  #body {
+    clear: both;
+    width: 480px;
+    margin: auto;
+    background: #fff;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-size: 14px;
+  }
+
+  #footer {
+    color: #666;
+    font-size: 60%;
+    clear: both;
+    padding-top: 20px;
+    margin: auto;
+  }
+
+  #terms {
+    text-align: left;
+    margin: auto;
+  }
+
+  body {
+    height: 90%;
+    width: 100%;
+    margin: 10px auto 0px auto;
+    padding: 0;
+    text-align: center;
+    font: 400 0.8em verdana, arial, sans-serif;
+    line-height: 170%;
+    /*background: #1d2024;*/
+    background: #ffffff;
+    color: #333;
+  }
+
+  #openid_url {
+    background: url(openid.gif) no-repeat;
+    background-color: #fff;
+    background-position: 0 50%;
+    color: #000;
+    padding-left: 18px;
+  }
+
+  #openid-label, #login-label {
+    font-size: smaller;
+    line-height: 14px;
+    vertical-align: middle;
+  }
+
+  .err {
+    font-weight: bold;
+    color: #000;
+    width: 70%;
+    margin: 0px auto 10px auto;
+  }
+
+  .btn-primary {
+    color: #fff;
+    margin: 0 1px;
+    border-radius: 0!important;
+    padding: 3px 18px 3px 18px;
+    line-height: 24px;
+    border-width: 4px;
+    font-size: 13px;
+    background-color: #2283c5!important;
+    border-color: #2283c5;
+  }
+
+  .btn-primary:hover {
+    background-color: #045e9f!important;
+    cursor: pointer;
+  }
+
+  </style>
+  <script>
+  function getElement(e) {
+    if (document.all) {
+      return document.all[e];
+    } else {
+      return document.getElementById(e);
+    }
+  }
+
+  function toggle(obj) {
+    var el = document.getElementById(obj);
+    if (el.style.display != 'none') {
+      el.style.display = 'none';
+    } else {
+      el.style.display = '';
+    }
+  }
+  var last = 'login';
+
+  function toggleAuth(newauth, name) {
+    toggle(newauth + '-form');
+    toggle(newauth + '-label');
+    toggle(last + '-form');
+    toggle(last + '-label');
+    last = newauth;
+  }
+
+  function resizebody() {
+    if (document.body.scrollWidth >= 528) document.getElementById("body").style.width = "480px";
+    else document.getElementById("body").style.width = "90%";
+  }
+  </script>
+  <meta charset="utf-8">
+</head>
+
+<body onload='resizebody();'>
+  <div id="wi_anchor_header">
+  <!--
+  ==  Header above every page
+  -->
+    <table>
+      <tr>
+        <td><img alt="logo" src="<%=media%>/img/ALOGO.png?ver=<%=fw_ver%>">
+        </td>
+
+        <td style="font-size:14px"><b>Smart Indoor Location Solution</b>
+        </td>
+      </tr>
+    </table>
+
+    <h1 style="color:black; padding-top:15px">
+      <b>歡迎登入智慧室內定位方案</b><br>
+      <b>Welcome to Smart Indoor Location Solution</b>
+    </h1>
+  </div>
+  <div id="body">
+<% if return_val == "success" then %>
+    <div id="login_success">
+    <!--
+      --  The login success message
+      -->
+    <h1>Success!</h1>
+    You are able to access internet now. <b>enjoy!</b>
+    </div>
+<% else %>
+    <form action="<%=controller%>/admin/acn_status/set_wi_anchor_binding" class="form-horizontal" method="post" name="wi_anchor_data" id="wi_anchor_data">
+    
+      <input name="userurl" type="hidden" value="http://www.msftconnecttest.com/redirect">
+      <div id="wi_anchor_form">
+  <!--
+  ==  The login form
+  -->
+        <div id="login-form">
+          <table>
+            <tr>
+              <td>登入身份 Login Identity</td>
+
+              <td><select id="id_type" name="id_type" onchange="type_change();">
+                <option value="employee">員工 Accton Group Employee</option>
+                <option value="guest">訪客 Accton Group Visitor</option>
+              </select>
+              </td>
+            </tr>
+
+            <tr id="row_employee">
+              <td>員工編號 Employee ID Number</td>
+              <td><input id="emp_num" name="emp_num" value=""></td>
+            </tr>
+
+            <tr id="row_guest_name" style="display:none">
+              <td>姓名 Name</td>
+              <td><input id="guest_name" name="guest_name" value=""></td>
+            </tr>
+            <tr id="row_guest_phone" style="display:none">
+              <td>行動電話 Cell Number Number</td>
+              <td><input id="guest_phone" name="guest_phone" value=""></td>
+            </tr>
+
+            <tr id="row_os_type">
+              <td>註冊裝置OS Device OS</td>
+              <td>
+                <select id="os_type" name="os_type">
+                <option value="1">iOS</option>
+                <option value="2">Android</option>
+                <option value="3">Windows</option>
+                <option selected value="0">Others 其他</option>
+              </select>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" colspan="2" nowrap>
+                <br>
+                <input class="btn-primary" id="login_btn" name="button" onclick="return parseString()" style="border:0px" type="submit" value="提交 Submit">
+                <br><br><br>
+              </td>
+            </tr>
+          </table>
+
+          <table>
+            <tr>
+              <td>說明：智慧室內定位方案係由智邦集團開發，透過無線網路與行動裝置訊號傳輸，進行數據分析比對，提供接觸者篩選結果。</td>
+            </tr>
+            <tr>
+              <td>注意事項：請隨身攜帶已登錄的行動裝置，並連線至IgniteNet-Guest，可提升數據結果精準度。</td>
+            </tr>
+            <tr>
+              <td>若有任何問題：請洽分機1920/1196</td>
+            </tr>
+
+            <tr>
+              <td>Smart Indoor Location Solution is an application that the Accton group developed; it uses Wi-Fi data to analyze contact risk.</td>
+            </tr>
+            <tr>
+              <td>Note: Please bring your logged-in mobile device with you in the office area and keep connected with Wi-Fi "IgniteNet-Guest" it will help improve the accuracy of contact screening results.</td>
+            </tr>
+          </table>
+        </div>
+
+        <script type="text/javascript">
+
+          function getQueryStr(search_name) {
+            var search_str = window.location.search.substring(1);
+            var search_arr = search_str.split("&");
+            for (var i = 0; i < search_arr.length; i++) {
+              item = search_arr[i].split("=");
+              if (item[0] == search_name) {
+                return item[1];
+              }
+            }
+          }
+
+          function parseString() {
+            var id_type_val = document.getElementById('id_type').value;
+            if (id_type_val == "guest") {
+              var guestname_obj = document.getElementById('guest_name');
+              var phone_obj = document.getElementById('guest_phone');
+              guestname_obj.value = guestname_obj.value.replace(/ /gi, '_');
+              phone_obj.value = phone_obj.value.replace(/ /gi, '_')
+            } else {
+              var emp_num_obj = document.getElementById('emp_num');
+              emp_num_obj.value = emp_num_obj.value.replace(/ /gi, '_')
+            }
+          }
+
+          function type_change() {
+            document.getElementById('row_guest_name').style.display = "none";
+            document.getElementById('row_guest_phone').style.display = "none";
+            document.getElementById('row_employee').style.display = "none";
+            var id_type_val = document.getElementById('id_type').value;
+            if (id_type_val == "guest") {
+              document.getElementById('row_guest_name').style.display = "";
+              document.getElementById('row_guest_phone').style.display = "";
+            } else {
+              document.getElementById('row_employee').style.display = "";
+            }
+            document.getElementById('row_os_type').style.display = "";
+          }
+          type_change();
+
+        </script>
+      </div>
+    </form>
+<% end %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+#!/bin/sh
+. /lib/acn/acn_functions.sh
+
+MID="$(get_MID)"
+update=0
+
+case $MID in
+"EAP102"*|"OAP103"*)
+	if [ "$(uci -q get system.led_wan.trigger)" == "" ]; then
+		uci set system.led_wan=led
+		uci set system.led_wan.name='WAN'
+		uci set system.led_wan.sysfs='green:bt'
+		uci set system.led_wan.trigger='netdev'
+		uci set system.led_wan.dev='eth0'
+		uci set system.led_wan.mode='tx rx link'
+	fi
+	uci commit system
+	;;
+*);;
+esac
+exit 0

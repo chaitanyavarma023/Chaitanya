@@ -1,0 +1,18 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+check_portal_enable() {
+  local portal_en
+  local section="$1"
+
+  config_get portal_en ${section} iw_portal_enable
+
+  [ -z "$portal_en" ] && uci -q set hotspot20.${section}.iw_portal_en='0'
+}
+
+config_load hotspot20
+config_foreach check_portal_enable profile
+uci commit hotspot20
+
+exit 0

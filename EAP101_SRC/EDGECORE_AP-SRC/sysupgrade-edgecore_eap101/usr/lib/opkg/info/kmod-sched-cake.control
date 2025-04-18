@@ -1,0 +1,11 @@
+Package: kmod-sched-cake
+Version: 4.4.60+2021-07-09-d9e1398c-1
+Depends: kernel (=4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-ipt-conntrack
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ipq807x/kmod-sched-cake
+SourceName: kmod-sched-cake
+Section: kernel
+SourceDateEpoch: 1632314979
+Maintainer: Kevin Darbyshire-Bryant <ldir@darbyshire-bryant.me.uk>
+Architecture: arm_cortex-a7
+Installed-Size: 19185
+Description:  Common Applications Kept Enhanced fq_codel/blue derived shaper

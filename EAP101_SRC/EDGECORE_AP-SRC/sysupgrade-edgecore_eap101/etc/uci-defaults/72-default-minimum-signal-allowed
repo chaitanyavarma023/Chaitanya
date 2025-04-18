@@ -1,0 +1,68 @@
+#!/bin/sh
+. /lib/functions.sh
+
+default_min_signal_allowed="0"
+default_signal_disable="0"
+default_signal_connect="-128"
+default_signal_stay="-128"
+
+check_signal_allowed() {
+  local vap="$1"
+  local radio="$2"
+  local radio_min_signal_allowed="$3"
+
+  local min_signal_allowed
+  local signal_connect
+  local signal_stay
+  local vap_device
+  local new_signal_connect
+  local new_signal_stay
+
+  config_get vap_min_signal_allowed $vap min_signal_allowed
+  config_get signal_connect $vap signal_connect
+  config_get signal_stay $vap signal_stay
+  config_get vap_device $vap device
+
+  [ "$vap" != "wmesh" -a "$radio" == "$vap_device" ] && {
+    if [ "$radio_min_signal_allowed" == "$default_signal_disable" ]; then
+      if [ "$vap_min_signal_allowed" == "" ]; then
+          new_signal_connect="$default_signal_connect"
+          new_signal_stay="$default_signal_stay"
+      fi
+    elif [ "$radio_min_signal_allowed" != "" ]; then
+      if [ "$vap_min_signal_allowed" == "" ]; then
+
+        [ "$signal_connect" = "" ] && new_signal_connect=$(($radio_min_signal_allowed-100))
+        [ "$signal_stay" = "" ] && new_signal_stay=$(($radio_min_signal_allowed-100))
+      fi
+    fi
+
+    [ -n "$new_signal_connect" ] && uci set wireless.$vap.signal_connect=$new_signal_connect
+    [ -n "$new_signal_stay" ] && uci set wireless.$vap.signal_stay=$new_signal_stay
+  }
+}
+
+default_min_signal_allowed() {
+  local radio="$1"
+  local min_signal_allowed
+  local current_min_signal
+
+  config_get min_signal_allowed $radio min_signal_allowed
+
+  [ -z "$min_signal_allowed" ] && {
+    current_min_signal="$default_min_signal_allowed"
+  } || {
+    #move min_signal_allowed from wifi-device to wifi-iface
+    uci -q delete wireless.${radio}.min_signal_allowed
+    current_min_signal="$min_signal_allowed"
+  }
+
+  # check signal_connect/signal_stay's value
+  config_foreach check_signal_allowed wifi-iface $radio $current_min_signal
+}
+
+config_load wireless
+config_foreach default_min_signal_allowed wifi-device
+uci commit wireless
+
+exit 0

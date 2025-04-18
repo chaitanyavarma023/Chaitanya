@@ -1,0 +1,97 @@
+#!/bin/sh
+
+. /ramfs/radius/bin/functions.common
+
+#exec_reply args:
+# 1~7:   User-Name NAS-IP-Address Post-Auth-Type Session-Timeout Idle-Timeout Acct-Interim-Interval Acct-Session-ID 
+# 8~11:  ZVendor-Byte-Amount-4GB ZVendor-Byte-Amount ZVendor-MaxByteIn-4GB ZVendor-MaxByteIn 
+# 12~15: ZVendor-MaxByteOut-4GB ZVendor-MaxByteOut Class "WISPr-Bandwidth-Min-Up:WISPr-Bandwidth-Max-Up"
+# 16~18: "WISPr-Bandwidth-Min-Down:WISPr-Bandwidth-Max-Down" WISPr-Redirection-URL WISPr-Session-Trerminate-Time
+# 19~20: WISPr-Session-Terminate-End-Of-Day WISPr-Billing-Class-Of-Service
+# 21~22: ZVendor-Group Chargeable-User-Identity
+# 23~25: Called-Station-Id Calling-Station-Id Framd-Ip-Address
+
+if [ -z "$1" -o "$1" = '""' -o -z "${USER_NAME}" ]; then
+  exit
+fi
+
+USER_NAME=$1
+
+v_trim session_timeout "${4}"
+v_trim idle_timeout "${5}"
+v_trim acct_interim_interval "${6}"
+v_muse acct_session_id "${7}"
+v_trim vsp_byteamount_4g "${8}"
+v_trim vsp_byteamount "${9}"
+v_trim vsp_maxbytein_4g "${10}"
+v_trim vsp_maxbytein "${11}"
+v_trim vsp_maxbyteout_4g "${12}"
+v_trim vsp_maxbyteout "${13}"
+v_trim wispr_bandwidth_up "${15}"
+v_trim wispr_bandwidth_down "${16}"
+v_trim wispr_redirection_url "${17}"
+v_trim wispr_session_terminate_time "${18}"
+v_trim wispr_session_terminate_end_of_day "${19}"
+v_trim wispr_billing_class_of_service "${20}"
+v_trim cui "${22}"
+v_trim calling_station_id "${24}"
+uname=$USER_NAME
+
+# check if managed by the cloud
+acn_enabled="$(uci -q get acn.mgmt.enabled)"
+acn_enc="$(uci -q get acn.radius.encrypt)"
+if [ "${acn_enabled}" = "1" -a "${acn_enc}" = "1" ]; then
+    acn_login="$(uci -q get acn.register.login)"
+    acn_pass="$(uci -q get acn.register.pass)"
+    # use CUI to replace User-Name
+    USER_NAME="${uname}"
+    calling_station_id="$(echo ${calling_station_id} | openssl enc -aes-256-cbc -d -a -k ${acn_pass} -md md5)"
+    uname="$(echo ${uname} | openssl enc -aes-256-cbc -d -a -k ${acn_pass} -md md5)"
+
+    # overwirte the value
+    [ -n "${USER_NAME}" ] && dump "User-Name" "${USER_NAME}" ":="
+    [ -n "${calling_station_id}" ] && dump "Calling-Station-Id" "${calling_station_id}" ":="
+    [ -n "${uname}" ] && dump "Chargeable-User-Identity" "${uname}" ":="
+fi
+
+
+
+IsMacAddress()
+{
+  if [ "${#1}" = "12" ]  &&  echo "${1}" | grep -Eq "([0-9a-fA-F]{2})[^0-9a-fA-F]?([0-9a-fA-F]{2})[^0-9a-fA-F]?([0-9a-fA-F]{2})[^0-9a-fA-F]?([0-9a-fA-F]{2})[^0-9a-fA-F]?([0-9a-fA-F]{2})[^0-9a-fA-F]?([0-9a-fA-F]{2})" ; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+# Assign all class into array
+REPLIED_CLASS=""
+for c in ${14}; do
+  tmp="$(echo "$c" | sed "s/^\"//;s/\"$//")"
+  REPLIED_CLASS="${REPLIED_CLASS}|${tmp}"
+done
+
+[ -n "$REPLIED_CLASS" ] && REPLIED_CLASS="${REPLIED_CLASS/|/}"
+
+byte_Amount=$((vsp_byteamount_4g*4*1024*1024*1024+vsp_byteamount))
+maxByteIn=$((vsp_maxbytein_4g*4*1024*1024*1024+vsp_maxbytein))
+maxByteOut=$((vsp_maxbyteout_4g*4*1024*1024*1024+vsp_maxbyteout))
+
+calling_station_id=$(echo ${calling_station_id} | tr - :)
+calling_file="/tmp/radius_exec/${calling_station_id}"
+
+if [ "$(IsMacAddress ${USER_NAME})" = "1" ] && [ -z "${uname}" ]; then
+  exit 0
+fi
+
+[ -z "${uname}" ] && uname=${USER_NAME}
+if [ -f $calling_file ]; then
+  echo -e "byte_amount=${byte_Amount}\nmaxByteIn=${maxByteIn}\nmaxByteOut=${maxByteOut}\nsession_timeout=${session_timeout}\nidle_timeout=${idle_timeout}\nacct_interim=${acct_interim_interval}\nuser_name=${uname}">> ${calling_file}
+fi
+
+/ramfs/bin/cipgwcli newmac "${calling_station_id}" "${idle_timeout}"
+
+#/ramfs/bin/cipgwcli login "${calling_station_id}" "${USER_NAME}" "${FRAMED_IP_ADDRESS_V4}" "${FRAMED_IP_ADDRESS_V6}" "0" "0" "0" "${UPLINK_QUOTA}" "${DOWNLINK_QUOTA}" "${TOTAL_QUOTA}" "$5" "$4" "$6"
+
+exit 0

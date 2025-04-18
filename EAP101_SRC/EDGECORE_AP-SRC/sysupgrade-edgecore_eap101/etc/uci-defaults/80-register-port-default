@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "$(uci -q get acn.register.port)" == "" ]; then
+	uci set acn.register.port='5222,443'
+	uci commit acn.register
+fi
+exit 0

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+tip_mode=$(uci -q get acn.mgmt.management)
+[ ! -z $tip_mode ] && [ "$tip_mode" -eq 3 ] || {
+	exit 0
+}
+
+. /lib/functions.sh
+
+iface_del() {
+        uci delete wireless.$1
+}
+
+config_load wireless
+config_foreach iface_del wifi-iface

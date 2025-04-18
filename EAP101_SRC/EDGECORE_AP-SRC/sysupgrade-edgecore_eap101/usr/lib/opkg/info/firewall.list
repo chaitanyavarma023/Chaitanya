@@ -1,0 +1,9 @@
+/usr/share/fw3/helpers.conf
+/etc/firewall.ssid_isolation
+/etc/init.d/firewall
+/sbin/fw3
+/etc/config/firewall
+/etc/firewall.user
+/etc/firewall.icmp
+/etc/firewall.smart_isolation
+/etc/hotplug.d/iface/20-firewall

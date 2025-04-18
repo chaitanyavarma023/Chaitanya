@@ -1,0 +1,53 @@
+
+<script type="text/javascript">
+//<![CDATA[
+function client_data(ssid,wpa,wep,wpa_suites, cipher,channel)
+{
+    var ssid_id             = document.getElementById("cbid.wireless.<%=self.radio_iface%>_1.ssid");
+    var security_id         = document.getElementById("cbid.wireless.<%=self.radio_iface%>_1.encryption");
+    var cipher_id             = document.getElementById("cbid.wireless.<%=self.radio_iface%>_1.cipher");
+    var channel_id             = document.getElementById("cbid.wireless.<%=self.radio_iface%>.channel");
+    $(ssid_id).val(ssid);
+
+    if( wpa == '0' )
+    {//0:None ;
+        if(wep == '0')
+            $(security_id).val("none") ;
+        else
+            $(security_id).val("wep-open");
+    }
+    else if( wpa == '1' )
+    {//1: WPA ;
+        if( wpa_suites != "802.1X")
+            $(security_id).val("psk");
+        else
+            $(security_id).val("wpa");
+    }
+    else if( wpa == '2' )
+    {//2:WPA2 ;
+        if( wpa_suites != "802.1X")
+            $(security_id).val("psk2");
+        else
+            $(security_id).val("wpa2");
+    }
+    else if( wpa == '3' )
+    {//3:Mixed
+        // Let's just choose WPA2-PSK
+        $(security_id).val("psk2");
+    }
+
+    cbi_d_update("cbid.wireless.<%=self.radio_iface%>_1.encryption");
+
+    if(cipher != "")
+        $(cipher_id ).val(cipher);
+
+    // XXX TODO: Add other ciphers here as we need to
+    cbi_d_update("cbid.wireless.<%=self.radio_iface%>_1.cipher");
+
+    $(channel_id ).val(channel);
+}
+//]]>
+</script>
+
+    <input type="button" class="btn btn-small" value="Scan" onclick="{scan(); $('#wifi_scan_modal').modal('show'); }"  id="scan_btn_<%=self.section%>" style="margin-bottom: 10px;" <% if self.is_controlled_by_cloud then write('disabled=disabled') end %> />
+

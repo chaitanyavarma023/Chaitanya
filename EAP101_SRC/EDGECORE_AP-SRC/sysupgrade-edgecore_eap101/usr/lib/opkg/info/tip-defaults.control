@@ -1,0 +1,12 @@
+Package: tip-defaults
+Version: 1
+Depends: libc
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/tip/tip-defaults
+SourceName: tip-defaults
+License: BSD-3-Clause
+Section: ucentral
+SourceDateEpoch: 1622550857
+Maintainer: John Crispin <john@phrozen.org>
+Architecture: arm_cortex-a7
+Installed-Size: 3138
+Description:  The default configuration of the AP.

@@ -7,7 +7,7 @@ openNDS includes ndsctl, a separate utility application. Some command line optio
 
 To print to stdout the status of the openNDS daemon:--->/usr/bin/ndsctl status
 
-To print to stdout the list of clients and trusted devices in json format:--->/usr/bin/ndsctl json
+To print to stdout the list of clients and trusted devices in json fot:--->/usr/bin/ndsctl json
 
 To print to stdout the details of a particular client in json format (This is particularly useful if called from a FAS or Binauth script.):--->/usr/bin/ndsctl json [mac|ip|token|hid]
 
@@ -100,7 +100,6 @@ firmware upgrad (CV)
 wget {below link for example}
 http://172.105.35.235:9000/firmwares/QN-O-240.HW2-7.0.1.B1-27-nov-2k24.sysupgrade
 
-
 root@QN_FD:14:E9:/tmp# sysupgrade -n -v QN-O-240.HW2-qca-wifi-80\+80-.sysupgrade 
 
 
@@ -173,20 +172,53 @@ once compilation success check firmware generated in ls ../../../../generated
 
 
 
+L2ACL mac check
+
+hostapd_cli -i ath10 -p /var/run/hostapd-wifi1/ accept_acl SHOW 
+
+hostapd_cli -i ath10 -p /var/run/hostapd-wifi1/ deny_acl SHOW 
+
+shows list of macs
+
+if want count use | wc -l
+
+cfg80211tool ath10 getmac
+
+uci get wireless.@wifi-iface[1].maclist | tr ' ' '\n' | wc -l
 
 
-Association Request detected from Source MAC: 86:e2:73:21:2d:dd
-Found IE: ID = 0x00, Length = 9
-Found IE: ID = 0x01, Length = 8
-Found IE: ID = 0x21, Length = 2
-Found IE: ID = 0x30, Length = 20
-Found IE: ID = 0x46, Length = 5
-Found IE: ID = 0x36, Length = 3
-Found IE: ID = 0x3B, Length = 20
-Found IE: ID = 0x2D, Length = 26
-Found IE: ID = 0x7F, Length = 11
-Found IE: ID = 0xBF, Length = 12
-Found IE: ID = 0x5A, Length = 3
-Found IE: ID = 0xFF, Length = 26
-Found IE: ID = 0xDD, Length = 7
-Found IE: ID = 0xDD, Length = 7
+
+
+tcpdump 
+
+tcpdump -i mon11 \( wlan addr1 58:61:63:00:72:bc or wlan addr2 58:61:63:00:72:bc or wlan addr1 2c:be:eb:97:45:45 or wlan addr2 2c:be:eb:97:45:45 \) 
+-w verify.pcap
+
+
+hostapd path : vi /lib/netifd/hostapd.sh
+
+
+
+wlan.ra == 58:61:63:00:72:bc 
+wlan.ta == 2c:be:eb:97:45:45
+
+
+
+
+wlan.fc.type == 1 and wlan.addr == 58:61:63:00:72:bc and wlan.addr == 2c:be:eb:97:45:45
+
+TOTAL
+
+!((wlan.fc.type == 1 or wlan.fc.type == 0  or wlan.fc.type==2 ) and (wlan.fc.subtype == 9 or wlan.fc.subtype == 12 or wlan.fc.subtype == 1 or wlan.fc.subtype == 11 or wlan.fc.subtype == 8 or wlan.fc.subtype == 13 or wlan.fc.subtype== 0 ) and (wlan.ra == 58:61:63:00:72:bc or wlan.ta == 58:61:63:00:72:bc or wlan.sa == 58:61:63:00:72:bc or wlan.ra == 2c:be:eb:97:45:45 or wlan.ta == 2c:be:eb:97:45:45 or wlan.da == 2c:be:eb:97:45:45 or wlan.bssid == 58:61:63:00:72:bc or wlan.bssid == 2c:be:eb:97:45:45)
+)
+
+
+
+
+
+
+
+
+
+
+

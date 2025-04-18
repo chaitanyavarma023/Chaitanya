@@ -1,0 +1,44 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+icmp_iptbl_status="del"
+icmp_target=""
+
+section_check() {
+	section_name="$1"
+
+	config_get enabled $section_name enabled
+	config_get proto $section_name proto
+	config_get target $section_name target
+	config_get src $section_name src
+	config_get dest $section_name dest
+	config_get depend $section_name depend
+	config_get name $section_name name
+
+	# iptable rule for ICMP when both Source and Destination are 'Any'
+	if [ "$proto" == "icmp" -a "$src" == "" -a "$dest" == "" -a "$enabled" == "1" ] && [ "$target" == "REJECT" -o "$target" == "DROP" ]; then
+		icmp_iptbl_status="add"
+
+		if [ -z "$icmp_target" ]; then
+			[ "$target" == "REJECT" ] && icmp_target="reject"
+			[ "$target" == "DROP" ] && icmp_target="DROP"
+		fi
+	fi
+}
+
+
+(
+	flock -x 200
+
+	config_load firewall
+	config_foreach section_check rule firewall
+
+	if [ "$icmp_iptbl_status" == "add" ]; then
+		iptables -I FORWARD 3 -p icmp -m comment --comment "!fw3: block OUTPUT ICMP" -j $icmp_target
+		iptables -I INPUT 5 -p icmp -m comment --comment "!fw3: block INPUT ICMP" -j $icmp_target
+	else
+		iptables -D FORWARD -p icmp -m comment --comment "!fw3: block OUTPUT ICMP" -j $icmp_target
+		iptables -D INPUT -p icmp -m comment --comment "!fw3: block INPUT ICMP" -j $icmp_target
+	fi
+) 200>/var/lock/firewall.icmp.flock

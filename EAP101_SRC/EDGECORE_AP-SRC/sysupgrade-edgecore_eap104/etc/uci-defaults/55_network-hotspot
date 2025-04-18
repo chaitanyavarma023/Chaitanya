@@ -1,0 +1,167 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+check_zone() {
+	local name
+
+	config_get name $1 name
+	if [ "$name" == "hotspot" ]; then
+		hszone=1
+	fi
+}
+
+check_hotspot_include() {
+	local path
+
+	config_get path $1 path
+	if [ "$path" == "/etc/firewall.hotspot" ]; then
+		uci_remove firewall $1
+	fi
+}
+
+check_smart_iso_include() {
+	local path
+
+	config_get path $1 path
+	if [ "$path" == "/etc/firewall.smart_isolation" ]; then
+		uci_remove firewall $1
+	fi
+}
+
+add_firewall_zone() {
+	local hszone
+
+	config_load firewall
+	config_foreach check_zone zone
+
+	if [ -z "$hszone" ]; then
+		uci -q batch <<-EOF
+		add firewall zone
+		set firewall.@zone[-1].name=hotspot
+		add_list firewall.@zone[-1].network=hotspot
+		add_list firewall.@zone[-1].network=hotspot_tunnel
+		set firewall.@zone[-1].input=ACCEPT
+		set firewall.@zone[-1].output=ACCEPT
+		set firewall.@zone[-1].forward=ACCEPT
+		EOF
+	fi
+
+	config_foreach check_hotspot_include include
+
+	uci -q batch <<-EOF
+	delete firewall.hs_inc
+	set firewall.hs_inc=include
+	set firewall.hs_inc.path='/etc/firewall.hotspot'
+	set firewall.hs_inc.reload='1'
+	set firewall.hs_inc.type='script'
+	EOF
+
+	config_foreach check_smart_iso_include include
+
+	uci -q batch <<-EOF
+	delete firewall.si_inc
+	set firewall.si_inc=include
+	set firewall.si_inc.path='/etc/firewall.smart_isolation'
+	set firewall.si_inc.reload='1'
+	set firewall.si_inc.type='script'
+	EOF
+
+	if [ -n "$(uci_get firewall hotspot_fw)" ]; then
+		uci_remove firewall hotspot_fw
+	fi
+
+	uci_commit firewall
+}
+
+if [ "$(uci -q show hotspot)" == "" ]; then
+	touch '/etc/config/hotspot'
+	uci -q batch <<-EOF >/dev/null
+		set hotspot.hotspot='hotspot'
+		set hotspot.hotspot.loc_id=''
+		set hotspot.hotspot.loc_name=''
+		set hotspot.hotspot.nasid=''
+		set hotspot.hotspot.hs_radius1=''
+		set hotspot.hotspot.hs_radius2=''
+		set hotspot.hotspot.hs_auth_port='1812'
+		set hotspot.hotspot.hs_acct_port='1813'
+		set hotspot.hotspot.hs_shared=''
+		set hotspot.hotspot.hs_portal_url=''
+		set hotspot.hotspot.hs_portal_secret=''
+		set hotspot.hotspot.hs_auth=''
+		set hotspot.hotspot.hs_wall=''
+		set hotspot.hotspot.hs_status='0'
+		set hotspot.hotspot.network='192.168.182.1'
+		set hotspot.hotspot.netmask='255.255.255.0'
+		set hotspot.hotspot.listen='192.168.182.1'
+		set hotspot.hotspot.dynip='192.168.182.1'
+		set hotspot.hotspot.dynip_mask='255.255.255.0'
+		set hotspot.hotspot.dhcpstart='10'
+		set hotspot.hotspot.dhcpend='254'
+		set hotspot.hotspot.lease='600'
+		set hotspot.hotspot.dns1=''
+		set hotspot.hotspot.dns2=''
+		set hotspot.hotspot.dns_domain=''
+		set hotspot.hotspot.hs_portal_logo='0'
+		set hotspot.hotspot.hs_portal_background='#1d2024'
+		set hotspot.hotspot.hs_portal_default_logo='logo.png'
+		set hotspot.hotspot.hs_mode='no_auth'
+		set hotspot.hotspot.hs_https='0'
+		set hotspot.hotspot.hs_https_domain=''
+		set hotspot.hotspot.hs_cloud_pem=''
+		set hotspot.hotspot.hs_cloud_md5=''
+		commit hotspot
+	EOF
+fi
+
+if [ "$(uci -q show network.hotspot)" == "" ]; then
+	uci -q batch <<-EOF >/dev/null
+		set network.hotspot=interface
+		set network.hotspot.proto='static'
+		set network.hotspot.auto='1'
+		set network.hotspot.stp='0'
+		set network.hotspot.ipaddr='0.0.0.0'
+		set network.hotspot.netmask='0.0.0.0'
+		set network.hotspot.force_link='0'
+		set network.hotspot.smart_isolation='0'
+		commit network
+	EOF
+
+	if [ -z "$(uci -q get network.bridge.type)" ]; then
+		uci -q batch <<-EOF >/dev/null
+			set network.hotspot.type='bridge'
+			commit network
+		EOF
+	fi
+fi
+
+if [ "$(uci -q show network.hotspot_tunnel)" == "" ]; then
+	uci -q batch <<-EOF >/dev/null
+		set network.hotspot_tunnel=interface
+		set network.hotspot_tunnel.ifname='tun0'
+		set network.hotspot_tunnel.proto='none'
+		commit network
+	EOF
+fi
+
+add_firewall_zone
+
+uci -q batch <<-EOF >/dev/null
+	delete ucitrack.@hotspot[-1]
+	add ucitrack hotspot
+	set ucitrack.@hotspot[-1].init=chilli
+
+	del_list ucitrack.@network[-1].affects='hotspot'
+	add_list ucitrack.@network[-1].affects='hotspot'
+
+	del_list ucitrack.@ethernet[-1].affects='hotspot'
+	add_list ucitrack.@ethernet[-1].affects='hotspot'
+
+	del_list ucitrack.@wireless[-1].affects='hotspot'
+
+	commit ucitrack
+EOF
+
+rm -f /tmp/luci-indexcache
+
+exit 0

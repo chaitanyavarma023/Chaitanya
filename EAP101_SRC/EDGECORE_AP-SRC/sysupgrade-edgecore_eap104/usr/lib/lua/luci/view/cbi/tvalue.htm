@@ -1,0 +1,9 @@
+<%+cbi/valueheader%>
+	<textarea class="cbi-input-textarea" 
+    style="<% if self.width then %>width: <%=self.width%>;<%end%><%=self.cust_style%>; <% if self.is_disabled then write('background-color:#eee') end %>"
+    <% if not self.size then %> style="width: 100%"<% else %> cols="<%=self.size%>"<% end %> onchange="cbi_d_update(this.id)"<%= attr("name", cbid) .. attr("id", cbid) .. ifattr(self.rows, "rows") .. ifattr(self.wrap, "wrap") %> <% if self.is_disabled then write('disabled=disabled') end %>>
+	<%-=pcdata(self:cfgvalue(section))-%>
+	</textarea>
+
+    <% if self.help_text then%><div class="help-text"><small><%=self.help_text%></small></div><%end%>
+<%+cbi/valuefooter%>

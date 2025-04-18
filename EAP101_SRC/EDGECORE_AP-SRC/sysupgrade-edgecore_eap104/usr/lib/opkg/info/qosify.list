@@ -1,0 +1,6 @@
+/etc/qosify-defaults.conf
+/etc/config/qosify
+/lib/bpf/qosify-bpf.o
+/etc/hotplug.d/net/10-qosify
+/usr/sbin/qosify
+/etc/init.d/qosify

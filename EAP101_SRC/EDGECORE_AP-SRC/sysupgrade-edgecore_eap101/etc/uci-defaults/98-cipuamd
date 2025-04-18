@@ -1,0 +1,11 @@
+#!/bin/sh
+
+uci -q batch <<-EOT
+	delete firewall.cipuamd
+	set firewall.cipuamd=include
+	set firewall.cipuamd.type=script
+	set firewall.cipuamd.path=/usr/share/cipuamd/firewall.include
+	set firewall.cipuamd.family=any
+	set firewall.cipuamd.reload=1
+	commit firewall
+EOT

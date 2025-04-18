@@ -1,0 +1,22 @@
+{
+	"admin/status/overview": {
+        "title": "Dashboard",
+        "order": 1,
+        "action": {
+            "type": "template",
+            "path": "admin_status/index"
+        }
+    },
+
+	"ucentral/status": {
+		"title": "Status",
+		"order": 1,
+		"action": {
+			"type": "view",
+			"path": "ucentral/status"
+		},
+		"depends": {
+			"acl": [ "luci-mod-ucentral" ]
+		}
+	}
+}

@@ -1,0 +1,66 @@
+<%
+local dummy
+local acn = require "luci.acn.util"
+local acn_uci = acn.cursor()
+user_name = luci.http.getcookie("user_name")
+root_user = luci.util.root_user(user_name)
+msp_disabled = (acn_uci:get("acn", "settings", "msp_enable") == "0" or acn_uci:get("acn", "settings", "msp_enable") == nil)
+-- IF CHANGE THIS HTML NEED TO CHANGE DYNAMIC SSID JS!!!
+%>
+
+<br/>
+<%+cbi/subtitle_heading%>
+<% if root_user or msp_disabled then %>
+    <div id="ssid_action_buttons" class="<%if self.is_controlled_by_cloud then print('hidden') end%> <% if self.mode:match('sta') or self.ssid_only_one then print('hidden') end %>">
+        <span id="btn_add_ssid" class="btn btn-info btn-small ssid-action-btn" data-rel="tooltip" data-original-title="
+        <%=luci.i18n.translatef('Add a new SSID (up to a max of %d)', self.max) %>"
+        >
+        <i class="icon-plus-sign"></i>
+            <%:Add%>
+        </span>
+        &nbsp;
+        <span id="btn_remove_ssid" data-rel="tooltip" data-original-title="<%:Remove selected SSID%>" class="btn btn-danger btn-small remove-btn ssid-action-btn">
+        <i class="icon-remove-sign"></i>
+            <%:Remove%>
+        </span>
+        <span id="alert_vap4" style="color:red; display:none">
+        &nbsp;&nbsp;<%=luci.i18n.translatef("If Beacon interval is less than 250 ms, it will be adjusted to 250 ms when there are more than 3 SSIDs are enabled.") %>
+        </span>
+        <span id="alert_vap8" style="color:red; display:none">
+        &nbsp;&nbsp;<%=luci.i18n.translatef("If Beacon interval is less than 500 ms, it will be adjusted to 500 ms when there are more than 7 SSIDs are enabled.") %>
+        </span>
+    </div>
+<% end %>
+<div id="cbi-wireless-<%=section%>">
+
+     <div class="tabbable tabs-top">
+
+        <ul id="ssid_tabs" class="nav nav-tabs <%if self.mode:match('sta') or self.ssid_only_one then print('hidden') end%>">
+            <% for i = 1, self.total_tabs do
+                  local ssid_value = acn_uci:get("wireless", section .. "_" .. i, "ssid")
+                  local custom_style = "line-height: unset;margin-top: unset;border-top-width:1px;"
+                  local lc_enabled = (acn_uci:get("wireless", section .. "_" .. i, "local_configurable") == "1")
+                  msp_local_config_tab = luci.util.msp_local_config(msp_disabled, lc_enabled)
+            %>
+                    <li id="SSID_tab_<%=i%>" data-ssidid="<%=i%>" class="<% if i == 1 then %> active <%end%>">
+                      <a data-toggle="tab" href="#SSID<%= i %>" style="<%=custom_style%>"> <%=ssid_value%>&nbsp;(SSID<%= i %>) </a>
+                    </li>
+            <%- end %>
+            <div id="last_ssid">
+            </div>
+        </ul>
+
+        <div class="tab-content" style="border: 1px solid rgb(202, 202, 202); min-height:50px" id="ssidTabContent">
+             <% for i = 1, self.total_tabs do %>
+                <div id="<%='SSID' .. i%>" class="tab-pane <% if i == 1 then %> active <%end%>">
+
+                    <div class="spinner-container<%=i%>"><i class="icon-spinner icon-spin" id="spinner<%=i%>"></i>    &nbsp;&nbsp;<%:Loading...%>
+                    </div>
+
+                </div>
+            <%- end %>
+
+        </div>
+
+    </div>
+</div>

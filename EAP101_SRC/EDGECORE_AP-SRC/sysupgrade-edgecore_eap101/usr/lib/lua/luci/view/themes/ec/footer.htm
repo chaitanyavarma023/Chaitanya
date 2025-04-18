@@ -1,0 +1,29 @@
+<% if not luci.dispatcher.context.plain_page then %>
+<%#
+ Copyright 2008 Steven Barth <steven@midlink.org>
+ Copyright 2008 Jo-Philipp Wich <jow@openwrt.org>
+ Copyright 2012 David Menting <david@nut-bolt.nl>
+ Licensed to the public under the Apache License 2.0.
+-%>
+
+<%
+	local ver = require "luci.version"
+	local disp = require "luci.dispatcher"
+	local request  = disp.context.path
+	local category = request[1]
+	local tree = disp.node()
+	--local categories = disp.node_childs(tree)
+%>
+   <footer>
+      <div class="grey" style="border-top:solid 1px rgb(221, 221, 221);text-align:center">
+        <small>Copyright &#169; 2023-2024, Edge-core Networks</small>
+      </div>
+   </footer>
+   </div>
+  </div>
+  </div>
+  </div>
+  </div>
+ </body>
+</html>
+<% end %>

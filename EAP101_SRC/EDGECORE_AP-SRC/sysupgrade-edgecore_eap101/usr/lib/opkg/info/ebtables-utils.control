@@ -1,0 +1,14 @@
+Package: ebtables-utils
+Version: 2018-06-27-48cff25d-1
+Depends: libc, kmod-ebtables, ebtables
+Source: package/network/utils/ebtables
+SourceName: ebtables-utils
+License: GPL-2.0
+Section: net
+SourceDateEpoch: 1734663215
+Architecture: arm_cortex-a7
+Installed-Size: 3355
+Description:  The ebtables program is a filtering tool for a bridging firewall. The
+ filtering is focussed on the Link Layer Ethernet frame fields. Apart
+ from filtering, it also gives the ability to alter the Ethernet MAC
+ addresses and implement a brouter.

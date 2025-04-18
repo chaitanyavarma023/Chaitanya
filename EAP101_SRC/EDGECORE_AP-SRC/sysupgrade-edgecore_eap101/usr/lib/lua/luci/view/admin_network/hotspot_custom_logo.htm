@@ -1,0 +1,171 @@
+<%
+local ImageSizeLimit = 100000;  --byte
+local ImageWidthLimit = 500;
+local ImageHeightLimit = 1000;
+%>
+
+<script type="text/javascript">
+$(function() {
+
+    $('#logo_file').ace_file_input({
+                no_file:_('No File ...'),
+                btn_choose:_('Choose'),
+                btn_change:_('Change'),
+                droppable:false,
+                onchange:null,
+                thumbnail:false
+    });
+
+    <% if logoupload_in_progress then %>
+
+        $("#logo_alert").modal();
+
+    <% end %>
+
+    $('#logo_btn').click(function() {
+        checkFile();
+        return false;
+    });
+
+    $('#remove_btn').click(function() {
+        var url = '<%=luci.dispatcher.build_url("admin", "network", "hotspot_remove_logo")%>';
+        $("#remove_btn").attr("disabled", "disabled");
+        $("#remove_btn").val("Processing..");
+        $.get(url,
+            function( data ) {
+                $("#remove_status").fadeIn().removeClass('hidden');
+                $("#remove_btn").hide();
+                $("#hs_logo_img").hide();
+                $("#remove_status").text(data);
+                $("#remove_status").fadeOut(10000);
+            }
+        );
+
+    });
+});
+
+//verify logo file
+var isCheckImageType = true;    //verify Filename extension
+var isCheckImageWidth = true;   //verify width
+var isCheckImageHeight = true;  //verify height
+var isCheckImageSize = true;    //verify size
+
+var ImageSizeLimit = <%=ImageSizeLimit%>;  //byte
+var ImageWidthLimit = <%=ImageWidthLimit%>
+var ImageHeightLimit = <%=ImageHeightLimit%>;
+
+var flag;
+function checkFile() {
+    clearErr();
+    var input = document.getElementById("logo_file");
+    var re = /\.(jpg|png|gif)$/i;
+    if (isCheckImageType && !re.test(input.value.toLowerCase())) {
+        showMessage(_("Only jpg, png, and gif files are supported."));
+        return false;
+    } else {
+        if(input.files) {
+            var f = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var data = e.target.result;
+                var image = new Image();
+                image.onload=function(){
+                    var _width = image.width;
+                    var _height = image.height;
+                    var _fileSize = f.size;
+                    flag = checkImage(_width, _height, _fileSize);
+                };
+                image.src= data;
+            };
+            reader.readAsDataURL(f);
+        } else {
+            var image = new Image();
+            image.onload =function(){
+                var _width = image.width;
+                var _height = image.height;
+                var _fileSize = image.fileSize;
+                flag = checkImage(_width, _height, _fileSize);
+            }
+            image.src = input.value;
+        }
+
+        return flag;
+    }
+}
+
+function checkImage(logo_width, logo_height, logo_size) {
+    if (isCheckImageWidth && logo_width > ImageWidthLimit) {
+        showMessage(_("The file's width must be less than %dpx.").format(ImageWidthLimit));
+        return false;
+    } else if (isCheckImageHeight && logo_height > ImageHeightLimit) {
+        showMessage(_("The file's height must be less than %dpx.").format(ImageHeightLimit));
+        return false;
+    } else if (isCheckImageSize && logo_size > ImageSizeLimit) {
+        showMessage(_("The file's size must be less than %dkb.").format(ImageSizeLimit/1000));
+        return false;
+    } else {
+        var file_name = $("#logo_file").val();
+        var extIndex = file_name.lastIndexOf('.');
+        if (extIndex != -1) {
+            var ext= file_name.substr(extIndex+1, file_name.length).toLowerCase();
+            $("#logo_ext").val(ext);
+        }
+
+        $('#form_logo,#cbi').each(function() {
+            var that = $(this);
+            $.post(that.attr('action'), that.serialize());
+        });
+
+       document.getElementById('form_logo').submit();
+  }
+}
+
+
+function showMessage(msg) { 
+    $("#bad-image-alert").text(msg);
+    $("#bad-image-alert").removeClass("hide");
+}
+
+function clearErr() {
+    $("#bad-image-alert").text("");
+    $("#bad-image-alert").addClass("hide");
+}
+
+</script>
+
+<form class="form-horizontal" method="post" id="form_logo" name="form_logo" action="<%=REQUEST_URI%>_upload_logo" enctype="multipart/form-data" class="modal hide fade in" style="display: none;">
+    <input type="hidden" id="logo_ext" name="logo_ext" value="">
+    <div id="logo_alert" data-backdrop="static" data-keyboard="false" class="modal fade in">
+        <div class="modal-header">
+            <h3 class="blue"><%:Upload new captive portal logo%></h3>
+        </div>
+        <div class="modal-body">
+            <h4><% if logoupload_in_progress then print(translate('Logo uploade in progress'))
+            else print(translate('Select files')) end %></h4>
+
+            <% if config_invalid or not logoupload_in_progress then %>
+            <p><%:Please select the logo file you'd like to upload.%></p>
+            <p><%:File limitation:%>
+                <%:size:%> <%=(ImageSizeLimit/1000)%>kb, <%:width:%> <%=ImageWidthLimit%>px, <%:height:%> <%=ImageHeightLimit%>px</p>
+
+            <input id="logo_file" name="logo_file" type="file" onclick="clearErr();"/>
+            <% end %>
+
+              <div id="logo_status">
+                    <div class="green hide" id="logo_success">
+                          <i class="icon-ok"></i> 
+                          <span class="msg"></span>
+                          <i id="logo_spinner" class="hidden icon-spinner green bigger-125"></i>
+                      </div>
+                    
+                    <div id="bad-image-alert" class="alert alert-error hide"><%:The uploaded logo file does not contain a supported format. %></div>
+                    
+            </div>
+        
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="logo_btn" name="logo_upload" class="btn btn-success"><%:Apply%></button>
+            <a href="#" class="btn" id="logo_cancel_btn" data-dismiss="modal"><%:Cancel%></a>
+        </div>
+    </div>    
+   </form>

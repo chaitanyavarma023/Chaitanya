@@ -1,0 +1,312 @@
+<%+header%>
+<script type="text/javascript">
+var ca_content_api_url = '<%=luci.dispatcher.build_url("admin", "system", "ca_content")%>';
+var upload_crt = 'custom_crt';
+var reset_default = 'reset_default';
+
+<%
+local uci = require "luci.model.uci".cursor()
+local mgmt_enabled = uci:get('acn', 'mgmt', 'enabled')
+%>
+
+function start_upload(file_type) {
+  if (file_type == upload_crt) {
+    $('#bad-crt-alert').hide();
+    $('#upload_crt_alert').modal();
+  } else if (file_type == reset_default) {
+    $('#resetdef_alert').modal();
+  }
+}
+
+function getFile(filePath) {
+  return filePath.substr(filePath.lastIndexOf('\\') + 1);
+}
+
+function send_ca_content_request() {
+  $.getJSON( ca_content_api_url, {  }, function (get_data) {
+    $("#_country").text((get_data == null || get_data.C == undefined) ? "N/A" : get_data.C);
+    $("#_locality").text((get_data == null || get_data.L == undefined) ? "N/A" : get_data.L);
+    $("#_org").text((get_data == null || get_data.O == undefined) ? "N/A" : get_data.O);
+    $("#_version").text((get_data == null || get_data.Version == undefined) ? "N/A" : get_data.Version);
+    $("#_serial").text((get_data == null || get_data.serial == undefined) ? "N/A" : get_data.serial);
+    $("#_sign").text((get_data == null || get_data.Signature == undefined) ? "N/A" : get_data.Signature);
+    $("#_dateS").text((get_data == null || get_data.notBefore == undefined) ? "N/A" : get_data.notBefore);
+    $("#_dateE").text((get_data == null || get_data.notAfter == undefined) ? "N/A" : get_data.notAfter);
+    $("#_key").text((get_data == null || get_data.keyid == undefined) ? "N/A" : get_data.keyid);
+    $("#_isCA").text((get_data == null || get_data.CA == undefined) ? "N/A" : get_data.CA);
+  });
+}
+
+
+$(function () {
+  send_ca_content_request();
+
+  $('#firmware_file, #crt_file, #key_file').ace_file_input({
+    no_file:_('No File ...'),
+    btn_choose:_('Choose'),
+    btn_change:_('Change'),
+    droppable:false,
+    onchange:null,
+    thumbnail:false
+  });
+
+  <% if upload_crt_in_progress then %>
+    $('#upload_crt_alert').modal();
+
+    <% if not crt_invalid then %>
+      apply_action('upload_crt', _('Uploading files, this may take a few minutes...'));
+      // Wait until device comes back
+      checking_time = 0;
+      try_contact_device(10 * 1000, 5 * 1000, 120 * 1000);
+    <% end %>
+
+  <% end %>
+
+  $('#upload_crt_btn').click(function () {
+    var filename = $('#crt_file').val();
+    if (filename == null || filename == '' || $(this).hasClass('disabled')) {
+      return;
+    }
+
+    filename = $('#key_file').val();
+    if (filename == null || filename == '' || $(this).hasClass('disabled')) {
+      return;
+    }
+
+    $('#bad-crt-alert').hide();
+    $('#select_crt_span').addClass('hide');
+    $('#select_key_span').addClass('hide');
+    $('#upload_crt_btn').hide();
+    $('#upload_crt_cancel_btn').hide();
+    $('#upgrade_crt_msg').html('<i class="icon-spinner icon-spin"></i><%: Uploading Certificate file....%>');
+
+    filename = filename.toLowerCase();
+    document.getElementById('form_upload').submit();
+  });
+
+  $('#reset_btn').click(function () {
+    apply_action('reset', 'Updating, this may take a few minutes...');
+    var url = '<%=luci.dispatcher.build_url("admin", "system")%>/reset_ca_default/';
+    $.post(url, null);
+    // Wait until device comes back
+    checking_time = 0;
+    try_contact_device(10 * 1000, 5 * 1000, 120 * 1000);
+  });
+
+});
+
+function apply_action(type, message) {
+  $('#' + type + '_btn').hide();
+  $('#' + type + '_cancel_btn').hide();
+  $('#' + type + '_success .msg').text(message);
+  $('#' + type + '_success').fadeIn().removeClass('hidden');
+  $('#' + type + '_spinner').addClass('icon-spin').removeClass('hidden');
+}
+</script>
+<style>
+@media only screen and (max-width:700px) {
+  .action-text {
+    display: block;
+    padding-top: 5px;
+  }
+}
+
+.btn-action {
+  width: 170px ;
+  margin-right:10px;
+}
+
+.btn-success {
+  margin-right:10px;
+}
+
+.cer_content{
+    border-left: 1px solid #CCCCCC;
+    padding-left: 20px;
+    margin-left: 20px;
+}
+
+h5 {
+    margin-bottom: 25px;
+    line-height: 25px;
+    margin-top: 0px;
+    padding-left: 20px;
+}
+
+.info-labels .row-fluid {
+    line-height: 27px;
+}
+
+#device_info .info-label {
+    width: 180px;
+}
+
+.info-labels .info-label {
+    text-transform: uppercase;
+    color: #3e5e6e;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.separator {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.info-labels .info-value {
+    display: inline-block;
+}
+</style>
+
+<!-- Upload crt alert message box -->
+    <form method="post" id="form_upload" name="form_upload" action="<%=REQUEST_URI%>" enctype="multipart/form-data">
+        <div id="upload_crt_alert" data-backdrop="static" data-keyboard="false" class="modal hide fade in" style="display: none; ">
+            <div class="modal-header"><h3 class="blue"><%:Upload Certificate File%></h3></div>
+            <div class="modal-body">
+                <h4 id="upgrade_crt_msg">
+                <%
+                  if upload_crt_in_progress and not crt_invalid then
+                    print(translate('Upload file in progress'))
+                  else
+                    print(translate('Select files'))
+                  end %>
+                </h4>
+            <% if crt_invalid or not upload_crt_in_progress then %>
+                <span id="select_crt_span">
+                    <p><%:Please select the %><b><%:Certificate file%></b><%: you'd like to upload%></p>
+                    <input id="crt_file"  name="crt_file" type="file"/>
+                    <span class="lbl"></span>
+                </span>
+                <span id="select_key_span">
+                    <p><%:Please select the %><b><%:Key file%></b><%: you'd like to upload%></p>
+                    <input id="key_file"  name="key_file" type="file"/>
+                    <span class="lbl"></span>
+                </span>
+            <% end %>
+                <div id="upload_status">
+                    <div class="green hidden" id="upload_crt_success">
+                        <i class="icon-ok"></i>
+                        <span class="msg"></span>
+                        <i id="upload_spinner" class="hidden icon-spinner green bigger-125"></i>
+                    </div>
+                <% if crt_invalid then %>
+                    <div id="bad-crt-alert" class="alert alert-error"><%:The uploaded file does not contain a supported format. %></div>
+                <% end %>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="upload_crt_btn" name="upload_crt" class="btn btn-success"><%:Apply%></button>
+                <button id="upload_crt_cancel_btn" class="btn" data-dismiss="modal"><%:Cancel%></button>
+            </div>
+        </div>
+    </form>
+<!--Reset to default Certificate message box-->
+    <div id="resetdef_alert"  data-backdrop="static"  data-keyboard="false"  class="modal hide fade in" style="display: none; ">
+        <div class="modal-header">
+            <h3 class="blue"><%:Reset to default Certificate%></h3>
+        </div>
+        <div class="modal-body">
+            <h4><%:Confirmation%></h4>
+            <p><%:Are you sure you want to erase the current Certificate for this device?%></p>
+            <div  id="reset_status">
+                <div class="green hidden" id="reset_success">
+                    <i class="icon-ok"></i> 
+                    <span class="msg"></span>
+                    <i id="reset_spinner" class="hidden icon-spinner green bigger-125"></i>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a id="reset_btn" name="reset" class="btn btn-success"><%:Yes%></a>
+            <a href="#" class="btn" id="reset_cancel_btn" data-dismiss="modal"><%:Cancel%></a>
+        </div>
+    </div>
+    <div class="cbi-map form-horizontal">
+        <h2><%:Upload Certificate%></h2>
+        <fieldset class="cbi-section">
+            <form method="post" id="sys_act" action="<%=pcdata(luci.http.getenv("REQUEST_URI"))%>">
+                <div class="row-fluid">  
+		<%if (mgmt_enabled == '1') then%>
+                    <button class="btn btn-info btn-success" type="button" disabled onclick="start_upload(upload_crt)" style="width:185px"><%:Upload Certificate%></button>
+		<%else%>
+                    <button class="btn btn-info btn-success" type="button" onclick="start_upload(upload_crt)" style="width:185px"><%:Upload Certificate%></button>
+		<%end%>
+                    <span class="action-text"><%:Upload Certificate of this device%></span>
+                </div> 
+                <div class="spacer"></div>
+                <div class="row-fluid">  
+                    <!--<button class="btn btn-info btn-warning" type="button" onclick="start_upload()" style="width:185px">-->
+		<%if (mgmt_enabled == '1') then%>
+		    <button class="btn btn-warning btn-action" type="button" disabled name="reset" onclick="start_upload(reset_default)" style="width:185px">
+		<%else%>
+		    <button class="btn btn-warning btn-action" type="button" name="reset" onclick="start_upload(reset_default)" style="width:185px">
+		<%end%>
+                        <%:Use Default Certificate%>
+                    </button>
+                    <span class="action-text"><%:Reset to default Certificate%></span>
+                </div> 
+                <div class="spacer"></div>
+            </form>
+        </fieldset>
+    </div>
+<!--Display Certificate content -->
+  <%if (mgmt_enabled == '1') then%>
+    <h5><%:The following table shows properties of your current Trusted Root CA Certificate upload by cloud.%></h5>
+  <%else%>
+    <h5><%:The following table shows properties of your current Trusted Root CA Certificate.%></h5>
+  <%end%>
+    <div class="info-labels span-right cer_content"  id="device_info">
+        <div class="row-fluid">
+            <div class="info-label"><%:Country%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_country"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:Locality%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_locality"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:Organization%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_org"></div>
+        </div> 
+        <div class="row-fluid">
+            <div class="info-label"><%:Version%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_version"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:Serial Number%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_serial"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:Sigature Algorithm%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_sign"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:Valid From%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_dateS"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:Valid Until%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_dateE"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:Subject Key Identifier%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_key"></div>
+        </div>
+        <div class="row-fluid">
+            <div class="info-label"><%:is Certificate Authority%></div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value" id="_isCA"></div>
+        </div>
+    </div>
+  </div>
+<%+footer%>
+

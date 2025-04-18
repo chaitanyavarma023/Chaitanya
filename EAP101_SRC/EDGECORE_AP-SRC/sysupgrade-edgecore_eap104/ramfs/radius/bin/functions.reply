@@ -1,0 +1,117 @@
+#!/bin/sh
+. /ramfs/radius/bin/functions.common
+
+if [ -z "${Auth_Server_Num}" ]; then
+    Auth_Server_Num=5
+fi
+
+is_blacklist() #args: username mgmtid
+{
+  local black_id
+  black_id="$(< /db/subscriber/mgmt/${2}/blacklist)"
+  [ -f /db/subscriber/blacklist/$black_id/users/${1} ] && echo 1
+}
+
+get_loc_status() #args: mgmtid
+{
+  status="$(< /db/subscriber/mgmt/${1}/radius/loc_status)"
+  echo "$status"
+}
+
+realm2srvindex() #args $2:mgmtid
+{
+  local realm mgmtid index
+  realm="`muse "$1" "${REALM}"`"
+  mgmtid="$2"
+
+  index=""
+  if [ "$(< /db/subscriber/mgmt/${mgmtid}/radius/account_service1)" == "Enabled" ]; then
+    server_ip="$(< /db/subscriber/mgmt/${mgmtid}/radius/acct_server_ip_1)"
+    if [ -n "$(grep -A10 "$realm" /ramfs/radius/etc/raddb/proxy.conf | grep -m 1 accthost | grep "$server_ip")" ]; then
+      index="1"
+    fi
+  elif [ "$(< /db/subscriber/mgmt/${mgmtid}/radius/account_service2)" == "Enabled" ]; then
+    server_ip="$(< /db/subscriber/mgmt/${mgmtid}/radius/acct_server_ip_2)"
+    if [ -n "$(grep -A10 "$realm" /ramfs/radius/etc/raddb/proxy.conf | grep -m 1 accthost | grep "$server_ip")" ]; then
+      index="2"
+    fi
+  fi
+  echo "$index"
+}
+
+rad_log() #args: type username message
+{
+  . /ramfs/bin/syslogd.inc.sh
+  local LIMIT DT RT TYPE UNAME NASID NASIP NASPT MAC ASID AST T1 T2 T3 T4 MSG
+  if true; then
+    LIMIT=500000
+    #Record Format:
+    #RecTime Type UserName NasIdentifier NasIPAddress NasPort CallingStationID AcctSessionID
+    #    AcctSessionTime AcctInputOctets AcctOutputOctets AcctInputPackets AcctOutputPackets Message
+
+    DT=`date "+%Y-%m-%d"`
+    RT=`date "+%Y-%m-%d %H:%M:%S %z"`
+    TYPE="$1"
+    UNAME=`trim "$2"`
+    NASID=`trim "${NAS_IDENTIFIER}"`
+    NASIP="${NAS_IP_ADDRESS}"
+    NASPT=`muse "${NAS_PORT}" "${NAS_PORT_ID}"`
+    MAC=`trim "$(echo ${CALLING_STATION_ID} |sed 's/-/:/g')"`
+    ASID=`trim "${ACCT_SESSION_ID}"`
+    AST=`muse "${ACCT_SESSION_TIME}" "0"`
+    T1=`muse "${ACCT_INPUT_OCTETS}" "0"`
+    if [ -n "${ACCT_INPUT_GIGAWORDS}" -a "${ACCT_INPUT_GIGAWORDS}" != "0" ]; then
+      T1="$((${ACCT_INPUT_GIGAWORDS}*4294967296 + ${T1}))"
+    fi
+    T2=`muse "${ACCT_OUTPUT_OCTETS}" "0"`
+    if [ -n "${ACCT_OUTPUT_GIGAWORDS}" -a "${ACCT_OUTPUT_GIGAWORDS}" != "0" ]; then
+      T2="$((${ACCT_OUTPUT_GIGAWORDS}*4294967296 + ${T2}))"
+    fi
+    T3=`muse "${ACCT_INPUT_PACKETS}" "0"`
+    T4=`muse "${ACCT_OUTPUT_PACKETS}" "0"`
+    if [ "$TYPE" = "Accept" -o "$TYPE" = "Reject" ]; then
+      MSG=`muse "$3" "${REPLY_MESSAGE}" "${ACCT_TERMINATE_CAUSE}"`
+    else
+      MSG=`muse "$3" "${ACCT_TERMINATE_CAUSE}" "${REPLY_MESSAGE}"`
+    fi
+
+    log_msg="Roaming Out ${TYPE} Username=${UNAME}"
+    [ "$TYPE" != "Start" -a "$TYPE" != "Accept" ] && log_msg+=", PktsIn=${T3}, BytesIn=${T1}, PktsOut=${T4}, BytesOut=${T2}"
+    [ -n "$MSG" ] && log_msg+=", ${MSG}"
+    logger_write "ro" "${TYPE}" "" "${log_msg}"
+
+    ORI_NAME=$(echo $UNAME | cut -d '@' -f1 )
+    SEL=$(/ramfs/bin/db /db/user_db "select extid,reference from ondemandusers where name='$ORI_NAME';")
+    EXTID=${SEL%%,*}
+    REFERENCE=${SEL##*,}
+ 
+    echo -e "${RT}\t${TYPE}\t${UNAME}\t${NASID}\t${NASIP}\t${NASPT}\t${MAC}\t${ASID}\t${AST}\t${T1}\t${T2}\t${T3}\t${T4}\t${MSG}\t${EXTID}\t${REFERENCE}\tRoaming Out\t" >> "/db/rohistory/$DT"
+  fi
+}
+
+get_bandwidth()
+{
+  group=$1
+  type=$2
+
+  if [ "${type}" = down ]; then
+	file="user_max_bandwidth"
+  else
+	file="user_max_upbandwidth"
+  fi
+	
+  data=$(< /db/subscriber/group/${group}/${file})
+  if [ -n $data ] && [ "${data}" != "0" ]; then
+    bw=${data%bit*}
+    len=$((${#bw}-1))
+    unit=${bw:$len:1}
+    digital=${bw:0:$len}
+    if [ ${unit} = "m" ]; then
+      bits="000000"
+    else
+      bits="000"
+    fi
+    bw_bits="${digital}${bits}"
+    echo "$bw_bits"
+  fi
+}

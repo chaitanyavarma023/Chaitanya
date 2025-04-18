@@ -1,0 +1,3 @@
+/usr/lib/freeradius3/rlm_chap.so
+/etc/freeradius3/mods-available/chap
+/etc/freeradius3/mods-enabled/chap

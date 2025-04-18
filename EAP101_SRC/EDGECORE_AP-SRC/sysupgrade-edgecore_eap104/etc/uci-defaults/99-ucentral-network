@@ -1,0 +1,45 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+section_del() {
+	uci delete $2.$1
+}
+
+remove_acc_firewall() {
+	local acc_include_list="dai hs_inc si_inc wifi_limit cipuamd capwap @dai[-1]"
+
+	for list in $acc_include_list; do
+		section_del $list firewall
+	done
+}
+
+config_load igmpproxy
+config_foreach section_del phyint igmpproxy
+
+config_load radsecproxy
+config_foreach section_del options radsecproxy
+
+tip_mode=$(uci -q get acn.mgmt.management)
+[ ! -z $tip_mode ] && [ "$tip_mode" -eq 3 ] || {
+	exit 0
+}
+
+config_load network
+config_foreach section_del interface network
+config_foreach section_del bridge-vlan network
+config_foreach section_del device network
+
+config_load dhcp
+config_foreach section_del dhcp dhcp
+
+config_load firewall
+config_foreach section_del rule firewall
+config_foreach section_del zone firewall
+config_foreach section_del forwarding firewall
+
+config_load usteer
+config_foreach section_del usteer usteer
+
+remove_acc_firewall
+

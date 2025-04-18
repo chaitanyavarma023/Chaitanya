@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# migration: if previous FW version set WPA3 Personal encryption = 'psk-sae' then change to 'sae'
+mesh_encryption="`uci get wireless.wmesh.encryption 2>/dev/null`"
+
+if [ "$mesh_encryption" == "psk-sae" ]; then
+    uci set wireless.wmesh.encryption='sae'
+    uci commmit wireless
+fi
+
+exit 0

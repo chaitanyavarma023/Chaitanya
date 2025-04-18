@@ -1,0 +1,85 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2014 OpenWrt.org
+
+START=10
+USE_PROCD=1
+
+validate_system_section() {
+	uci_load_validate system system "$1" "$2" \
+		'hostname:string:OpenWrt' \
+		'conloglevel:uinteger' \
+		'buffersize:uinteger' \
+		'timezone:string:UTC' \
+		'zonename:string'
+}
+
+system_config() {
+	[ "$2" = 0 ] || {
+		echo "validation failed"
+		return 1
+	}
+
+	echo "$hostname" > /proc/sys/kernel/hostname
+	[ -z "$conloglevel" -a -z "$buffersize" ] || dmesg ${conloglevel:+-n $conloglevel} ${buffersize:+-s $buffersize}
+	echo "$timezone" > /tmp/TZ
+	[ -n "$zonename" ] && [ -f "/usr/share/zoneinfo/${zonename// /_}" ] \
+		&& ln -sf "/usr/share/zoneinfo/${zonename// /_}" /tmp/localtime \
+		&& rm -f /tmp/TZ
+
+	# apply timezone to kernel
+	hwclock -u --systz
+	wifischedule_enabled="`uci -q get wifi_schedule.@global[0].enabled`"
+	[ "$wifischedule_enabled" == "1" ] && /etc/init.d/wifischedule reload
+}
+
+reload_service() {
+	config_load system
+	config_foreach validate_system_section system system_config
+	led_enable
+
+	retry_count=$(fw_printenv | grep bootlimit | cut -d= -f2)
+	bootmaxcnt_uci="`uci -q get acn.settings.bootmaxcnt`"
+	[ -z "${bootmaxcnt_uci}" ] && bootmaxcnt_uci=3
+#	if [ "${retry_count}" != "${bootmaxcnt_uci}" ]; then
+#		fw_setenv bootlimit ${bootmaxcnt_uci}
+#	fi
+	[ "${retry_count}" != "${bootmaxcnt_uci}" ] && {
+		echo "uboot environment bootlimit parameter is changed and updated to /etc/uboot_env.data." >> /var/log/uboot_env.log
+
+		mv /etc/uboot_env.data /var/uboot_env.tmp
+
+		touch /etc/uboot_env.data
+
+		while read -r line
+		do
+			local key="${line%% *}"
+			local value="${line#* }"
+
+			case ${key} in
+			active|bootcount)
+				;;
+			bootlimit)
+				value="${bootmaxcnt_uci}"
+
+				echo "${key} ${value}" >> /etc/uboot_env.data
+				;;
+                        *)
+                                echo "${key} ${value}" >> /etc/uboot_env.data
+                                ;;
+                        esac
+		done < /var/uboot_env.tmp
+
+                rm -f /var/uboot_env.tmp
+
+		fw_setenv -s /etc/uboot_env.data
+	}
+}
+
+service_triggers() {
+	procd_add_reload_trigger "system" "acn"
+	procd_add_validation validate_system_section
+}
+
+start_service() {
+	reload_service
+}

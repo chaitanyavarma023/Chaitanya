@@ -1,0 +1,11 @@
+Package: ratelimit
+Version: 1
+Depends: libc, hostapd-utils, tc, kmod-ifb
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ucentral/ratelimit
+SourceName: ratelimit
+Section: net
+SourceDateEpoch: 1648179425
+Maintainer: John Crispin <john@phrozen.org>
+Architecture: arm_cortex-a7
+Installed-Size: 1812
+Description:  Allow Wireless client rate limiting

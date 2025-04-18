@@ -1,0 +1,36 @@
+#!/bin/sh
+#exec_auth arg: User-Name
+
+. /ramfs/radius/bin/functions.common
+
+remotevpn="0"
+
+v_trim calling_station_id "${CALLING_STATION_ID}"
+calling_station_id=$(echo ${calling_station_id} | tr - :)
+calling_file="/tmp/radius_exec/${calling_station_id}"
+
+v_trim nas_ip_t "${NAS_IP_ADDRESS}"
+
+if [ -f "${calling_file}" ]; then
+  source ${calling_file}
+  # check if NAS IP is different, then rm calling_file, nas_ip is from source files.
+  if [ "${nas_ip_t}" != "${nas_ip}" ]; then
+    rm -f ${calling_file}
+  fi
+fi
+
+######   Local User for Roaming Out and 8021X   #######
+
+if [ ! -f "${calling_file}" ]; then
+  v_muse user "$1" "${USER_NAME}"
+  v_trim client_ip "${FRAMED_IP_ADDRESS}"
+fi
+
+msg="user=${user}\nclient_ip=${client_ip}\nnas_ip=${nas_ip_t}"
+
+echo -e "${msg}" > ${calling_file}
+chmod 777 ${calling_file}
+
+[ -n "${FREERADIUS_PROXIED_TO}" -o -z "${EAP_TYPE}" ] && dump "Proxy-To-Realm" "OneCloud" ":="
+
+exit 0

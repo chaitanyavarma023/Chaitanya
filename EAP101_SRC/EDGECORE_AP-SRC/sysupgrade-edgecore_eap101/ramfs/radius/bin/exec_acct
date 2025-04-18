@@ -1,0 +1,107 @@
+#!/bin/ba
+#exec_acct arg: User-Name
+if [ -z "$1" ] || [ -z "${USER_NAME}" ]; then
+  exit
+fi
+
+if [ "${CLIENT_IP_ADDRESS}" = "127.0.0.1" ] || [ "${NAS_IP_ADDRESS}" = "127.0.0.1" ]; then
+  exit
+fi
+
+. /ramfs/radius/bin/functions
+
+
+# get ACN related attributes
+acn_enabled=$(uci -q get acn.mgmt.enabled)
+if [ "${acn_enabled}" = "1" ]; then
+    acn_login="$(uci -q get acn.register.login)"
+    acn_pass="$(uci -q get acn.register.pass)"
+    acn_pass="$(echo -n ${acn_pass} | openssl dgst -sha256 | awk '{print $2}')"
+
+    dump "ZVendor-Register-Id" "${acn_login}" ":="
+    dump "ZVendor-Register-Password" "${acn_pass}" ":="
+fi
+
+v_muse client_ip "${CLIENT_IP_ADDRESS}" "${NAS_IP_ADDRESS}"
+nas_info=`/usr/bin/awk -f /ramfs/bin/get_nas.awk /db "${client_ip}"`
+mgmtid=$(getmgmtid "${REALM}" "${USER_NAME}")
+utype=$(getutype "${mgmtid}")
+[ -z "${CHARGEABLE_USER_IDENTITY}" ] && CHARGEABLE_USER_IDENTITY="${USER_NAME}"
+uname=$(trim ${CHARGEABLE_USER_IDENTITY})
+uname=${uname%@*}
+if [ "${nas_info%% *}" = "1" ]; then
+  postfix=$(trim ${USER_NAME})
+  postfix=${postfix#*@}
+  if [ "${utype}" = "LOCAL" ]; then
+    log_od_ra_file "${uname}" "${postfix}"
+    ACCT_TERMINATE_CAUSE=`trim "${ACCT_TERMINATE_CAUSE}"`
+    rad_log "${ACCT_STATUS_TYPE}" "$1" "${ACCT_TERMINATE_CAUSE}"
+    if [ "${ACCT_STATUS_TYPE}" = "Stop" ]; then
+      rm /db/od_ra/"${uname}@${postfix}"
+    fi
+  elif [ "${utype}" = "ONDEMAND" ]; then
+    log_od_ra_file "${uname}" "${postfix}"
+    ACCT_TERMINATE_CAUSE=`trim "${ACCT_TERMINATE_CAUSE}"`
+    rad_log "${ACCT_STATUS_TYPE}" "$1" "${ACCT_TERMINATE_CAUSE}"
+    if [ "${ACCT_STATUS_TYPE}" = "Stop" ]; then
+      /ramfs/bin/logout_ondemand.sh "$uname" "${ACCT_TERMINATE_CAUSE}" "${postfix}" 
+    fi
+  elif [ "${ACCT_STATUS_TYPE}" == "Accounting-Off" ]; then
+    for i in $(ls /db/od_ra); do
+      /ramfs/bin/logout_ondemand.sh "$i" "Admin-Reboot" "${postfix}"
+    done
+  fi
+elif [ "${nas_info%% *}" = "2" ]; then
+  
+  v_trim called_ip "${NAS_IP_ADDRESS}"
+  calling_id=`/ramfs/bin/stationid2mac "${CALLING_STATION_ID}"`
+  if [ ! -f "/tmp/online/$calling_id" ]; then
+    # This MAC is not in online user list, but AP still send Interim-Update, 
+    # for safty, we should inform AP the information. But since online file 
+    # is empty so we directly calll split_tunnel_api in this situation.
+    if [ "${ACCT_STATUS_TYPE}" = "Interim-Update" ]; then
+      v_muse InPkt "${ACCT_INPUT_PACKETS}" "0"
+      v_muse OutPkt "${ACCT_OUTPUT_PACKETS}" "0"
+      if [ ${InPkt} -gt 100 -a ${OutPkt} -gt 100 ]; then
+        /ramfs/od_emcd/bin/split_tunnel_api.sh "logout" "all-${calling_id}" "${called_ip}"
+      fi
+    fi
+  else
+    SPtunnel_dev_path="/data/od_emcd/tunnel"
+    dev_id_and_status="`in_wide_apmgmt ${called_ip}`"
+    ap_dev_id=`echo ${dev_id_and_status} | cut -f1 -d ","`
+    if [ -n "$(cat ${SPtunnel_dev_path}/dev${ap_dev_id})" ]; then
+      v_trim acct_session_id "${ACCT_SESSION_ID}"
+      v_trim acct_session_time "${ACCT_SESSION_TIME}"
+      v_trim calling_ip "${FRAMED_IP_ADDRESS}"
+      called_id=`/ramfs/bin/stationid2mac "${CALLED_STATION_ID}"` 	
+      v_muse InPkt "${ACCT_INPUT_PACKETS}" "0"
+      v_muse OutPkt "${ACCT_OUTPUT_PACKETS}" "0"
+      v_muse InByte "${ACCT_INPUT_OCTETS}" "0"
+      v_muse OutByte "${ACCT_OUTPUT_OCTETS}" "0"
+      currenttime_s=$(date +%s)
+      SPT_ACCT_DB="/tmp/db_inmemory.db"
+
+      [ ! -f "${SPT_ACCT_DB}" ] && touch ${SPT_ACCT_DB}
+      if [ "${ACCT_STATUS_TYPE}" = "Stop" ]; then
+        /ramfs/bin/bdcli ${SPT_ACCT_DB} "UPDATE radacct SET acct_status_type='${ACCT_STATUS_TYPE}', acctupdatetime='${currenttime_s}', acctstoptime='${currenttime_s}', acctsessiontime='${acct_session_time}' WHERE acctsessionid='${acct_session_id}';"
+      elif [ "${ACCT_STATUS_TYPE}" = "Start" -o "${ACCT_STATUS_TYPE}" = "Interim-Update" ]; then
+        /ramfs/bin/bdcli ${SPT_ACCT_DB} "INSERT or replace INTO radacct (acctsessionid, username, client_mac, client_ip, nas_mac, nas_ip, dev_id, acct_status_type, Inpkt, Outpkt, ByteIn, ByteOut, acctstarttime, acctupdatetime, acctsessiontime) VALUES('${acct_session_id}','${uname}','${calling_id}','${calling_ip}','${called_id}','${called_ip}','${ap_dev_id}','${ACCT_STATUS_TYPE}','${InPkt}','${OutPkt}','${InByte}','${OutByte}','${currenttime_s}','${currenttime_s}','${acct_session_time}');"
+      else #Accting-On/Accounting-Off
+        /ramfs/bin/bdcli ${SPT_ACCT_DB} "UPDATE radacct SET acctstoptime='${currenttime_s}', acct_status_type='${ACCT_STATUS_TYPE}' WHERE nas_mac='${called_id}';"
+      fi
+    fi
+  fi
+
+  if [ -n "${mgmtid}" ]; then
+    ignore_acct="$(< /db/subscriber/mgmt/${mgmtid}/radius/ignore_acct)"
+    if [ "${ignore_acct}" = "Disabled" ]; then
+      if [ "${ACCT_STATUS_TYPE}" == "Stop" -a "Session-Timeout" != "${ACCT_TERMINATE_CAUSE}" -a "Idle-Timeout" != "${ACCT_TERMINATE_CAUSE}" ]; then
+        /ramfs/bin/nam_kick "$calling_id" "${ACCT_TERMINATE_CAUSE}"
+        /ramfs/bin/eap_delete.sh "$station_mac" "Kick"
+      fi
+      exit 0
+    fi
+  fi
+fi
+exit 0

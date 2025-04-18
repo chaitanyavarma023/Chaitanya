@@ -1,0 +1,37 @@
+#!/bin/sh
+
+if [ "$1" == "reg" -a "$2" == "get" ]; then
+	CNAME=`acc hw get Model | cut -d'=' -f2 | awk -F '-' '{print toupper($2)}'`
+	MID=`acc hw get product_name | cut -d'=' -f2 | cut -d'-' -f1`
+	uci_country="$(uci -q get wireless.radio0.country)"
+
+	if [ "$CNAME" == "" -o "$CNAME" == "WW" ]; then
+	  country=${uci_country}
+	else
+	  country=${CNAME}
+	fi
+
+	case $country in
+	"JP")
+		cat /etc/fake_iw_reg/$MID/"iw_reg_JP"
+		;;
+	"KR")
+		cat /etc/fake_iw_reg/$MID/"iw_reg_KR"
+		;;
+	"TH")
+		cat /etc/fake_iw_reg/$MID/"iw_reg_TH"
+		;;
+	"IN")
+		cat /etc/fake_iw_reg/$MID/"iw_reg_IN"
+		;;
+	"AT"|"BE"|"BG"|"HR"|"CZ"|"CY"|"DK"|"EE"|"FI"|"FR"|"DE"|"GR"|"HU"|"IS"|"IE"|"IT"|"LV"|"LT"|"LI"|"LU"|"MT"|"NO"|"NL"|"PL"|"PT"|"RO"|"SK"|"SI"|"ES"|"SE"|"CH"|"TR"|"GB")
+		cat /etc/fake_iw_reg/$MID/"iw_reg_ETSI"
+		;;
+	*)
+		#others use US/FCC setting
+		cat /etc/fake_iw_reg/$MID/"iw_reg_FCC"
+		;;
+	esac
+else
+	iw_origin $@
+fi

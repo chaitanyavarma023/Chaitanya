@@ -1,0 +1,10 @@
+Package: capwap
+Version: 0.93.3-1
+Depends: libc, libopenssl1.1, libpthread, libevent2-7
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ec-private/cip/capwap
+SourceName: capwap
+Section: net
+SourceDateEpoch: 1722396738
+Architecture: arm_cortex-a7
+Installed-Size: 92222
+Description:  The Control And Provisioning of Wireless Access Points.

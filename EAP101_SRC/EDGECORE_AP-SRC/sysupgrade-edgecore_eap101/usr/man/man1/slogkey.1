@@ -1,0 +1,148 @@
+'\" t
+.\"     Title: slogkey
+.\"    Author: [see the "Author" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 09/25/2023
+.\"    Manual: The slogkey manual page
+.\"    Source: 4.4
+.\"  Language: English
+.\"
+.TH "SLOGKEY" "1" "09/25/2023" "4\&.4" "The slogkey manual page"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+slogkey \- Manage cryptographic keys for use with \fBsyslog\-ng\fR secure logging
+.SH "SYNOPSIS"
+.HP \w'\fBslogkey\fR\ 'u
+\fBslogkey\fR [options] [arguments]
+.SH "DESCRIPTION"
+.PP
+The
+\fBslogkey\fR
+utility is used to manage cryptographic keys for use with the secure logging module of
+\fBsyslog\-ng\fR\&. Use this utility to create a master key, derive a host key to be used by a secure logging configuration and to display the current sequence counter of a key\&. The options determine the operating mode and are mutually exclusive\&.
+.SH "ARGUMENTS"
+.PP
+The arguments depend on the operating mode\&.
+.PP
+\fBMaster key generation\fR
+.RS 4
+Call sequence: slogkey \-\-master\-ḱey <filename>
+.sp
+<filename>: The name of the file to which the master key will be written\&.
+.RE
+.PP
+\fBHost key derivation\fR
+.RS 4
+Call sequence: slogkey \-\-derive\-key <master key file> <host MAC address> <host serial number> <host key file>
+.sp
+<master key file>: The master key from which the host key will be derived\&.
+.sp
+<host MAC address>: The MAC address of the host on which the key will be used\&. Instead of the MAC address, any other string that uniquely identifies a host can be supplied, e\&.g\&. the company inventory number\&.
+.sp
+<host serial number>: The serial number of the host on which the key will be used\&. Instead of the serial number, any other string that uniquely identifies a host can be supplied, e\&.g\&. the company inventory number\&.
+.sp
+<host key file>: The name of the file to which the host key will be written\&.
+.sp
+NOTE: The newly created host key has its counter set to 0 indicating that it represents the initial host key k0\&. This host key must be kept secret and not be disclosed to third parties\&. It will be required to successfully decrypt and verify log archives processed by the secure logging environment\&. As each log entry will be encrypted with its own key, a new host key will be created after successful processing of a log entry and will replace the previous key\&. Therefore, the initial host key needs to be stored in a safe place before starting the secure logging environment, as it will be deleted from the log host after processing of the first log entry\&.
+.RE
+.PP
+\fBSequence counter display\fR
+.RS 4
+Call sequence: slogkey \-\-counter <host key file>
+.sp
+<host key file>: The host key file from which the sequence will be read\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-master\-key\fR or \fB\-m\fR
+.RS 4
+Generates a mew master key\&. <filename> is the name of the file storing the newly generated master key\&.
+.RE
+.PP
+\fB\-\-derive\-key\fR or \fB\-d\fR
+.RS 4
+Derive a host key using a previously generated master key\&.
+.RE
+.PP
+\fB\-\-counter\fR or \fB\-c\fR
+.RS 4
+Display the current log sequence counter of a key\&.
+.RE
+.PP
+\fB\-\-help\fR or \fB\-h\fR
+.RS 4
+Display a help message\&.
+.RE
+.SH "FILES"
+.PP
+/usr/bin/slogkey
+.PP
+/etc/syslog\-ng\&.conf
+.SH "SEE ALSO"
+.PP
+\fBsyslog\-ng\&.conf\fR(5)
+.PP
+\fBsecure\-logging\fR(7)
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+.PP
+For the detailed documentation of see
+\m[blue]\fB\fBThe syslog\-ng Administrator Guide\fR\fR\m[]\&\s-2\u[1]\d\s+2
+.PP
+If you experience any problems or need help with syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng mailing list\fR\fR\m[]\&\s-2\u[2]\d\s+2\&.
+.PP
+For news and notifications about of syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng blogs\fR\fR\m[]\&\s-2\u[3]\d\s+2\&.
+.PP
+For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team <secure\-logging@airbus\&.com>\&.
+.sp .5v
+.RE
+.SH "AUTHOR"
+.PP
+This manual page was written by the Airbus Secure Logging Team <secure\-logging@airbus\&.com>\&.
+.SH "COPYRIGHT"
+.SH "NOTES"
+.IP " 1." 4
+\fBThe syslog-ng Administrator Guide\fR
+.RS 4
+\%https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html
+.RE
+.IP " 2." 4
+\fBsyslog-ng mailing list\fR
+.RS 4
+\%https://lists.balabit.hu/mailman/listinfo/syslog-ng
+.RE
+.IP " 3." 4
+\fBsyslog-ng blogs\fR
+.RS 4
+\%https://syslog-ng.org/blogs/
+.RE

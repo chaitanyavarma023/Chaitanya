@@ -1,0 +1,9 @@
+/etc/init.d/ustats
+/etc/config/ucentral
+/usr/sbin/ucentral
+/etc/config/ustats
+/usr/libexec/ucentral-wdt.sh
+/etc/init.d/ucentral-wdt
+/etc/uci-defaults/zzz-ucentral
+/lib/upgrade/keep.d/ucentral-client
+/etc/init.d/ucentral

@@ -1,0 +1,369 @@
+<%
+  local network = section
+  local pos = 0
+%>
+
+<%-
+    if type(self.hidden) == "table" then
+        for k, v in pairs(self.hidden) do
+-%>
+    <input type="hidden" id="<%=k%>" name="<%=k%>" value="<%=pcdata(v)%>" />
+<%-
+        end
+    end
+%>
+
+<div class="well">
+  <div class="row-fluid">
+
+<!-- Members -->
+    <div class="cbi-value" id="cbi-network-<%=network%>-ifname">
+      <label id="cbi-network-<%=network%>-ifname-tel" class=" control-label" for="cbid.network.<%=network%>.ifname">
+      <%
+        pos = pos + 1
+        local node = self.children[pos]
+        print(node.title)
+      %>
+      </label>
+
+      <div class="controls">
+        <%+admin_network/lan_members%>
+        <input type="hidden" id="cbid.network.<%=network%>.ifname" value="" />
+      </div>
+    </div>
+
+    <fieldset  class="cbi-section-node">
+
+<!-- IP Address -->
+      <div class="cbi-value" id="cbi-network-<%=network%>-ipaddr">
+        <label id="cbi-network-<%=network%>-ipaddr-tel" class="control-label" for="cbid.network.<%=network%>.ipaddr">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+
+%>
+        </label>
+        <div class="controls">
+          <input title="" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.<%=network%>.ipaddr" id="cbid.network.<%=network%>.ipaddr" value="<%=(node:cfgvalue(section) or node.default)%>" cbi_datatype="ip4addr" cbi_optional="true" data-original-title="" />
+        </div>
+      </div>
+
+<!-- Subnet mask -->
+      <div class="cbi-value" id="cbi-network-<%=network%>-netmask">
+        <label id="cbi-network-<%=network%>-netmask-tel" class=" control-label" for="cbid.network.<%=network%>.netmask">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+
+%>
+        </label>
+        <div class="controls">
+          <input title="" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.<%=network%>.netmask" id="cbid.network.<%=network%>.netmask" value="<%=(node:cfgvalue(section) or node.default)%>"  cbi_datatype="ip4addr" cbi_optional="true" data-original-title="" />
+          <script type="text/javascript">
+              cbi_validate_field('cbid.network.<%=network%>.netmask', true, 'netmask');
+          </script>
+        </div>
+      </div>
+
+<!-- MTU -->
+      <div class="cbi-value" id="cbi-network-<%=network%>-mtu">
+        <label id="cbi-network-<%=network%>-mtu-tel" class=" control-label" for="cbid.network.<%=network%>.mtu">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+
+ %>
+        </label>
+
+        <div class="controls">
+        <input title="" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.<%=network%>.mtu" id="cbid.network.<%=network%>.mtu" value="<%=(node:cfgvalue(section) or node.default)%>" cbi_datatype="range" cbi_optional="true" data-original-title="" />
+        </div>
+      </div>
+    </fieldset>
+
+
+    <fieldset  class="cbi-section-node" >
+<!-- DHCP -->
+      <div class="cbi-value" id="cbi-network-<%=network%>-dhcp">
+        <label id="cbi-network-<%=network%>-dhcp-tel" class=" control-label" for="cbid.network.<%=network%>.dhcp">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+
+%>
+        </label>
+
+        <div class="controls">
+<%
+      local dhcp_val = "0"
+
+      local relay_enable = self.map.uci:get('dhcp', 'dhcprelay', 'enabled') or ''
+      if relay_enable == '' or relay_enable == '1' then
+        dhcp_val = "0"
+      else
+        if self.map.uci:get('dhcp', network, 'interface' ) then
+          local ignore = self.map.uci:get('dhcp', network, 'ignore') or ''
+            if ignore == '' or ignore == '0' then
+              dhcp_val = "1"
+            else
+              dhcp_val = "0"
+            end
+        else
+          dhcp_val = "0"
+        end
+      end %>
+
+          <input type="hidden" value="<%=dhcp_val%>" id="cbi.cbe.network.<%=network%>.dhcp" name="cbi.cbe.network.<%=network%>.dhcp" />
+
+          <input title="" class="ace-tooltip ace-switch ace-switch-3 dhcp_button" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="checkbox" id="cbid.network.<%=network%>.dhcp" name="cbid.network.<%=network%>.dhcp" value="<%=dhcp_val%>" <% if dhcp_val == "1" then print(' checked="checked" ') end %>/>
+          <span class="lbl"></span>
+
+        </div>
+      </div>
+
+      <div class="cbi-value" id="cbi-network-<%=network%>-dhcp_start" style="">
+        <label id="cbi-network-<%=network%>-dhcp_start-tel" class=" control-label" for="cbid.network.<%=network%>.dhcp_start">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+       -- node:render(section, scope)
+
+%>
+        </label>
+
+        <div class="controls">
+          <input title="" type="text" class="ace-tooltip dhcp_<%=network%> dhcp_option" onchange="cbi_d_update(this.id)" name="cbid.network.<%=network%>.dhcp_start" id="cbid.network.<%=network%>.dhcp_start"  value="<%=self.map.uci:get('dhcp', network, 'start') or ''%>"  />
+        </div>
+      </div>
+
+      <div class="cbi-value" id="cbi-network-<%=network%>-dhcp_max" style="">
+        <label id="cbi-network-mgmt-dhcp_max-tel" class=" control-label" for="cbid.network.<%=network%>.dhcp_max">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+
+%>
+        </label>
+
+        <div class="controls">
+          <input title="" type="text" class="ace-tooltip  dhcp_<%=network%> dhcp_option" onchange="cbi_d_update(this.id)" name="cbid.network.<%=network%>.dhcp_max" id="cbid.network.<%=network%>.dhcp_max"  value="<%=self.map.uci:get('dhcp', network, 'limit') or ''%>"  />
+        </div>
+      </div>
+
+<!-- DHCP Lease Time -->
+      <div class="cbi-value" id="cbi-network-<%=network%>-dhcp_leasetime" style="margin-bottom: 20px;">
+        <label id="cbi-network-mgmt-dhcp_leasetime-tel" class=" control-label" for="cbid.network.<%=network%>.dhcp_leasetime">
+    <%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+    %>
+        </label>
+
+        <div class="controls">
+          <select class="cbi-input-select dhcp_<%=network%>_lease dhcp_option" id="cbid.network.<%=network%>.dhcp_leasetime" name="cbid.network.<%=network%>.dhcp_leasetime" onchange="cbi_d_update(this.id)">
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-5m" value="5m" <% if self.map.uci:get('dhcp', network, 'leasetime') == "5m" then print(' selected="selected" ') end %>><%:5min%>  </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-30m" value="30m" <% if self.map.uci:get('dhcp', network, 'leasetime') == "30m" then print(' selected="selected" ') end %>><%:30min%> </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-1h" value="1h" <% if self.map.uci:get('dhcp', network, 'leasetime') == "1h" then print(' selected="selected" ') end %>><%:1hr%>   </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-3h" value="3h" <% if self.map.uci:get('dhcp', network, 'leasetime') == "3h" then print(' selected="selected" ') end %>><%:3hr%>   </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-6h" value="6h" <% if self.map.uci:get('dhcp', network, 'leasetime') == "6h" then print(' selected="selected" ') end %>><%:6hr%>   </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-8h" value="8h" <% if self.map.uci:get('dhcp', network, 'leasetime') == "8h" then print(' selected="selected" ') end %>><%:8hr%>   </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-12h" value="12h" <% if self.map.uci:get('dhcp', network, 'leasetime') == "12h" then print(' selected="selected" ') end %>><%:12hr%>  </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-24h" value="24h" <% if self.map.uci:get('dhcp', network, 'leasetime') == "24h" then print(' selected="selected" ') end %>><%:1 day%> </option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-72h"  value="72h"  <% if self.map.uci:get('dhcp', network, 'leasetime') == "72h" then print(' selected="selected" ') end %>><%:3 days%></option>
+          	<option id="cbid-network-<%=network%>-dhcp_leasetime-168h" value="168h" <% if self.map.uci:get('dhcp', network, 'leasetime') == "168h" then print(' selected="selected" ') end %>><%:1 week%></option>
+          </select>
+        </div>
+      </div>
+
+<!-- DHCP DNS-->
+      <div class="cbi-value " id="cbi-network-<%=network%>-dhcp_dns" style="">
+        <label id="cbi-network-<%=network%>-dhcp_dns-tel" class=" control-label" for="cbid.network.<%=network%>.dhcp_dns">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+%>
+        </label>
+        <div class="controls">
+          <textarea rows="3" cols="20" class="ace-tooltip dhcp_<%=network%> dhcp_option" onchange="cbi_d_update(this.id)" name="cbid.network.<%=network%>.dhcp_dns" id="cbid.network.<%=network%>.dhcp_dns">
+<%
+        local _tbl=self.map.uci:get('dhcp', network, 'dhcp_option')
+        local all_dns=''
+        local _val
+        if _tbl then
+            for i,_val in pairs(_tbl) do
+                _val=_val:match('6,(.*)')
+                if _val then
+                    if all_dns ~= '' then
+                        all_dns=all_dns..','
+                    end
+                    all_dns=all_dns.._val
+                end
+            end
+        end
+        print(all_dns)
+%>
+          </textarea>
+        </div>
+      </div>
+
+    </fieldset>
+
+    <fieldset class="cbi-section-node <% if network:match("^vlan+%d+[_]%d+$") then print('hide') end %>">
+
+<!-- DHCP Relay -->
+      <div class="cbi-value" id="cbi-network-<%=network%>-circuit_id_data">
+        <label id="cbi-network-<%=network%>-circuit_id_data-tel" class=" control-label" for="cbid.network.<%=network%>.circuit_id_data">
+<%
+        pos = pos + 1
+        node = self.children[pos]
+        print(node.title)
+
+ %>
+        </label>
+
+        <div class="controls">
+        <input title="" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.<%=network%>.circuit_id_data" id="cbid.network.<%=network%>.circuit_id_data" value="<%=(node:cfgvalue(section) or node.default)%>" cbi_datatype="range" cbi_optional="true" data-original-title="" />
+        </div>
+      </div>
+<!-- STP-->
+      <div class="cbi-value" id="cbi-network-<%=network%>-stp">
+        <label id="cbi-network-<%=network%>-stp-tel" class=" control-label" for="cbid.network.<%=network%>.stp">
+<%
+      pos = pos + 1
+      node = self.children[pos]
+      print(node.title)
+
+ %>
+        </label>
+
+        <div class="controls">
+          <input type="hidden" value="<%=(node:cfgvalue(section) or node.default)%>" name="cbi.cbe.network.<%=network%>.stp" />
+
+          <input title="" class="ace-tooltip ace-switch ace-switch-3" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="checkbox" id="cbid.network.<%=network%>.stp"   <% if node:cfgvalue(section) == "1" then print(' checked="checked" ') end %> name="cbid.network.<%=network%>.stp" value="<%=(node:cfgvalue(section) or node.default)%>" />
+          <span class="lbl"></span>
+        </div>
+      </div>
+
+<!-- UPnP-->
+      <div class="cbi-value" id="cbi-network-<%=network%>-upnp">
+        <label id="cbi-network-<%=network%>-upnp-tel" class=" control-label" for="cbid.network.<%=network%>.upnp">
+<%
+      pos = pos + 1
+      node = self.children[pos]
+      print(node.title)
+
+%>
+        </label>
+
+        <div class="controls">
+          <input type="hidden" <% intiface = self.map.uci:get("upnpd", "config", "internal_iface")
+          if intiface and string.find(intiface, network) then luci.http.write('value="1"') else luci.http.write('value="0"') end%> name="cbi.cbe.network.<%=network%>.upnp" />
+
+          <input title="" class="ace-tooltip ace-switch ace-switch-3" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="checkbox" id="cbid.network.<%=network%>.upnp"   <% if intiface and string.find(intiface, network) then luci.http.write(' checked="checked" ') end %> name="cbid.network.<%=network%>.upnp" <%if intiface and string.find(intiface, network) then luci.http.write('value="1"') else luci.http.write('value="0"') end%> />
+          <span class="lbl"></span>
+        </div>
+      </div>
+
+<!-- Smart Isolation-->
+      <div class="cbi-value" id="cbi-network-<%=network%>-smart_isolation">
+        <label id="cbi-network-<%=network%>-smart_isolation-tel" class=" control-label" for="cbid.network.<%=network%>.smart_isolation">
+<%
+    pos = pos + 1
+    node = self.children[pos]
+    print(node.title)
+
+%>
+        </label>
+
+        <div class="controls">
+          <select class="cbi-input-select" id="cbid.network.<%=network%>.smart_isolation" name="cbid.network.<%=network%>.smart_isolation" onchange="cbi_d_update(this.id)">
+            <option id="cbid-network-<%=network%>-smart_isolation-disable" value="0" <% if node:cfgvalue(section) == "0" then print(' selected="selected" ') end %>><%:Disable (full access)%></option>
+            <option id="cbid-network-<%=network%>-smart_isolation-internet" value="1" <% if (node:cfgvalue(section) == "1" or node:cfgvalue(section) == nil) then print(' selected="selected" ') end %>><%:Internet access only%></option>
+            <option id="cbid-network-<%=network%>-smart_isolation-local" value="2" <% if node:cfgvalue(section) == "2" then print(' selected="selected" ') end %>><%:LAN access only%></option>
+            <option id="cbid-network-<%=network%>-smart_isolation-internet-strict" value="3" <% if (node:cfgvalue(section) == "3" or node:cfgvalue(section) == nil) then print(' selected="selected" ') end %>><%:Internet access strict%></option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+ </div>
+</div>
+
+<% if self.error and self.error[section] then -%>
+    <div class="cbi-section-error">
+        <ul><% for _, e in ipairs(self.error[section]) do -%>
+            <li>
+                <%- if e == "invalid" then -%>
+                    <%:One or more fields contain invalid values!%>
+                <%- elseif e == "missing" then -%>
+                    <%:One or more required fields have no value!%>
+                <%- else -%>
+                    <%=pcdata(e)%>
+                <%- end -%>
+            </li>
+        <%- end %></ul>
+    </div>
+<%- end %>
+
+<% if self.optionals[section] and #self.optionals[section] > 0 or self.dynamic then %>
+    <div class="cbi-optionals">
+        <% if self.dynamic then %>
+            <input type="text" id="cbi.opt.<%=self.config%>.<%=section%>" name="cbi.opt.<%=self.config%>.<%=section%>" />
+            <% if self.optionals[section] and #self.optionals[section] > 0 then %>
+            <script type="text/javascript">
+                cbi_combobox_init('cbi.opt.<%=self.config%>.<%=section%>', {
+                <%-
+                    for i, val in pairs(self.optionals[section]) do
+                -%>
+                    <%-=string.format("%q", val.option) .. ":" .. string.format("%q", striptags(val.title))-%>
+                    <%-if next(self.optionals[section], i) then-%>,<%-end-%>
+                <%-
+                    end
+                -%>
+                }, '', '<%-: -- custom -- -%>');
+            </script>
+            <% end %>
+        <% else %>
+
+        <select id="cbi.opt.<%=self.config%>.<%=section%>" name="cbi.opt.<%=self.config%>.<%=section%>">
+            <option><%: -- Additional Field -- %></option>
+            <% for key, val in pairs(self.optionals[section]) do -%>
+                <option id="cbi-<%=self.config.."-"..section.."-"..val.option%>" value="<%=val.option%>"><%=striptags(val.title)%></option>
+            <%- end %>
+        </select>
+
+        <script type="text/javascript"><% for key, val in pairs(self.optionals[section]) do %>
+<%
+            if #val.deps > 0 then %><% for j, d in ipairs(val.deps) do
+-%>
+            cbi_d_add("cbi-<%=self.config.."-"..section.."-"..val.option..d.add%>", {
+        <%-
+            for k,v in pairs(d.deps) do
+                local section2 = section
+                local cval = v
+                if type(v) == 'table' then
+                    cval = v.value
+                    section2 = v.section2
+                end
+
+        -%>
+            <%-=string.format('"cbid.%s.%s.%s"', self.config, section2, k) .. ":" .. string.format("%q", cval)-%>
+            <%-if next(d.deps, k) then-%>,<%-end-%>
+        <%-
+            end
+        -%>
+            });
+        <%- end %><% end %>
+        <% end %>
+        </script>
+    <% end %>
+        <input type="submit" class="cbi-button cbi-button-fieldadd" value="<%:Add%>" />
+    </div>
+<% end %>

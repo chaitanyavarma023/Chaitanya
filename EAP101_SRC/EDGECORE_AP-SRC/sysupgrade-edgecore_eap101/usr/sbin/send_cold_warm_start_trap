@@ -1,0 +1,34 @@
+#!/bin/sh
+
+WARM_START_FILE="/etc/warm_restart"
+trap_enable=$(uci -q get snmpd.snmp_trap.enable)
+server_ip=$(uci -q get snmpd.snmp_trap.server_ip)
+
+# coldStart:    snmptrap -v 2c -c public <server_ip> "" 1.3.6.1.6.3.1.1.5.1 1.3.6.1.6.3.1.1.4.3.0 o 1.3.6.1.4.1.259
+# warmStart:    snmptrap -v 2c -c public <server_ip> "" 1.3.6.1.6.3.1.1.5.2 1.3.6.1.6.3.1.1.4.3.0 o 1.3.6.1.4.1.259
+# 1.3.6.1.4.1.259 is the OID for 'edgecore'
+
+# send traps only when enabled at /etc/config/snmpd
+if [ -n "$trap_enable" ] && [ -n "$server_ip" ]; then
+    if [ "$(uci -P /var/state get snmpd.snmp_trap.start_send)" != "" ]; then
+        return
+    fi
+
+    while [ -z "$(ping -c 2 $server_ip 2>&1 | grep ttl)" ]; do
+        sleep 1
+    done
+
+    # coldStart/warmStart
+    if [ -f "$WARM_START_FILE" ]; then
+        # warmStart
+        snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.2 1.3.6.1.6.3.1.1.4.3.0 o 1.3.6.1.4.1.259
+        [ "$?" == "0" ] && rm -f "$WARM_START_FILE"
+    else
+        # coldStart
+        snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.1 1.3.6.1.6.3.1.1.4.3.0 o 1.3.6.1.4.1.259
+
+    fi
+
+    uci -P /var/state revert snmpd.snmp_trap.start_send
+    uci -P /var/state set snmpd.snmp_trap.start_send='1'
+fi

@@ -1,0 +1,98 @@
+<%
+local acn_status = require "luci.acn.status"
+
+-- JS file for this page
+luci.dispatcher.context.page_js =
+    "<script src='/javascript/jquery.tablesorter.min.js?ver=" .. acn_status.version() .. "'></script>\n"
+    .. '<script src="' .. media .. '/js/discovery.js?ver=' .. acn_status.version() .. '"></script>\n'
+    .. '<script type="text/javascript">\n'
+    .. "var discovery_start_url ='" .. luci.dispatcher.build_url("admin", "system", "discovery_start") .. "';\n"
+    .. "var discovery_stop_url ='" .. luci.dispatcher.build_url("admin", "system", "discovery_stop") .. "';\n"
+    .. '$(function() {\n'
+    .. '  $("#table_discovery").tablesorter({\n'
+    .. '    headers: {\n'
+    .. '      0: {\n'
+    .. '        sorter: false\n'
+    .. '      },\n'
+    .. '      3: {\n'
+    .. '        sorter: false\n'
+    .. '      },\n'
+    .. '      4: {\n'
+    .. '        sorter: false\n'
+    .. '      },\n'
+    .. '      5: {\n'
+    .. '        sorter: false\n'
+    .. '      }\n'
+    .. '    }\n'
+    .. '  });\n'
+    .. '});\n'
+    .. '</script>\n'
+    .. '<style type="text/css">\n'
+    .. '  table.tablesorter {\n'
+    .. '    width: 100%;\n'
+    .. '    text-align: left;\n'
+    .. '  }\n'
+    .. '\n'
+    .. '  .header {\n'
+    .. '    background-image: url("/img/bg.gif");\n'
+    .. '    background-repeat: no-repeat;\n'
+    .. '    background-position: 95% center;\n'
+    .. '    cursor: pointer;\n'
+    .. '  }\n'
+    .. '\n'
+    .. '  th.headerSortDown {\n'
+    .. '    background-image: url("/img/desc.gif");\n'
+    .. '    background-repeat: no-repeat;\n'
+    .. '    background-position: 95% center;\n'
+    .. '    cursor: pointer;\n'
+    .. '  }\n'
+    .. '\n'
+    .. '  th.headerSortUp {\n'
+    .. '    background-image: url("/img/asc.gif");\n'
+    .. '    background-repeat: no-repeat;\n'
+    .. '    background-position: 95% center;\n'
+    .. '    cursor: pointer;\n'
+    .. '  }\n'
+    .. '</style>\n'
+%>
+
+<%+header%>
+<form class="form-horizontal" id="form_" name="form_"  method="post" action="">
+    <h2><%:Device Discovery Tool%></h2>
+
+    <button class="btn btn-info btn-add btn-small" onclick="{ device_discovery('start'); return false;}" value="" id="btn_scan">
+        <i class="icon-search icon-only"></i>&nbsp;<%:Scan Network%>
+    </button>
+
+    <button class="btn btn-info btn-add btn-small" onclick="{ device_discovery('clear'); return false;}" value="" id="btn_clear">
+        <i class="icon-remove icon-only"></i>&nbsp;<%:Clear%>
+    </button>
+    <br><br>
+    <table id="table_discovery" class="table table-striped table-bordered table-hover tablesorter">
+        <thead>
+            <tr class="cbi-section-table-titles">
+                <th class="cbi-section-table-cell"><%:Device Model%></th>
+                <th class="cbi-section-table-cell"><%:Hostname%></th>
+                <th class="cbi-section-table-cell"><%:MAC Address%></th>
+                <th class="cbi-section-table-cell"><%:Device IP Address%></th>
+                <!-- <th class="cbi-section-table-cell">SSIDs</th>
+                <th class="cbi-section-table-cell">VLAN ID</th>
+                <th class="cbi-section-table-cell">&nbsp;</th> -->
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <span id="spinner_scan_container" style="font-size:14pt; font-color:light-gray; display:none">
+        <i class="icon-spinner icon-spin" id="spinner_scan"></i> <%:Loading...%>
+    </span>
+
+    <div id="row_empty" style="font-style:italic" class="grey hide">
+        <%:No data available for this list%>
+    </div>
+
+</form>
+
+<%+footer%>
+

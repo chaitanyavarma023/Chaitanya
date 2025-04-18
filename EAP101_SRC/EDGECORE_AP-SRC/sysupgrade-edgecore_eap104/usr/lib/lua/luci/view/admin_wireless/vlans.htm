@@ -1,0 +1,526 @@
+
+<%
+local acn = require("luci.acn.util")
+local product = require("luci.acn.product")
+local uci = acn.cursor()
+local num_eths = product.num_eth_ports or 2
+local acn_status = require "luci.acn.status"
+local ipvalidation = require "luci.acn.ipvalidation"
+local json = require "cjson.safe"
+
+local is_eap104 = product.is_EAP104()
+
+local ipdata = ipvalidation.getipdata()
+local json_ipdata = ipdata and json.encode(ipdata) or {}
+
+-- Before VLAN passthrough (#1966), VLAN portmapping was used in switch (eth0.1,
+-- eth0.2, etc); so this is left as heritage: VLAN numbering starts after last ethernet
+local VLAN_START = num_eths + 1
+local MAX_VLANS = VLAN_START + 16
+
+-- JS file for this page
+luci.dispatcher.context.page_js =
+   '<script type="text/javascript">\n'
+.. '    var MAX_VLAN_COUNT = ' .. MAX_VLANS .. ';\n'
+.. '    var VLAN_START = ' .. VLAN_START .. ';\n'
+.. '    var num_eths = ' .. num_eths .. ';\n'
+.. '    var eth_inputs = "'
+
+for i=1, num_eths do
+
+    local eth = product.eth(i-1)
+    luci.dispatcher.context.page_js = luci.dispatcher.context.page_js
+    .. "<span style='display:inline-block;'>"
+    .. "<input id='vlanCFG_ID-eth".. i .. "' name='vlanCFG_ID-eth".. i.. "' value='" .. eth['dev_name']
+    .. "' type='checkbox'> "
+    .. "<label for='vlanCFG_ID-eth" .. i .. "' class='lbl'>&nbsp; " .. acn.eth_to_friendly(i-1) .. "</label>"
+    .. "</input></span>&nbsp;&nbsp;"
+end
+
+-- #4707: Management VLAN
+-- XXX TODO maybe move to some other place (util.lua, for example) to achieve
+-- DRY principle (some code duplicated with Internet.lua, managemen VLAN stuff)
+local ifname = uci:get("network", "managementvlan", "ifname") or ""
+local mgmt_vlan_id = ifname and ifname:match('.+%.(%d+)') or ""
+ifname = uci:get("network", "wanvlan", "ifname") or ""
+local wan_vlan_id = ifname and ifname:match('.+%.(%d+)') or ""
+-- #4707 END
+
+local dhcprelay_enable = uci:get("dhcp", "dhcprelay", "enabled") or "0"
+
+luci.dispatcher.context.page_js =  luci.dispatcher.context.page_js .. '\"; \n'
+    .. "    var mgmt_vlan_id = '" .. mgmt_vlan_id .. "';\n"
+    .. "    var wan_vlan_id = '" .. wan_vlan_id .. "';\n"
+    .. '    var ipdata = ' .. json_ipdata ..';\n'
+    .. '    var dhcprelay_enable = ' .. dhcprelay_enable ..';\n'
+    .. '</script>\n'
+    .. '<script src="' .. media .. '/js/vlans.js?ver=' .. acn_status.version() .. '"></script>\n'
+
+local fw_rules = {}
+uci:foreach("firewall", "rule", function (fw)
+    if fw.name and fw.src then
+        fw_rules[fw.src .. "-" .. fw.name] = fw
+    end
+end)
+
+local function delete_fw_rule(uci, src, name)
+    local rule = fw_rules[src .. "-" .. name]
+    if rule then
+        uci:delete("firewall", rule[".name"])
+        fw_rules[src .. "-" .. name] = nil
+    end
+end
+
+local function add_fw_rule(uci, rule)
+    local cfg_name = uci:add("firewall", "rule")
+
+    if cfg_name then
+        uci:set("firewall", cfg_name, "enabled", "1")
+        uci:set("firewall", cfg_name, "target", "ACCEPT")
+        uci:set("firewall", cfg_name, "family", "ipv4")
+
+        for key, value in pairs(rule) do
+            uci:set("firewall", cfg_name, key, value)
+        end
+        fw_rules[rule.src .. "-" .. rule.name] = cfg_name
+    end
+end
+
+local fw_zones = {}
+uci:foreach("firewall", "zone", function (fw)
+    if fw.name then
+        fw_zones[fw.name] = fw
+    end
+end)
+
+local function delete_fw_zone(uci, name)
+    local rule = fw_zones[name]
+    if rule then
+        uci:delete("firewall", rule[".name"])
+        fw_zones[name] = nil
+    end
+end
+
+local function add_fw_zone(uci, rule)
+    local cfg_name = uci:add("firewall", "zone")
+
+    if cfg_name then
+        for key, value in pairs(rule) do
+            uci:set("firewall", cfg_name, key, value)
+        end
+
+        uci:set("firewall", cfg_name, "output", "ACCEPT")
+        uci:set("firewall", cfg_name, "input", "REJECT")
+        uci:set("firewall", cfg_name, "forward", "REJECT")
+
+        fw_zones[rule.name] = cfg_name
+    end
+end
+
+-- First handle deleted sections
+
+local is_cbi_apply = luci.http.formvalue("cbi.apply")
+local is_cbi_save = luci.http.formvalue("btn_save")
+
+if is_cbi_save or is_cbi_apply then
+
+    for logical_vlan_id = VLAN_START, MAX_VLANS do
+
+        delete_fw_rule(uci, acn.vlan_net_name(logical_vlan_id), "Allow-Ping")
+        delete_fw_rule(uci, acn.vlan_net_name(logical_vlan_id), "Allow-IGMP")
+
+        local vlan_ifname = uci:get("network", acn.vlan_net_name(logical_vlan_id), "ifname")
+        if vlan_ifname then
+            local vlan_id = vlan_ifname:match('eth%d+%.(%d+)') or ""
+            delete_fw_zone(uci, acn.vlan_net_name(logical_vlan_id) .. "_" .. vlan_id)
+            uci:delete("network", acn.vlan_net_name(logical_vlan_id) .. "_" .. vlan_id)
+            uci:delete("dhcp", acn.vlan_net_name(logical_vlan_id) .. "_" .. vlan_id)
+        end
+        delete_fw_zone(uci, acn.vlan_net_name(logical_vlan_id))
+
+        if luci.http.formvalue("acn.del.vlan" .. logical_vlan_id)  == "1" then
+            uci:delete("network", acn.vlan_net_name(logical_vlan_id) )
+
+            -- Move any wireless interfaces back to "route to default network"
+            local net_name = acn.vlan_net_name(logical_vlan_id)
+            local members =  acn.network_wifi_ifaces(true, uci)[net_name] or {}
+
+            for j, wifi_logical_name in ipairs(members) do
+                uci:set("wireless", wifi_logical_name, "network", lan_network)
+                uci:save("wireless")
+            end
+
+            if is_eap104 then
+                uci:delete("network", "svlan_" .. net_name)
+            end
+        end
+    end
+
+    -- Now handle new and saved items
+
+    for logical_vlan_id = VLAN_START, MAX_VLANS do
+        local form_pppoe_status = luci.http.formvalue("pppoe_" .. logical_vlan_id)
+        local form_vlan_id = luci.http.formvalue(acn.vlan_net_name(logical_vlan_id) .. ".id")
+
+        if form_vlan_id then
+            local new_ports = ""
+            local vlan_ports = "6t"
+
+            for k=0, num_eths -1 do
+
+                local eth       = product.eth(k)
+                local form_port = luci.http.formvalue(acn.vlan_net_name(logical_vlan_id) .. "-eth" .. (k+1))
+
+                if form_port then
+
+                    if is_eap104 then
+                        local prev_vlan_ifname_list = {}
+                        local prev_vlan_ifname = uci:get("network", acn.vlan_net_name(logical_vlan_id), "ifname")
+                        prev_vlan_ifname_list = luci.util.split(tostring(prev_vlan_ifname), " ") or {}
+
+                        -- recover lanX from network.vlanY.ifname
+                        if #prev_vlan_ifname_list > 0 then
+                            for m=1, #prev_vlan_ifname_list do
+                                local lan_dev_name = prev_vlan_ifname_list[m]:match("lan%d")
+
+                                if lan_dev_name then
+                                    -- avoid duplicate
+                                    local check_new_ports = new_ports:match(lan_dev_name)
+                                    if not check_new_ports then
+                                        if #new_ports > 0 then
+                                          new_ports = new_ports .. " "
+                                        end
+                                        new_ports = new_ports .. lan_dev_name
+                                    end
+                                end
+                            end
+                        end
+
+                        local lan_dev = uci:get("network", "dev_" .. form_port, "ifname") or nil
+                        if not lan_dev then
+                            if #new_ports > 0 then
+                              new_ports = new_ports .. " "
+                            end
+                            new_ports = new_ports .. form_port .. "." .. form_vlan_id --eth0
+                        else
+                            if not new_ports:find(lan_dev .. "." .. form_vlan_id) then
+                                if #new_ports > 0 then
+                                  new_ports = new_ports .. " "
+                                end
+                                new_ports = new_ports .. lan_dev .. "." .. form_vlan_id
+                            end
+
+                            if #vlan_ports > 0 then
+                                vlan_ports = vlan_ports .. " "
+                            end
+
+                            local lan_vid = uci:get("network", "svlan_" .. form_port, "vlan")
+                            if lan_vid then
+                                vlan_ports = vlan_ports .. lan_vid .. "t"
+                            end
+                        end
+                    else
+
+                        if #new_ports > 0 then
+                          new_ports = new_ports .. " "
+                        end
+                        new_ports = new_ports .. form_port .. "." .. form_vlan_id
+                    end
+                    local bat_tag = new_ports:find("bat", 1) or "nil"
+                    if bat_tag == "nil" then
+                        bat_vlan = "bat0" .. "." .. form_vlan_id
+
+                        if #new_ports > 0 then
+                          new_ports = new_ports .. " "
+                        end
+                        new_ports = new_ports .. bat_vlan
+                    end
+                end
+            end
+
+            local vlan_net_name = acn.vlan_net_name(logical_vlan_id)
+            if vlan_net_name then
+                local vlan_ifname = uci:get("network", vlan_net_name, "ifname")
+                if vlan_ifname then
+                    local eth_vlan_tagged = vlan_ifname:gsub("eth%d+%.%d+%s*", "") or ""
+                    local bat_vlan_tagged = vlan_ifname:gsub("bat%d+%.%d+%s*", "") or ""
+                    local vlan_lan_tagged = vlan_ifname:gsub("lan%d", "") or ""
+
+                    if eth_vlan_tagged ~= "" and not new_ports:match(eth_vlan_tagged)
+                    and new_ports:match(bat_vlan_tagged) and not new_ports:match(vlan_lan_tagged) then
+
+                        if #new_ports > 0 then
+                          new_ports = new_ports .. " "
+                        end
+                        new_ports = new_ports .. eth_vlan_tagged
+                    end
+
+                    -- add back original ethernet setting
+                    for iface in string.gmatch(vlan_ifname, '(eth%d+)$') do
+
+                        if #new_ports > 0 then
+                          new_ports = new_ports .. " "
+                        end
+                        new_ports = new_ports .. iface
+                    end
+                end
+            end
+
+            uci:section("network", "interface", vlan_net_name)
+
+            uci:set("network", vlan_net_name , "vlan_net", "1")
+            uci:set("network", vlan_net_name , "vid", form_vlan_id)
+            uci:set("network", vlan_net_name , "ifname", new_ports)
+
+            if is_eap104 and vlan_net_name then
+                uci:set("network", "svlan_" .. vlan_net_name, "switch_vlan")
+                uci:set("network", "svlan_" .. vlan_net_name, "device", "switch1") --TODO: get device name
+                uci:set("network", "svlan_" .. vlan_net_name, "vlan", form_vlan_id)
+                uci:set("network", "svlan_" .. vlan_net_name, "ports", vlan_ports)
+            end
+
+            if dhcprelay_enable == "1" then
+                local form_circuit_id = "manual"
+
+                uci:set("network", vlan_net_name , "circuit_id", form_circuit_id)
+
+                local form_circuit_id_data = luci.http.formvalue("vlan" .. logical_vlan_id .. ".circuit_id_data")
+
+                uci:set("network", vlan_net_name , "circuit_id_data", form_circuit_id_data)
+            end
+
+            if form_pppoe_status then
+                local form_pppoe_username = luci.http.formvalue("username_" .. logical_vlan_id)
+                local form_pppoe_pwd = luci.http.formvalue("pwd_" .. logical_vlan_id)
+                local form_pppoe_ip = luci.http.formvalue("ip_" .. logical_vlan_id)
+
+                uci:set("network", vlan_net_name , "proto", "pppoe")
+                uci:set("network", vlan_net_name , "username", form_pppoe_username)
+                uci:set("network", vlan_net_name , "password", form_pppoe_pwd)
+                uci:set("network", vlan_net_name , "defaultroute", "0")
+
+                -- for application network
+                local interface_name = vlan_net_name .. "_" .. form_vlan_id
+                uci:section("network", "interface", interface_name)
+                uci:set("network", interface_name , "type", "bridge")
+                uci:set("network", interface_name , "proto", "static")
+                uci:set("network", interface_name , "ipaddr", form_pppoe_ip)
+                uci:set("network", interface_name , "netmask", "255.255.255.0")
+                uci:set("network", interface_name , "smart_isolation", "1")
+                uci:set("network", interface_name , "title", interface_name)
+                uci:set("network", interface_name , "mtu", "1500")
+                uci:set("network", interface_name , "stp", "0")
+
+                -- Firewall - for application network
+                add_fw_zone(uci, {
+                    name = interface_name,
+                    network = {interface_name}
+                })
+
+                -- Firewall - for ppp network
+                add_fw_zone(uci, {
+                    name = vlan_net_name,
+                    network = {vlan_net_name},
+                    masq = "1",
+                    mtu_fix = "1"
+                })
+
+                -- Firewall - for ppp network
+                add_fw_rule(uci, {
+                    name = "Allow-Ping",
+                    src = vlan_net_name,
+                    icmp_type = "echo-request",
+                    proto = "icmp"
+                })
+
+                -- Firewall - for ppp network
+                add_fw_rule(uci, {
+                    name = "Allow-IGMP",
+                    src = vlan_net_name,
+                    proto = "igmp"
+                })
+
+                -- dhcp
+                local interface_name = vlan_net_name .. "_" .. form_vlan_id
+                uci:section("dhcp", "dhcp", interface_name)
+                uci:set("dhcp", interface_name , "limit", "150")
+                uci:set("dhcp", interface_name , "leasetime", "12h")
+                uci:set("dhcp", interface_name , "start", "100")
+                uci:set("dhcp", interface_name , "interface", interface_name)
+                uci:set("dhcp", interface_name , "ignore", "0")
+
+                uci:delete("network", vlan_net_name , "type")
+            else
+                uci:set("network", vlan_net_name , "type", "bridge")
+                uci:set("network", vlan_net_name , "proto", "none")
+                uci:delete("network", vlan_net_name , "username")
+                uci:delete("network", vlan_net_name , "password")
+                uci:delete("network", vlan_net_name , "defaultroute")
+            end
+        end
+    end
+    uci:save("firewall")
+    uci:load("firewall")
+    uci:save("network")
+    uci:load("network")
+    uci:save("dhcp")
+    uci:load("dhcp")
+end
+
+%>
+
+<%+header%>
+
+<div id="form_error_msg_placeholder" class="alert alert-error hide"><i class="icon-remove"></i>&nbsp;<span id="form_error_msg"></span></div>
+<form class="form-horizontal" id="form_vlans" name="form_vlans"  method="post" action="<%=REQUEST_URI%>">
+  <div class="hide">
+    <input type="hidden" name="token" value="<%=token%>" />
+    <input type="hidden" name="cbi.submit" value="1" />
+    <input type="submit" value="<%:Save%>" class="hidden" />
+  </div>
+<% for logical_vlan_id = VLAN_START, MAX_VLANS-1 do %>
+    <input type="hidden" name="acn.del.vlan<%=logical_vlan_id%>" id="acn.del.vlan<%=logical_vlan_id%>" value="0" />
+<% end %>
+  <h2><%:Wireless VLAN Settings%></h2>
+
+  <div> <%=luci.i18n.translatef("Create up to %d VLAN-tagged networks.", MAX_VLANS- VLAN_START) %><br/><br/></div>
+
+  <button class="btn btn-info btn-add btn-small" onclick="{ addRow(); return false;}"  value=""  title="Add" id="btn_add">
+    <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+  </button>
+  <span id="alert_up_max" style="color:red; display:none">
+    &nbsp;&nbsp;<%=luci.i18n.translatef("The max number of allowed VLAN-tagged networks is %d.", MAX_VLANS- VLAN_START) %>
+  </span>
+  <span id="alert_duplicate" style="color:red; display:none">
+  &nbsp;&nbsp;<%:Please fix the duplicate VLAN networks.%>
+  </span>
+  <span id="alert_duplicate_mgmt" style="color:red; display:none">
+  &nbsp;&nbsp;<%:One of the VLAN IDs is a duplicate of the management VLAN ID.%>
+  </span>
+  <span id="alert_duplicate_vlantag" style="color:red; display:none">
+  &nbsp;&nbsp;<%:One of the VLAN IDs is a duplicate of the VLAN tag ID.%>
+  </span>
+  <span id="alert_no_ports_selected" style="color: red; display:none">
+    &nbsp;&nbsp;<%:At least one port per network must be selected.%>
+  </span>
+  <span id="alert_member_nonempty" style="color:red; display:none">
+  &nbsp;&nbsp;<%:Please remove all Members before deleting VLAN.%>
+  </span>
+  <table id="table_vlans" class="table table-striped table-bordered table-hover">
+    <thead>
+      <tr class="cbi-section-table-titles">
+        <th class="cbi-section-table-cell" style="width:100px"><%:VLAN Id%></th>
+        <th class="cbi-section-table-cell" style="width:390px"><%:Ports%></th>
+<% if dhcprelay_enable == "1" then %>
+        <th class="cbi-section-table-cell" style="width:260px"><%:DHCP Relay%></th>
+<% end %>
+        <!-- <th class="cbi-section-table-cell" style="width:390px"><%:PPPoE Profile%></th> -->
+        <th class="cbi-section-table-cell"><%:Members%></th>
+        <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+<%
+        local vlans = acn.vlans(uci)
+        local num_vlans = #vlans
+        local eths = {}
+
+        for i=0, num_eths -1 do
+            local eth = product.eth(i)
+            eths[#eths + 1]= eth
+        end
+
+        local mgmt_enabled = (uci:get("acn", "mgmt", "enabled") == "1")
+
+        for i, vlan in ipairs(vlans) do
+            local site_entity = vlan['__uid'] and mgmt_enabled
+            local _logical_vlan_id = vlan['logical_vlan_id']
+            local dhcprelay_circuit_id = ""
+            local dhcprelay_circuit_id_data = ""
+
+            if dhcprelay_enable == "1" then
+                dhcprelay_circuit_id = vlan['circuit_id']
+                dhcprelay_circuit_id_data = vlan['circuit_id_data']
+            end
+
+            local is_pppoe_enabled = (vlan['proto'] == "pppoe")
+            local pppoe_user_value = ""
+            local pppoe_pwd_value = ""
+            local pppoe_ip_value = ""
+            if is_pppoe_enabled then
+                pppoe_user_value = vlan['pppoe_username']
+                pppoe_pwd_value = vlan['pppoe_pwd']
+                pppoe_ip_value = vlan['pppoe_ip']
+            end
+%>
+          <tr id="vlan<%=_logical_vlan_id%>_row">
+            <td>
+                <input  style="width:50px" type="text" class="ace-tooltip"
+                  name="vlan<%=_logical_vlan_id%>.id"
+                  id="vlan<%=_logical_vlan_id%>.id"
+                  value="<%=vlan['vlan_id']%>" data-original-title="">
+            </td>
+            <td>
+<%
+                local ports = vlan['ports']
+                local ifaces = vlan['ifaces']
+                for i, eth in pairs(eths) do
+%>
+                  <input id="vlan<%=_logical_vlan_id%>-eth<%=i%>"
+                    name="vlan<%=_logical_vlan_id%>-eth<%=i%>"
+                    value="<%=eth['dev_name']%>"
+                    type="checkbox" <% if ports[eth['dev_name']] then print('checked="checked"') end %> <% if ifaces and ifaces[eth['dev_name']] then print('disabled="disabled"') end %>>
+                  <label for="vlan<%=_logical_vlan_id%>-eth<%=i%>" class="lbl">&nbsp; <%=acn.logical_to_friendly(eth['logical_name'])%></label>&nbsp;&nbsp;
+               <% end %>
+            </td>
+<% if dhcprelay_enable == "1" then %>
+            <td>
+                <span class="" id="dhcp_relay_data_<%=_logical_vlan_id%>"><%:Circuit Id%> &nbsp;
+                <input  style="width:150px" type="text" class="ace-tooltip"
+                  name="vlan<%=_logical_vlan_id%>.circuit_id_data"
+                  id="vlan<%=_logical_vlan_id%>.circuit_id_data"
+                  value="<%=dhcprelay_circuit_id_data%>" data-original-title=""> <br> </span>
+            </td>
+<% end %>
+            <!-- <td>
+              <input id="pppoe_<%=_logical_vlan_id%>" name="pppoe_<%=_logical_vlan_id%>" value="1" type="checkbox" onchange="pppoe_change('<%=_logical_vlan_id%>');" <% if is_pppoe_enabled then print('checked') end%>><label class="lbl">&nbsp; <%:Enable%></label> <br>
+              <span class="hide" id="input_user_<%=_logical_vlan_id%>"><%:PPPoe Username%> &nbsp; <input id="username_<%=_logical_vlan_id%>" name="username_<%=_logical_vlan_id%>" value="<%=pppoe_user_value%>" type="text" style="margin-bottom: 3px;"> <br> </span>
+              <span class="hide" id="input_pwd_<%=_logical_vlan_id%>"><%:PPPoe Password%> &nbsp; &nbsp;<input id="pwd_<%=_logical_vlan_id%>" name="pwd_<%=_logical_vlan_id%>" value="<%=pppoe_pwd_value%>" type="password" style="margin-bottom: 3px;">
+              <i class="icon-eye-open" style="cursor:pointer" onclick="var e = document.getElementById('pwd_<%=_logical_vlan_id%>'); e.type = (e.type=='password') ? 'text' : 'password';"></i><br></span>
+              <span class="hide" id="input_ip_<%=_logical_vlan_id%>"><%:IP Address%> &nbsp; &nbsp;<input id="ip_<%=_logical_vlan_id%>" name="ip_<%=_logical_vlan_id%>" value="<%=pppoe_ip_value%>" type="text"> <br>
+              <span style="font-size: 11px;color: gray;">*Please go to <a href='<%=luci.dispatcher.build_url('admin','status','lan') %>'>lan settings</a> to modify more ip settings.</span></span>
+            </td> -->
+            <td><% luci.template.render('cbi/lan_members', {network = vlan['dev_name'], acn = acn}) %></td>
+            <td>
+               <button class="btn btn-mini <% if not site_entity then print('btn-danger') else print('ace-tooltip disabled') end %>"
+                <% if site_entity then print('  data-original-title="This item is managed by the cloud and cannot be deleted. Please unselect ports instead." onclick="return false"') end %>
+                onclick="removeRow(this.id);  return false;"
+                alt="Delete" id="vlan<%=_logical_vlan_id%>" value="<%=_logical_vlan_id%>" alt="Delete"><i class="icon-trash"></i></button>
+            </td>
+          </tr>
+    <% end %>
+    </tbody>
+  </table>
+
+<% if num_vlans == 0 then %>
+  <div id="row_empty" style="font-style:italic" class="grey"><%:No data available for this list%></div>
+<% end %>
+
+  <div class="cbi-page-actions">
+    <input id="btn_apply" class="btn btn-info btn-small cbi-button-apply" type="button" value="<%:Save%> &amp; <%:Apply%>" name="btn_apply" onclick="cbi_submit(this, 'cbi.apply')">
+    <input id="btn_save" class="btn btn-info btn-small cbi-button-save" type="submit" value="<%:Save%>" name="btn_save">
+    <input class="btn btn-info btn-small cbi-button-reset" type="button" value="<%:Reset%>" onclick="location.href='/cgi-bin/luci/admin/wireless/vlans'">
+  </div>
+
+</form>
+
+<% if is_cbi_apply then %>
+
+<script type="text/javascript">
+  L.require('ui').then(function(ui) {
+    ui.changes.apply();
+  });
+</script>
+
+<% end %>
+<%+footer%>

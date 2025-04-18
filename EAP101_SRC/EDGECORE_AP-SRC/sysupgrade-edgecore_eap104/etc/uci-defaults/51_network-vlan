@@ -1,0 +1,29 @@
+#!/bin/sh
+
+if [ "$(uci -q get network.wanvlan)" != "interface" ]; then
+	uci -q batch <<-EOF >/dev/null
+		set network.wanvlan='interface'
+		set network.wanvlan.enabled='0'
+		commit network.wanvlan
+	EOF
+fi
+
+if [ "$(uci -q get network.managementvlan)" != "interface" ]; then
+	uci -q batch <<-EOF >/dev/null
+		set network.managementvlan='interface'
+		set network.managementvlan.enabled='0'
+		commit network.managementvlan
+	EOF
+fi
+
+if [ "$(uci -q get network.managementvlan.ip4table)" == "" ]; then
+	uci set network.managementvlan.ip4table='1'
+	uci commit network.managementvlan
+fi
+
+if [ "$(uci -q get network.wanvlan.ip4table)" == "" ]; then
+	uci set network.wanvlan.ip4table='1'
+	uci commit network.wanvlan
+fi
+
+exit 0

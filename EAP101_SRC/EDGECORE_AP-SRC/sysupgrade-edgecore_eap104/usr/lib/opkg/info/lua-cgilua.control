@@ -1,0 +1,12 @@
+Package: lua-cgilua
+Version: 5.1.4-1
+Depends: libc, lua
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ec-private/lua/lua-cgilua
+SourceName: lua-cgilua
+License: MIT
+Section: lang
+SourceDateEpoch: 1711442072
+Maintainer: Dirk Chang <dirk@kooiot.com>
+Architecture: arm_cortex-a7
+Installed-Size: 137004
+Description:  CGILua is a tool for creating dynamic Web pages and manipulating input data from Web forms.

@@ -1,0 +1,61 @@
+#!/bin/sh
+. /lib/acn/acn_functions.sh
+
+ori_wizard_val="`uci get acn.wizard.enabled 2>/dev/null`"
+[ "$ori_wizard_val" == "1" -a -z "$(uci -q get acn.wizard.ez_setup)" ] && {
+  uci set acn.wizard.enabled='0'
+  uci set acn.wizard.ez_setup='1'
+  uci commit acn.wizard
+}
+
+acc_control=$1
+ez_setup="`uci get acn.wizard.ez_setup 2>/dev/null`"
+mgmt_state="`uci get acn.register.state 2>/dev/null`"
+
+update_vap_ssid_key() {
+    SN="`acc hw get SN |cut -d'=' -f2`"
+    internet_src="`uci get network.wan.inet_src 2>/dev/null`"
+    mac="$(ifconfig ${internet_src} | grep HWaddr | awk '{print $5}' | sed s/://g)"
+
+    [ -z "$SN" ] && SN="$(get_MID)"
+    [ -z "$mac" ] && mac="${SN}${SN}"
+
+    vaps="$1"
+    for _vap in ${vaps}; do
+        uci -q set wireless.${_vap}.ssid="Goto WiFi setting ${SN}"
+        uci -q set wireless.${_vap}.key=${mac}
+    done
+    uci commit wireless
+}
+
+update_vap_old_ssid_key() {
+    SN="`acc hw get SN |cut -d'=' -f2`"
+    internet_src="`uci get network.wan.inet_src 2>/dev/null`"
+    mac="$(ifconfig ${internet_src} | grep HWaddr | awk '{print $5}' | sed s/://g)"
+
+    [ -z "$SN" ] && SN="$(get_MID)"
+    [ -z "$mac" ] && mac="${SN}${SN}"
+
+    vaps="$1"
+    for _vap in ${vaps}; do
+        uci -q set wireless.${_vap}.ssid=${SN}
+        uci -q set wireless.${_vap}.key=${mac}
+    done
+    uci commit wireless
+}
+
+if [ "$mgmt_state" == "1" ];then
+    uci set acn.wizard.ez_setup='0'
+    uci commit acn.wizard
+else
+    [ "$ez_setup" == "1" ] && {
+		update_vap_ssid_key "radio0_2 radio1_2"
+		update_vap_old_ssid_key "radio0_3 radio1_3"
+	}
+    [ "$acc_control" != "" ] && {
+		update_vap_ssid_key "radio0_2 radio1_2"
+		update_vap_old_ssid_key "radio0_3 radio1_3"
+	}
+fi
+
+exit 0

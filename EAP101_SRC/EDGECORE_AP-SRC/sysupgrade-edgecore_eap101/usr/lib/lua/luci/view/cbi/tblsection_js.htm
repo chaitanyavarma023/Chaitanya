@@ -1,0 +1,218 @@
+<%-
+
+local rowcnt = 1
+function rowstyle()
+	rowcnt = rowcnt + 1
+	return (rowcnt % 2) + 1
+end
+
+function width(o)
+	if o.width then
+		if type(o.width) == 'number' then
+			return ' style="width:%dpx"' % o.width
+		end
+		return ' style="width:%s"' % o.width
+	end
+	return ''
+end
+-%>
+
+<%+cbi/acn_dialogheader%>
+
+<% if self.add_btn_location == 'top' then %>
+<button class="btn btn-info btn-add <% if self.add_btn_small then print('btn-small') end %>"  onclick='{ <%=self.add_onclick%> return false;}' value="" name="cbi.cts.<%=self.config%>.<%=self.sectiontype%>.<%=section%>" title="<%:Add%>" id="btn_add" <%=self.table_hide%> <% if self.is_disabled then write('disabled=disabled style="background-color:#eee"') end %>>
+    <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+</button>
+<% if self.max_count then %>
+<span id="alert_up_max" style="color:red; display:none">
+&nbsp;&nbsp;The allowed max number is <%=self.max_count%>.
+</span>
+<% end %>
+<% end %>
+
+<!-- tblsection -->
+<%
+  title_margin = self.title_margin
+  if not (title_margin and #title_margin > 0) then 
+      title_margin = ""
+  end
+%>
+<fieldset class="cbi-section" id="cbi-<%=self.config%>-<%=self.sectiontype%>" style="<% print(title_margin) %>">
+	<% if self.title and #self.title > 0 and not self.acn_dialog then -%>
+	    <%  title_fontsize = self.title_fontsize
+	        if not (title_fontsize and #title_fontsize > 0) then 
+	            title_fontsize = "h2"
+	        end
+	    %>
+		<<% print(title_fontsize) %> id="tblsection_title" name="tblsection_title" class="header text-info semi-bold blue"><%=self.title%></<% print(title_fontsize) %>>
+		<input type="hidden" id="table_name" name="table_name" value=""/>
+	<%- end %>
+	<%- if self.sortable then -%>
+		<input type="hidden" id="cbi.sts.<%=self.config%>.<%=self.sectiontype%>" name="cbi.sts.<%=self.config%>.<%=self.sectiontype%>" value="" />
+	<%- end -%>
+	<%- if self.description and #self.description > 0  then -%>
+	<h4><div id="tblsection_msg" class="page-header position-relative text-info"><i class="icon-lightbulb"/>&nbsp;&nbsp;<%=self.description%></div>	</h4>
+	<%- end -%>
+	<div class="cbi-section-node">
+		<%- local count = 0 -%>
+		<table id="<%=self.table_name%>" class="table <% if not self.no_stripe then print('table-striped') end%>  table-bordered table-hover" <%=self.table_hide%>>
+			<thead>
+			<tr class="cbi-section-table-titles">
+			<%- if not self.anonymous then -%>
+				<%- if self.sectionhead then -%>
+					<th class="cbi-section-table-cell"><%=self.sectionhead%></th>
+				<%- else -%>
+					<th>&#160;</th>
+				<%- end -%>
+			<%- end -%>
+			<%- for i, k in pairs(self.children) do if not k.optional then -%>
+				<th class="cbi-section-table-cell"<%=width(k)%>>
+				<%- if k.titleref then -%><a title="<%=self.titledesc or translate('Go to relevant configuration page')%>" class="cbi-title-ref" href="<%=k.titleref%>"><%- end -%>
+					<%-=k.title-%>
+				<%- if k.titleref then -%></a><%- end -%>
+				</th>
+			<%- count = count + 1; end; end; if self.sortable then -%>
+				<th class="cbi-section-table-cell"><%:Sort%></th>
+			<%- end; if self.extedit or self.addremove then -%>
+				<th class="cbi-section-table-cell">&#160;</th>
+			<%- count = count + 1; end -%>
+			</tr>
+			</thead>
+
+			<%- local isempty = true
+                local mgmt_enabled = (self.map.uci:get("acn", "mgmt", "enabled") == "1")
+			    for i, k in ipairs(self:cfgsections()) do
+					section = k
+					scope = { valueheader = "cbi/cell_valueheader", valuefooter = "cbi/cell_valuefooter" }
+
+                    local site_entity = self.map.uci:get(self.config, k, "__uid") and mgmt_enabled
+					local user_root = false
+                    local firewall_custom_rule = "1"
+                    local data_hide = "style='display:none'"
+                    local fw_name = ""
+                    if self.config == "firewall" then
+                        firewall_custom_rule = self.map.uci:get(self.config, k, "custom") or ""
+                        fw_name = self.map.uci:get(self.config, k, "name") or ""
+                    end
+                    if self.config == "users" then
+                        user_root = (self.map.uci:get(self.config, k, "name") == "root")
+		    end
+					if firewall_custom_rule == "1" or fw_name == "Allow-Ping" or self.table_name == "table_dhcp_snooping" or self.table_name == "table_arp_statictrust" then
+					    	data_hide = ""
+				        	isempty = false
+					end
+			-%>
+			<% if self.table_name == "table_dhcp_snooping" or self.table_name == "table_arp_statictrust" then%>
+				<tr class="cbi-section-table-row<% if self.extedit or self.rowcolors then %> cbi-rowstyle-<%=rowstyle()%><% end %>" id="cbi-<%=self.sectiontype%>-<%=section%>" <%=data_hide%> data-lan="<%=self.network%>">
+			<% else %>
+				    <tr class="cbi-section-table-row<% if self.extedit or self.rowcolors then %> cbi-rowstyle-<%=rowstyle()%><% end %>" id="cbi-<%=self.config%>-<%=section%>" <%=data_hide%> data-lan="<%=self.network%>">
+			<% end %>
+            			    <% if self.config == "firewall" and firewall_custom_rule == "1" then %>
+            			      <input type="hidden" value="1" name="cbid.<%=self.config%>.<%=section%>.custom" id="cbid.<%=self.config%>.<%=section%>.custom">
+            			    <% end %>
+            				<% if not self.anonymous then -%>
+            					<th><h3><%=(type(self.sectiontitle) == "function") and self:sectiontitle(section) or k%></h3></th>
+            				<%- end %>
+
+            				<%-
+            					for k, node in ipairs(self.children) do
+            						if not node.optional then
+            							node:render(section, scope or {})
+            						end
+            					end
+            				-%>
+
+            				<%- if self.sortable then -%>
+            					<td class="cbi-section-table-cell" style="width:50px">
+            						<a href="#" onclick="return cbi_row_swap(this, true,  'cbi.sts.<%=self.config%>.<%=self.sectiontype%>')" title="<%:Move up%>"><img src="<%=resource%>/cbi/up.gif" alt="<%:Move up%>" /></a>
+            						<a href="#" onclick="return cbi_row_swap(this, false, 'cbi.sts.<%=self.config%>.<%=self.sectiontype%>')" title="<%:Move down%>"><img src="<%=resource%>/cbi/down.gif" alt="<%:Move down%>" /></a>
+            					</td>
+            				<%- end -%>
+
+            				<%- if self.extedit or self.addremove then -%>
+            					<td class="cbi-section-table-cell" style="width:50px">
+            						<%- if self.extedit then -%>
+            							<a href="
+            							<%- if type(self.extedit) == "string" then -%>
+            								<%=self.extedit:format(section)%>
+            							<%- elseif type(self.extedit) == "function" then -%>
+            								<%=self:extedit(section)%>
+            							<%- end -%>
+            							" title="<%:Edit%>"><img style="border: none" src="<%=resource%>/cbi/edit.gif" alt="<%:Edit%>" /></a>
+            						<%- end;
+            						    if self.addremove then %>
+
+            							    <% if not site_entity then %>
+									<% if self.table_name == "table_dhcp_snooping" or self.table_name == "table_arp_statictrust" then %>
+										<input type="hidden" name="acn.del.<%=self.sectiontype%>.<%=k%>"	id="acn.del.<%=self.sectiontype%>.<%=k%>" value="0" />
+									<% else %>
+										<input type="hidden" name="acn.del.<%=self.config%>.<%=k%>"	id="acn.del.<%=self.config%>.<%=k%>" value="0" />
+									<% end %>
+            							    <% end %>
+                                            <button class="btn btn-mini <% if not site_entity and not user_root and fw_name ~="Allow-Ping" then print('btn-danger') else print('ace-tooltip disabled') end %>" <% if user_root then print('  data-original-title="This account can not be deleted. Please disable it instead."') end%> <% if site_entity then print('  data-original-title="This item is managed by the cloud and cannot be deleted. Please disable it instead."') end %> value="<%=k%>" onclick="<%=self.del_onclick%>  return false" id="cbi.rts.<%=self.config%>.<%=k%>" alt="<%:Delete%>"><i class="icon-trash"></i></button>
+            <!--========================================================================================================-->
+            						<%- end -%>
+            				    </td>
+            				<%- end -%>
+            			</tr>
+			    <%-
+			    end -%>
+
+			<%- if isempty then -%>
+    			<tbody>
+    				<tr id="<%=self.table_name%>_row_empty">
+    				<td colspan="<%=count%>"><em><br /><%:No data available for this list%></em></td>
+    			</tr>
+    			</tbody>
+			<%- end -%>
+
+		</table>
+
+		<% if self.error then %>
+			<div class="cbi-section-error">
+				<ul><% for _, c in pairs(self.error) do for _, e in ipairs(c) do -%>
+					<li><%=pcdata(e):gsub("\n","<br />")%></li>
+				<%- end end %></ul>
+			</div>
+		<% end %>
+
+		<%- if self.addremove then -%>
+			<% if self.template_addremove then include(self.template_addremove) else -%>
+			<div class="cbi-section-create cbi-tblsection-create">
+				<% if self.anonymous then %>
+
+					<% if self.acn_dialog then -%>
+						<div class="modal-footer">
+					<%-end %>
+
+					<% if not self.add_btn_location or self.add_btn_location == 'bottom' then %>
+					<button id="btn_add" class="btn btn-info btn-add <% if self.add_btn_small then print('btn-small') end %>"  onclick='{ <%=self.add_onclick%> return false;}' value="" name="cbi.cts.<%=self.config%>.<%=self.sectiontype%>.<%=section%>" title="<%:Add%>">
+						<i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+					</button>
+					<span id="alert_up_max" style="color:red; display:none">
+                      &nbsp;&nbsp;<%=luci.i18n.translatef("The allowed max number is %d.", self.max_count) %> &nbsp;&nbsp;
+                    </span>
+					<%end%>
+
+					<% if self.acn_dialog then -%>
+						</div>
+					<%-end %>
+
+				<% else %>
+					<% if self.invalid_cts then -%><div class="cbi-section-error"><% end %>
+					<input type="text" class="cbi-section-create-name" id="cbi.cts.<%=self.config%>.<%=self.sectiontype%>.<%=section%>" name="cbi.cts.<%=self.config%>.<%=self.sectiontype%>.<%=section%>" />
+					<script type="text/javascript">cbi_validate_field('cbi.cts.<%=self.config%>.<%=self.sectiontype%>.<%=section%>', true, 'uciname');</script>
+					<input class="cbi-button cbi-button-add" onclick="<%=self.add_onclick%> this.form.cbi_state='add-section'; return false;" value="<%:Add%>" title="<%:Add%>" />
+					<% if self.invalid_cts then -%>
+						<br /><%:Invalid%></div>
+					<%- end %>
+				<% end %>
+			</div>
+			<%- end %>
+		<%- end -%>
+	</div>
+</fieldset>
+
+
+<%+cbi/acn_dialogfooter%>
+<!-- /tblsection -->

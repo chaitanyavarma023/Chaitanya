@@ -1,0 +1,39 @@
+proxy server {
+    default_fallback = yes
+}
+
+home_server remoteradius {
+    type = auth+acct
+    ipaddr = __CLOUD_IP__
+    port = __CLOUD_PORT__
+    secret = __CLOUD_SECRET__
+    proto = tcp
+    status_check = none
+    tls {
+        ca_file = /etc/certs/ignite.ca
+    }
+}
+
+home_server externalradius {
+    ipaddr = __CLOUD_IP__
+    port = __CLOUD_PORT__
+    secret = __CLOUD_SECRET__
+}
+
+home_server_pool my_radius_pool {
+    home_server = __CLOUD_SERVER__
+}
+
+realm OneCloud {
+    auth_pool = my_radius_pool
+    nostrip
+}
+
+realm AcctServer {
+    acct_pool = my_radius_pool
+    nostrip
+}
+
+realm NULL {
+    nostrip
+}

@@ -1,0 +1,86 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2019 OpenWrt.org
+
+START=99
+USE_PROCD=1
+
+SYSLOGCONF="/etc/syslog-ng.conf"
+LOG_FILE="/var/log/messages"
+
+# get uci config
+state=$(uci -q get system.@system[0].log_remote)
+server_ip=$(uci -q get system.@system[0].log_ip)
+server_port=$(uci -q get system.@system[0].log_port)
+syslog_prefix=$(uci -q get system.@system[0].log_prefix)
+syslog_level=$(uci -q get acn.mgmt.syslog_level)
+
+# Use for return value of function
+RET=""
+
+# Map interger to Level
+level_map()
+{
+    case "$1" in
+	"1") RET="emerg" ;;
+	"2") RET="alert" ;;
+	"3") RET="crit" ;;
+	"4") RET="err" ;;
+	"5") RET="warning" ;;
+	"6") RET="notice" ;;
+	"7") RET="info" ;;
+	"8") RET="debug" ;;
+    *) RET="info" ;;
+    esac
+    echo "$RET"
+}
+
+start_syslog()
+{
+    [ ! -f ${LOG_FILE} ] && touch ${LOG_FILE}
+    rm -f $SYSLOGCONF
+    # recreate /etc/syslog-ng.conf file
+    echo '@version: 4.4' >> $SYSLOGCONF
+    echo '@include "scl.conf"' >> $SYSLOGCONF
+    echo 'options { chain_hostnames(no); create_dirs(yes); keep_hostname(yes); log_fifo_size(256); log_msg_size(1024); stats(freq(0)); flush_lines(0); use_fqdn(no); keep-timestamp(no);};' >> $SYSLOGCONF
+    # create template for the  log messages, e.g.: "2023 Dec 29 09:42:40 EAP101 TAN: user.notice: hostapd: wlan0: AP-ENABLED"
+    echo "template t_format { template (\"\$FULLDATE \$HOST $syslog_prefix: \$FACILITY.\$PRIORITY: \$PROGRAM: \$MSG\n\"); };" >> $SYSLOGCONF
+    echo "source src { internal(); unix-dgram(\"/dev/log\"); };" >> $SYSLOGCONF
+    # read Kernel messages
+    echo "source kernel { file(\"/proc/kmsg\"); };" >> $SYSLOGCONF
+    echo 'source net { tcp(ip(0.0.0.0) port(514)); };' >> $SYSLOGCONF
+
+    local level=$(level_map $syslog_level)
+    # filter log messages based on both facility and level/priority
+    echo "filter level_filter { level($level..emerg) and facility(user, cron, daemon, kern, mail, authpriv, news, auth, lpr, uucp, local0, local1, local2, local3, local4, local5, local6, local7); };" >> $SYSLOGCONF
+    echo "destination messages { file(\"$LOG_FILE\" template(t_format)); };" >> $SYSLOGCONF
+
+    if [ "$state" = "1" ]; then
+        # Remote Syslog enabled
+        echo "destination remote { udp(\"$server_ip\" port($server_port) template(\"<\$PRI> \$FULLDATE $syslog_prefix: \$PROGRAM: \$MSG\n\")); };" >> $SYSLOGCONF
+        echo "log { source(src); source(kernel); source(net); filter(level_filter); destination(messages); destination(remote); };" >> $SYSLOGCONF
+    else
+        # Remote Syslog disabled
+        echo "log { source(src); source(kernel); source(net); filter(level_filter); destination(messages); };" >> $SYSLOGCONF
+    fi
+
+    echo '@include "/etc/syslog-ng.d/"' >> $SYSLOGCONF
+}
+
+start_service() {
+	start_syslog
+	[ -f /etc/syslog-ng.conf ] || return 1
+	procd_open_instance
+	procd_set_param command /usr/sbin/syslog-ng --foreground
+	procd_close_instance
+}
+
+reload_service()
+{
+    stop
+    start
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger acn system
+}

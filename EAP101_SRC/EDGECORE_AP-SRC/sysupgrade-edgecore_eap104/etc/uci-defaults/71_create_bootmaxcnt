@@ -1,0 +1,12 @@
+#!/bin/sh
+
+#retry_count=$(fw_printenv | grep bootlimit | cut -d= -f2)
+retry_count=3
+
+if [ "$(uci -q get acn.settings.bootmaxcnt)" == "" ]; then
+uci -q batch <<-EOF >/dev/null
+    set acn.settings.bootmaxcnt=$retry_count
+    commit acn
+EOF
+fi
+exit 0

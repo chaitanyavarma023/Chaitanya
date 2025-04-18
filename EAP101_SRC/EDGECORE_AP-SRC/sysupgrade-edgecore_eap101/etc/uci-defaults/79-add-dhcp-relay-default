@@ -1,0 +1,63 @@
+#!/bin/sh  
+
+. /lib/functions.sh
+
+add_circuit_id_option_to_network() {
+	local network=$1
+	local net_device=""
+	local dhcprelay_enable="$(uci -q get dhcp.dhcprelay.enabled)"
+	local circuit_id=$(uci -q get network.${network}.circuit_id)
+
+	case "${network}" in
+	bat0 | bat0_hardif_mesh0)
+		;;
+	hotspot | hotspot_tunnel)
+		;;
+	loopback)
+		;;
+	managementvlan | managementvlan6)
+		;;
+	wan | wan6)
+		;;
+	wanvlan | wanvlan6)
+		;;
+	*)
+		if [ -n "${circuit_id}" ] && [ "${dhcprelay_enable}" == "0" ]; then
+			uci -q del network.${network}.circuit_id
+			uci -q del network.${network}.circuit_id_data
+		fi
+
+		if [ "${circuit_id}" == "hostname" ] && [ "${dhcprelay_enable}" == "1" ]; then
+			net_device="$(uci -q get network.${network}.device)"
+
+			[ "${net_device}" == "" ] && {
+				net_device="br-${network}"
+			}
+
+			uci -q set network.${network}.circuit_id="manual"
+			uci -q set network.${network}.circuit_id_data="${net_device}"
+		fi
+		;;
+	esac
+}
+
+if [ "$(uci -q get dhcp.dhcprelay)" == "" ]; then
+	uci -q set dhcp.dhcprelay='dhcprelay'
+	uci -q set dhcp.dhcprelay.enabled="0"
+else
+	if [ "$(uci -q get dhcp.dhcprelay.enabled)" == "0" ]; then
+		uci -q del dhcp.dhcprelay.server_1
+		uci -q del dhcp.dhcprelay.server_port_1
+		uci -q del dhcp.dhcprelay.backup_enabled
+		uci -q del dhcp.dhcprelay.server_2
+		uci -q del dhcp.dhcprelay.server_port_2
+		uci -q del dhcp.dhcprelay.remote_id
+	fi
+fi
+
+uci commit dhcp.dhcprelay
+
+config_load network
+config_foreach add_circuit_id_option_to_network interface
+
+uci commit network

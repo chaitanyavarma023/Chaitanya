@@ -1,0 +1,3 @@
+/usr/sbin/mesh-discovery
+/usr/sbin/sync_wireless_vaps.sh
+/etc/init.d/meshd

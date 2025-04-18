@@ -1,0 +1,8 @@
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+/sbin/channel_balance.sh boot
+/sbin/wmi_monitor.sh boot
+/sbin/logrotate_cron.sh boot
+/sbin/wifi_monitor.sh boot
+
+exit 0

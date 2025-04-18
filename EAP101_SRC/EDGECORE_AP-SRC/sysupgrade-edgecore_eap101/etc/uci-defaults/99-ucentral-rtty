@@ -1,0 +1,12 @@
+#!/bin/sh
+
+tip_mode=$(uci -q get acn.mgmt.management)
+[ ! -z $tip_mode ] && [ "$tip_mode" -eq 3 ] || {
+	exit 0
+}
+
+uci add rtty rtty
+uci set rtty.@rtty[-1].id=$(cat /sys/class/net/eth0/address | tr -d :)
+uci set rtty.@rtty[-1].description="$(cat /tmp/sysinfo/model)"
+uci set rtty.@rtty[-1].ssl=1
+uci set rtty.@rtty[-1].port='5912'

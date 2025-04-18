@@ -1,0 +1,23 @@
+#!/bin/sh
+
+. /lib/acn/acn_functions.sh
+
+MID="$(get_MID)"
+
+case $MID in
+"EAP101"*|"EAP102"*|"EAP104"*|"OAP103"*)
+	# country code is the 2nd column
+	CNAME=$(get_CNAME)
+	case $CNAME in
+	"IN")
+		uci set acn.mgmt.register="https://regsvc.ignitenet.in/register"
+		uci set acn.mgmt.controller_url="https://cloud.ignitenet.in/"
+		uci set acn.register.url="https://regsvc.ignitenet.in/register"
+		uci commit acn
+		;;
+	esac
+	;;
+*);;
+esac
+
+exit 0

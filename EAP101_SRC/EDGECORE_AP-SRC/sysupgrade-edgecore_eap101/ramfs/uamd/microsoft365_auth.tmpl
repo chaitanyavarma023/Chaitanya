@@ -1,0 +1,54 @@
+#!/usr/bin/env cgilua.cgi
+
+<%
+
+function parseurl(s)
+	local ans = {}
+	for k,v in s:gmatch('([^&=?]-)=([^&=?]+)' ) do
+		ans[ k ] = v
+	end
+	return ans
+end
+
+local uri = os.getenv("QUERY_STRING")
+local item = parseurl(uri)
+local url = "__TOKEN_URI"
+local redirect_uri = cgilua.urlcode.escape("__REDIRECT_URI")
+local client_id = "__CLIENT_ID"
+local scope = cgilua.urlcode.escape("__PERMISSION")
+local client_secret = "__CLIENT_SECRET"
+local reply_str = ""
+local reply_msg = "__PLAN_ID"
+local value = ""
+local user_info = ""
+local handle = {}
+
+if ( item['code'] ~= nil and item['state'] ~= nil ) then
+	local cmd = "curl -k -d 'client_id=" .. client_id .. "&scope=" .. scope .. "&code=" .. item['code'] .. "&redirect_uri=" .. redirect_uri .. "&grant_type=authorization_code&client_secret=" .. client_secret .. "' " .. url
+
+	handle = io.popen(cmd, "r")
+	reply_str = handle:read("*a")
+	handle:close()
+
+	json = require("cjson")
+
+	value = json.decode(reply_str)
+	
+	if ( value['access_token'] ~= nil ) then
+		cmd = "curl -k -H 'Authorization: Bearer " .. value['access_token'] .. "' https://graph.microsoft.com/oidc/userinfo"
+
+		handle = io.popen(cmd, "r")
+		reply_str = handle:read("*a")
+		handle:close()
+
+		user_info = json.decode(reply_str)
+
+		cgilua.redirect("__RESULT_URL?username=" .. user_info['email'] .. "&method=Microsoft&reply=" .. reply_msg)
+	else
+		cgilua.redirect("__RESULT_URL?result=Fail")
+	end
+else
+	cgilua.redirect("__RESULT_URL?result=Fail")
+end
+
+%>

@@ -1,0 +1,6 @@
+
+var boot_retries_id='';var reset_counts_id='';function get_section_id(){$('.cbi-value-field text').each(function(text){if(this.id.indexOf('bootmaxcnt')>=0){var id_arr=this.id.split('.');if(id_arr[2]!=undefined){return id_arr[2];}}});}
+function validatebootcounts(){var boot_retries_val=parseInt($(boot_retries_id).val(),10);var reset_counts_val=parseInt($(reset_counts_id).val(),10);if(reset_counts_val>=boot_retries_val){set_err_msg($(reset_counts_id),true,'Number of \"plug-and-unplug\" power shall be smaller than Number of boot retries.');return false;}
+clear_validate_error(boot_retries_id);clear_validate_error(reset_counts_id);return true}
+function before_submit(){if(!validatebootcounts()){errmsg='Some fields are invalid, cannot save values!';alert(errmsg);return false;}else{return true;}}
+$(function(){$('#cbi').submit(function(){return before_submit();});var section_id=get_section_id();if(section_id!=undefined&&section_id!=''){boot_retries_id='#cbid\\.system\\.'+section_id+'\\.bootmaxcnt';reset_counts_id='#cbid\\.system\\.'+section_id+'\\.bootresetlimit';$(boot_retries_id).change(function(){validatebootcounts();});$(reset_counts_id).change(function(){validatebootcounts();});validatebootcounts();}})

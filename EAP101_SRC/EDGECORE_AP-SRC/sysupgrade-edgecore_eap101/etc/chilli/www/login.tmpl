@@ -1,0 +1,32 @@
+<!--
+  --  The message between the header and the form on the login page
+  -->
+<!--h1>Welcome to $LOCATION_NAME!</h1-->
+
+<div id="terms_div">
+
+	<div id="terms_error" style="display:none;color: red; padding-bottom: 10px;">Please accept the terms and conditions before continuing.</div>
+	<input id="terms_checkbox" type="checkbox">&nbsp;I accept <a id="terms_link" onclick="return toggle_terms()" href="">the Terms and Conditions</a>.
+<!-- You must also
+agree to these $(href terms.chi "terms and conditions").<p>-->
+
+	<div id="terms_area" style="display:none; min-height: 200px; width:100%;margin-top: 10px;">$(cat $HS_PORTAL_TERMS)</div>
+	<br><!--h1>Welcome to IgniteNet HotSpot!</h1-->
+
+</div>
+
+<script type="text/javascript">
+
+function toggle_terms() {
+
+	var displayed = (document.getElementById('terms_area').style.display == "inline-block");
+	var style = "inline-block";
+	if(displayed) {
+		style = "none";
+	}
+
+	document.getElementById('terms_area').style.display= style;
+
+	return false;
+}
+</script>

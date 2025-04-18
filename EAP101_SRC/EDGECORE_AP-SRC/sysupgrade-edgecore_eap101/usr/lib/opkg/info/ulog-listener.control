@@ -1,0 +1,10 @@
+Package: ulog-listener
+Version: 1
+Depends: libc
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/cip/ulog-listener
+SourceName: ulog-listener
+Section: FruitFarm
+SourceDateEpoch: 1672127084
+Architecture: arm_cortex-a7
+Installed-Size: 3151
+Description:  ulog-listener for dhcp-snooping and arp-inspection

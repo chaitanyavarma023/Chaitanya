@@ -1,0 +1,10 @@
+Package: cipgwacct
+Version: 1
+Depends: libc, libevent2-7
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/cip/cipgwacct
+SourceName: cipgwacct
+Section: utils
+SourceDateEpoch: 1710495067
+Architecture: arm_cortex-a7
+Installed-Size: 42178
+Description:  UAM DAEMON from 4ipnet.

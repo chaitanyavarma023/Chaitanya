@@ -1,0 +1,11 @@
+Package: qca-nss-fw-ipq60xx
+Version: 383
+Depends: libc
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ipq807x/qca-nss-fw
+SourceName: qca-nss-fw-ipq60xx
+Section: firmware
+SourceDateEpoch: 1631603797
+Maintainer: John Crispin <john@phrozen.org>
+Architecture: arm_cortex-a7
+Installed-Size: 357516
+Description:  Retail NSS firmware for IPQ60xx from QCA

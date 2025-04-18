@@ -1,0 +1,8 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+uci set uhttpd.main.rfc1918_filter='0'
+uci commit uhttpd.main
+
+exit 0

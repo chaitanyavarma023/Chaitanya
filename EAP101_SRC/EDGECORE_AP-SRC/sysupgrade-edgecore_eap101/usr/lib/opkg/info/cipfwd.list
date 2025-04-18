@@ -1,0 +1,5 @@
+/sbin/cipfwd
+/etc/firewall.dai
+/sbin/sender
+/etc/uci-defaults/57_firewall-dai
+/etc/init.d/cipfwd

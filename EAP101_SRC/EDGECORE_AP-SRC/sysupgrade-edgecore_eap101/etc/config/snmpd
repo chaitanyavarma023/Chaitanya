@@ -1,0 +1,122 @@
+config agent
+	option enabled '1'
+	option agentaddress 'UDP:161,UDP6:161'
+
+config com2sec public
+	option secname 'ro'
+	option source 'default'
+	option community 'public'
+
+config com2sec private
+	option secname 'rw'
+	option source 'default'
+	option community 'private'
+
+config group public_v1
+	option group 'public'
+	option version 'v1'
+	option secname 'ro'
+
+config group public_v2c
+	option group 'public'
+	option version 'v2c'
+	option secname 'ro'
+
+config group public_usm
+	option group 'public'
+	option version 'usm'
+	option secname 'ro'
+
+config group private_v1
+	option group 'private'
+	option version 'v1'
+	option secname 'rw'
+
+config group private_v2c
+	option group 'private'
+	option version 'v2c'
+	option secname 'rw'
+
+config group private_usm
+	option group 'private'
+	option version 'usm'
+	option secname 'rw'
+
+config view all
+	option viewname 'all'
+	option type 'included'
+	option oid '.1'
+	option mask ''
+
+config access public_access
+	option group 'public'
+	option context 'none'
+	option version 'any'
+	option level 'noauth'
+	option prefix 'exact'
+	option read 'all'
+	option write 'none'
+	option notify 'none'
+
+config access private_access
+	option group 'private'
+	option context 'none'
+	option version 'any'
+	option level 'noauth'
+	option prefix 'exact'
+	option read 'all'
+	option write 'all'
+	option notify 'all'
+
+config system
+	option sysLocation	'office'
+	option sysContact	'bofh@example.com'
+	option sysName		'HeartOfGold'
+#	option sysServices	'72'
+#	option sysDescr		'adult playground'
+#	option sysObjectID	'1.2.3.4'
+
+config exec
+	option name	'filedescriptors'
+	option prog	'/bin/cat'
+	option args	'/proc/sys/fs/file-nr'
+#	option miboid	'1.2.3.4'
+config engineid
+#	option engineid 'LEDE'
+	option engineidtype '3'
+	option engineidnic 'eth0'
+
+config rw_community 'rw_community'
+	option permission 'rw'
+	option name 'private'
+	option source 'default'
+	option view 'all'
+
+config ro_community 'ro_community'
+	option permission 'ro'
+	option name 'public'
+	option source 'default'
+	option view 'all'
+
+config rw_community6 'rw_community6'
+	option permission 'rw'
+	option name 'private6'
+	option source 'default'
+	option view 'all'
+
+config ro_community6 'ro_community6'
+	option permission 'ro'
+	option name 'public6'
+	option source 'default'
+	option view 'all'
+
+config user
+	option permission 'rw'
+	option name 'admin'
+	option seclevel 'priv'
+	option view 'all'
+	option authen 'MD5'
+	option authenpw 'admin123'
+	option encryp 'DES'
+	option encryppw 'admin123'
+

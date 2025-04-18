@@ -1,0 +1,8 @@
+DEFAULT
+	User-Name =* ANY,
+	Session-Timeout =* ANY,
+	EAP-Message =* ANY,
+	State =* ANY,
+	Message-Authenticator =* ANY,
+	Class =* ANY,
+	Proxy-State =* ANY

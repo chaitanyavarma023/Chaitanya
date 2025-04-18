@@ -1,0 +1,55 @@
+server inner-tunnel {
+  listen {
+    ipaddr = 127.0.0.1
+    port = 61812
+    type = auth
+  } #listen
+  authorize {
+    preprocess
+    chap
+    mschap
+    suffix
+    inner-eap
+    exec_auth
+    pap
+  } #authorize
+  authenticate {
+    Auth-Type PAP {
+      pap
+    } # Auth-Type PAP
+    Auth-Type CHAP {
+      chap
+    } # Auth-Type CHAP
+    Auth-Type MS-CHAP {
+      mschap
+    } # Auth-Type MS-CHAP
+    eap
+    inner-eap
+  } # authenticate
+  preacct {
+    preprocess
+    update request {
+      FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0}}"
+    } # update request
+    suffix
+    exec_preacct
+  } # preacct
+  accounting {
+    exec_acct
+  } # accounting
+  session {
+  }
+  post-auth {
+    exec
+    exec_reply
+    Post-Auth-Type REJECT {
+      attr_filter.access_reject
+    } # Post-Auth-Type REJECT
+  } # post-auth
+  pre-proxy {
+    exec_proxy_auth
+  } # pre-proxy
+  post-proxy {
+    eap
+  } # post-proxy
+} # server inner-tunnel

@@ -1,0 +1,12 @@
+Package: luasec
+Version: 0.9-1
+Depends: libc, lua, libopenssl1.1, luasocket
+Source: feeds/packages/lang/luasec
+SourceName: luasec
+License: MIT
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1711276820
+Architecture: arm_cortex-a7
+Installed-Size: 25305
+Description:  LuaSec is a binding for OpenSSL library to provide TLS/SSL communication.

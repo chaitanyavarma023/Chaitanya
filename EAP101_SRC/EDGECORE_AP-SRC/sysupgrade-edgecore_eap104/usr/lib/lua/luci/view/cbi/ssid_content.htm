@@ -1,0 +1,12 @@
+<% 
+section = self.section 
+-- IF CHANGE THIS HTML NEED TO CHANGE DYNAMIC SSID JS!!!
+ %>
+
+
+<fieldset class="cbi-section-node<% if self.tabs then %> cbi-section-node-tabbed<% end %>" id="cbi-<%=self.config%>-<%=section%>">
+    <%+cbi/ucisection%>
+</fieldset>
+             
+  
+

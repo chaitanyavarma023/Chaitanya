@@ -1,0 +1,55 @@
+#!/bin/sh
+
+[ -z "$(uci -q show snmpd.rw_community)" ] && {
+	if [ "$(uci -q show snmpd.@community[0])" != "" ]; then
+		uci set snmpd.rw_community=rw_community
+		uci set snmpd.rw_community.permission=$(uci -q get snmpd.@community[0].permission)
+		uci set snmpd.rw_community.name=$(uci -q get snmpd.@community[0].name)
+		uci set snmpd.rw_community.source=$(uci -q get snmpd.@community[0].source)
+		uci set snmpd.rw_community.view=$(uci -q get snmpd.@community[0].view)
+		uci -q del snmpd.@community[0]
+	else
+		uci set snmpd.rw_community=rw_community
+		uci set snmpd.rw_community.permission='rw'
+		uci set snmpd.rw_community.name='private'
+		uci set snmpd.rw_community.source='default'
+		uci set snmpd.rw_community.view='all'
+	fi
+}
+
+[ -z "$(uci -q show snmpd.rw_community6)" ] && {
+	if [ "$(uci -q show snmpd.@community6[0])" != "" ]; then
+		uci set snmpd.rw_community6=rw_community6
+		uci set snmpd.rw_community6.permission=$(uci -q get snmpd.@community6[0].permission)
+		uci set snmpd.rw_community6.name=$(uci -q get snmpd.@community6[0].name)
+		uci set snmpd.rw_community6.source=$(uci -q get snmpd.@community6[0].source)
+		uci set snmpd.rw_community6.view=$(uci -q get snmpd.@community6[0].view)
+		uci -q del snmpd.@community6[0]
+	else
+		uci set snmpd.rw_community6=rw_community6
+		uci set snmpd.rw_community6.permission='rw'
+		uci set snmpd.rw_community6.name='private6'
+		uci set snmpd.rw_community6.source='default'
+		uci set snmpd.rw_community6.view='all'
+	fi
+}
+
+[ -z "$(uci -q get snmpd.ro_community)" ] && {
+	uci set snmpd.ro_community=ro_community
+	uci set snmpd.ro_community.permission='ro'
+	uci set snmpd.ro_community.name='public'
+	uci set snmpd.ro_community.source='default'
+	uci set snmpd.ro_community.view='all'
+}
+
+[ -z "$(uci -q get snmpd.ro_community6)" ] && {
+	uci set snmpd.ro_community6=ro_community6
+	uci set snmpd.ro_community6.permission='ro'
+	uci set snmpd.ro_community6.name='public6'
+	uci set snmpd.ro_community6.source='default'
+	uci set snmpd.ro_community6.view='all'
+}
+
+uci commit snmpd
+
+exit 0

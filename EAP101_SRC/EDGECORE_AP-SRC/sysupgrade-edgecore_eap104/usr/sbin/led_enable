@@ -1,0 +1,10 @@
+#!/bin/sh
+
+. /lib/functions/leds.sh
+
+if [ "$(uci -q get system.@system[0].led_enable)" = "1" ]; then
+    /etc/init.d/led restart
+else
+    /etc/init.d/led turnoff
+fi
+

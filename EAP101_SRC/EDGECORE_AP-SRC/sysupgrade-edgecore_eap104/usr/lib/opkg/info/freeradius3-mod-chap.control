@@ -1,0 +1,13 @@
+Package: freeradius3-mod-chap
+Version: 3_0_21-2
+Depends: libc, freeradius3
+Source: feeds/packages/net/freeradius3
+SourceName: freeradius3-mod-chap
+License: GPL-2.0
+LicenseFiles: COPYRIGHT LICENSE
+Section: net
+SourceDateEpoch: 1734663430
+CPE-ID: cpe:/a:freeradius:freeradius
+Architecture: arm_cortex-a7
+Installed-Size: 3245
+Description:  CHAP module

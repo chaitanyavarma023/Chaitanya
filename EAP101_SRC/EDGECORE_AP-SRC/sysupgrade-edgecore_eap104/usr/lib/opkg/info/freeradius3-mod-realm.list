@@ -1,0 +1,3 @@
+/usr/lib/freeradius3/rlm_realm.so
+/etc/freeradius3/mods-enabled/realm
+/etc/freeradius3/mods-available/realm

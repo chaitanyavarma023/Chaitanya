@@ -1,0 +1,16 @@
+#!/bin/sh
+
+tip_mode=$(uci -q get acn.mgmt.management)
+[ ! -z $tip_mode ] && [ "$tip_mode" -eq 3 ] || {
+	exit 0
+}
+
+uci set lldpd.config.enable_cdp=0
+uci set lldpd.config.enable_fdp=0
+uci set lldpd.config.enable_sonmp=0
+uci set lldpd.config.enable_edp=0
+uci set lldpd.config.description="TIP/OpenAP"
+uci set lldpd.config.lldp_hostname="$(cat /tmp/sysinfo/model)"
+uci del lldpd.config.lldp_location
+uci del lldpd.config.interface
+uci commit lldpd

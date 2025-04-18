@@ -1,0 +1,38 @@
+$INCLUDE dictionary.rfc2865
+$INCLUDE dictionary.rfc2866
+$INCLUDE dictionary.rfc2867
+$INCLUDE dictionary.rfc2868
+$INCLUDE dictionary.rfc2869
+$INCLUDE dictionary.rfc3162
+$INCLUDE dictionary.rfc3576
+$INCLUDE dictionary.rfc3580
+$INCLUDE dictionary.rfc4372
+$INCLUDE dictionary.rfc4675
+$INCLUDE dictionary.rfc4679
+$INCLUDE dictionary.freeradius
+$INCLUDE dictionary.microsoft
+$INCLUDE dictionary.wispr
+#$INCLUDE dictionary.zvendor
+$INCLUDE dictionary.freeradius.internal
+
+ATTRIBUTE	Originating-Line-Info			94	string
+ATTRIBUTE	Digest-Response				206	string
+ATTRIBUTE	Digest-Attributes			207	octets	# stupid format
+
+VALUE	Service-Type			Voice			12
+VALUE	Service-Type			Fax			13
+VALUE	Service-Type			Modem-Relay		14
+VALUE	Service-Type			IAPP-Register		15
+VALUE	Service-Type			IAPP-AP-Check		16
+VALUE	Framed-Protocol			GPRS-PDP-Context	7
+VALUE	NAS-Port-Type			Wireless-CDMA2000	22
+VALUE	NAS-Port-Type			Wireless-UMTS		23
+VALUE	NAS-Port-Type			Wireless-1X-EV		24
+VALUE	NAS-Port-Type			IAPP			25
+VALUE	NAS-Port-Type			FTTP			26
+VALUE	NAS-Port-Type			Wireless-802.16		27
+VALUE	NAS-Port-Type			Wireless-802.20		28
+VALUE	NAS-Port-Type			Wireless-802.22		29
+VALUE	NAS-Port-Type			xPON			35
+VALUE	NAS-Port-Type			Wireless-XGP		36
+VALUE	Framed-Protocol			PPTP			9

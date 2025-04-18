@@ -1,0 +1,205 @@
+#!/bin/sh
+# this files is modifed from cipuamd/rep_ip, it is project dependent, so suggest to move to outside of cipuamd package
+
+file=$1
+ifname=$2
+port=$3
+wan_ip=$4
+vif=$5
+
+DB_BASE_PATH="/db"
+ST_BASE_PATH="/tmp/status"
+CONF_BASE_PATH="/db/conf_spec"
+CERT_FILE="/etc/uhttpd.crt"
+DOMAIN_NAME_CONF="wireless.global.certificate_dns"
+WIZARD_IFNAME="wlan0-1 wlan0-2 wlan1-1 wlan1-2"
+EXTERNAL_LOGIN_URL="external_login_url"
+EXTERNAL_CHECK_LOGIN_PAGE="check_external_login.lp"
+EXTERNAL_REDIR_PORTAL_PAGE="redir_external_portal.lp"
+WEB_PATH="cgi-bin/examples"
+HTTPS_PORT_CONF="uhttpd.main.listen_https"
+HTTP_PORT_CONF="uhttpd.main.listen_http"
+wisp_reply="0"
+WEB_URL_FILE="/tmp/web_url"
+
+function check_hs20_portal()
+{
+	local vif="$1"
+	local hs20_profile=$(uci -q get wireless.${vif}.hs20_profile)
+	local iw_section_name=$(uci -q show hotspot20 | grep "$hs20_profile" | grep "name" | awk -F '.' '{print $2}')
+	local iw_portal_en=$(uci -q get hotspot20.${iw_section_name}.iw_portal_enable)
+	local iw_portal_url=$(uci -q get hotspot20.${iw_section_name}.iw_portal_url)
+
+	if [ -z "$iw_portal_en" ] || [ "$iw_portal_en" = "0" ]; then
+		echo ""
+		return
+	fi
+
+	echo $iw_portal_url
+}
+
+if [ ! -d "$DB_BASE_PATH" ]; then
+  mkdir -p "$DB_BASE_PATH"
+  echo -n "ipassconnect,cdma+wlan,skype wispr,boingo client,CaptiveNetworkSupport">> "$DB_BASE_PATH"/wispr_agent
+fi
+
+if [ ! -d "$ST_BASE_PATH" ]; then
+  mkdir -p "$ST_BASE_PATH"
+fi
+
+if [ ! -d "$CONF_BASE_PATH" ]; then
+  mkdir -p "$CONF_BASE_PATH"
+fi
+
+mkdir -p "$DB_BASE_PATH/uamd"
+
+# FB_EXT_CP_URL, must read from cfg
+# set from cip-web/web/web_wlan.c
+# dn=`cat "$DB_BASE_PATH/uamd/device_name"`
+
+setup_wizard="0"
+if [ "$(uci -q get acn.wizard.ez_setup)" != "0" ]; then
+    for interface in $WIZARD_IFNAME
+    do
+        if [ "${interface}" = "${ifname}" ]; then
+            setup_wizard="1"
+        fi
+    done
+fi
+
+wi_anchor_enabled="$(uci -q get addon.wianchor.enabled)"
+
+domain_name=$(uci -q get ${DOMAIN_NAME_CONF})
+https_port=$(uci -q get ${HTTPS_PORT_CONF})
+http_port=$(uci -q get ${HTTP_PORT_CONF})
+[ -z "${domain_name}" ] && domain_name=$(/ramfs/bin/parseCN.sh ${CERT_FILE})
+if [ "${setup_wizard}" = "1" ]; then
+	IP=$wan_ip
+	IP6=$wan_ip
+	protocol="https"
+elif [ -n "$domain_name" ]; then
+	IP=$domain_name
+	[ -n "$https_port" -a "$https_port" != "443" ] && IP=${IP}:${https_port}
+	IP6=$domain_name
+	protocol="https"
+else
+	IP=$wan_ip
+	[ -n "$http_port" -a "$http_port" != "80" ] && IP=${IP}:${http_port}
+	IP6=$wan_ip
+	protocol="http"
+fi
+
+[ -n "${vif}" ] && {
+	external_url=$(uci -q get wireless.${vif}.${EXTERNAL_LOGIN_URL})
+	external_iw_portal_url=$(check_hs20_portal "$vif")
+	microsoft365_url=$(uci -q get wireless.${vif}.m365_auth_url)
+}
+
+if [ "${setup_wizard}" = "1" ]; then
+    web_page="cgi-bin/luci/admin/system/qr_wizard"
+elif [ "${wi_anchor_enabled}" = "1" ]; then
+    web_page="cgi-bin/luci/admin/acn_status/wi_anchor"
+elif [ -n "$external_url" ]; then
+    web_page="${WEB_PATH}/${ifname}/${EXTERNAL_CHECK_LOGIN_PAGE}"
+elif [ -n "$external_iw_portal_url" ]; then
+    web_page="${WEB_PATH}/${ifname}/${EXTERNAL_REDIR_PORTAL_PAGE}"
+    protocol=${external_iw_portal_url%%:*}
+    wisp_reply="1"
+else
+    web_page="${WEB_PATH}/${ifname}/index.lp"
+fi
+
+rep=""
+rep="${rep};s/__MYIP6/${IP6}/g"
+rep="${rep};s/__MYIP/${IP}/g"
+rep="${rep};s/__PROTOCOL/${protocol}/g"
+rep="${rep};s/__WAN1/${WAN1}/"
+rep="${rep};s/__WAN2/${WAN2}/"
+rep="${rep};/__WAN_VPN_IF/d"
+rep="${rep};s/__PORT/${port}/g"
+rep="${rep};s/__WISP_REP/${wisp_reply}/g"
+
+
+mkdir -p "$CONF_BASE_PATH/DoS_Limit"
+AGENT_NUM="3"
+rep="${rep};s/__AGENT_NUM/${AGENT_NUM}/"
+
+
+AGENT_LOGOUT_NUM="5"
+rep="${rep};s/__AGENT_LOGOUT_NUM/${AGENT_LOGOUT_NUM}/"
+
+# retry page
+mkdir -p "$DB_BASE_PATH/disclaimer"
+JSCRIPT="You would not be able to log in until you enable javascript in your Web browser"
+
+mkdir -p "$DB_BASE_PATH/DoS_Limit"
+HTITLE="Forbidden"
+HBODY="Your HTTP requests were blocked due to exceeding the limit earlier."
+HALERT1="You have exceeded the HTTP request limit. Please wait"
+HALERT2="to retry."
+HWAIT="5"
+HACTION="Now you can retry by clicking here."
+
+
+# read_cipcfg device name
+HADDRESS="SSAC1200"
+[ -z "${HADDRESS}" ] && HADDRESS="SSAC1200"
+echo -n "$HADDRESS" > "$DB_BASE_PATH/system_name"
+
+
+
+rep="${rep};s/__HTITLE/${HTITLE}/"
+rep="${rep};s/__HBODY/${HBODY}/"
+rep="${rep};s/__HADDRESS/${HADDRESS}/"
+rep="${rep};s/__HALERT1/${HALERT1}/"
+rep="${rep};s/__HALERT2/${HALERT2}/"
+rep="${rep};s/__HWAIT/${HWAIT}/"
+rep="${rep};s/__HACTION/${HACTION}/"
+rep="${rep};s/__JSCRIPT/${JSCRIPT}/"
+
+# echo -n "Disabled" > "$DB_BASE_PATH/proxy_mode"
+BUILTIN="Disabled"
+if [ "${BUILTIN}" != "Disabled" ]; then
+    rep="${rep};s/__BUILTIN/1/"
+else
+    rep="${rep};s/__BUILTIN/0/"
+fi
+
+# echo -n "ELF" > "$DB_BASE_PATH/UAMD_Format"
+LOG_FORMAT="ELF"
+if [ "${LOG_FORMAT}" = "CLF" ]; then
+    rep="${rep};s/__LOG_FORMAT/0/"
+else
+    rep="${rep};s/__LOG_FORMAT/1/"
+fi
+
+
+
+rep="${rep};s/__SPECIAL_REDIR_FOR_KT/$__SPECIAL_REDIR_FOR_KT/"
+
+
+__MYLOGOUTPAGE='loginpages/dns_out.shtml'
+
+# Escape the slash character
+__MYLOGOUTPAGE=$(echo $__MYLOGOUTPAGE | sed 's/\//\\\//g')
+rep="${rep};s/__MYLOGOUTPAGE/$__MYLOGOUTPAGE/"
+
+__MYTICKETPAGE='OndemandBillingPlanWebPrinter.shtml'
+rep="${rep};s/__MYTICKETPAGE/$__MYTICKETPAGE/"
+
+# For login page
+__MYPAGE="${web_page}"
+
+# Escape the slash character
+__MYPAGE=$(echo $__MYPAGE | sed 's/\//\\\//g')
+
+rep="${rep};s/__MYPAGE/$__MYPAGE/"
+
+# replace all file at the same time
+#for f in $*; do
+#	sed "$rep" "$f.tmpl" > $f
+#done
+
+sed "${rep}" "${file}.tmpl" > $file.${ifname}
+echo -n "${protocol}://${IP}" > $WEB_URL_FILE
+

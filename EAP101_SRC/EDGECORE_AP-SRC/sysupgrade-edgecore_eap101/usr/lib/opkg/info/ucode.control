@@ -1,0 +1,13 @@
+Package: ucode
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, libucode
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ucentral/ucode
+SourceName: ucode
+License: ISC
+Section: utils
+SourceDateEpoch: 1695897051
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 6030
+Description:  ucode is a tiny script interpreter featuring an ECMAScript oriented
+ script language and Jinja-inspired templating.

@@ -1,0 +1,11 @@
+<%
+local acn = require("luci.acn.util")
+local acn_uci = acn.cursor()
+local brand = require("luci.acn.brand")
+local cloud_controller_url = acn_uci:get("acn", "mgmt", "controller_url") or brand.controller_url
+%>
+<%+cbi/valueheader%>
+<div class="cfg-value">
+<%=luci.i18n.translatef("Take me to the <a href='%s' target='_blank'>%s Cloud Controller</a> management site.", cloud_controller_url, product.company_name())%>
+</div>
+<%+cbi/valuefooter%>

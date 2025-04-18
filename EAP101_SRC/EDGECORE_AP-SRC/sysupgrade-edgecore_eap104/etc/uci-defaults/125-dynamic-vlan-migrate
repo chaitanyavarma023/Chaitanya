@@ -1,0 +1,26 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+migrate_dynamic_vlan() {
+    config_get support_dynamic_vlan $1 support_dynamic_vlan
+    config_get support_default_vlan_behavior $1 support_default_vlan_behavior
+    config_get support_network $1 support_network
+
+    [ -n "$support_dynamic_vlan" ] && uci set wireless.$1.dynamic_vlan="$support_dynamic_vlan"
+    [ -n "$support_default_vlan_behavior" ] && uci set wireless.$1.default_vlan_behavior="$support_default_vlan_behavior"
+    [ -n "$support_network" ] && {
+    	uci set wireless.$1.network="$support_network"
+    	uci set wireless.$1.vlan_network_name="$support_network"
+    }
+
+    uci del wireless.$1.support_dynamic_vlan
+    uci del wireless.$1.support_default_vlan_behavior
+    uci del wireless.$1.support_network
+}
+
+config_load wireless
+config_foreach migrate_dynamic_vlan wifi-iface
+uci commit wireless
+
+exit 0

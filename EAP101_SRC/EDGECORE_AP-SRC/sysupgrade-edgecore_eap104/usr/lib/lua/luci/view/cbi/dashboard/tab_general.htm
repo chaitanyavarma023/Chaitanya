@@ -1,0 +1,431 @@
+<div id="tab_general" class="tab-pane active">
+ <h3 class="main-header"><%:Port Status%></h3>
+
+   <div class="row-fluid" id="eth-containers">
+
+
+   <%
+   uci = acn.cursor()
+
+   local is_ethport_plugged = false
+   local internet_src = uci:get("network", "wan", "inet_src") or "eth0"
+   for k=0, num_eth_ports -1 do
+       local eth = product.eth(k)
+       local friendly = acn.logical_to_friendly(eth.logical_name)
+
+       local status, msg = eth_status[eth.logical_name], ''
+
+       if status.linked  then
+           msg = status.friendly
+           icon_class = 'icon-exchange blue'
+           if internet_src == eth.logical_name then
+              is_ethport_plugged = true
+           end
+       else
+           msg = translate('No connection detected')
+           icon_class = 'icon-ban-circle disabled-eth-icon'
+           if not status.enabled then
+               msg = translate('Interface is disabled')
+               icon_class = 'icon-ban-circle disabled-icon'
+           end
+       end
+   %>
+
+   <%
+   user_name = luci.http.getcookie("user_name")
+   root_user = luci.util.root_user(user_name)
+   msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+   %>
+
+       <div  class="eth-container">
+           <span class="status-icon">
+               <i class="<%=icon_class%>"></i>
+           </span>
+
+           <div style="display:inline-block">
+              <div style="display: inline; ">
+                <% if root_user or msp_disabled then %>
+                    <a href="<%=luci.dispatcher.build_url('admin/network/ethernet')%>?id=<%=k%>"><%=friendly%></a>
+                <% else %>
+                    <a href="<%=luci.dispatcher.build_url('admin/status/ethernet')%>?id=<%=k%>" onclick="return false" oncontextmenu="return false"><%=friendly%></a>
+                <% end %>
+              </div>
+
+              <div class="status-msg">
+                <%= msg%>
+              </div>
+           </div>
+       </div>
+
+    <% end %>
+    <%
+    if product.supports_3g() then
+        local acn = require "luci.acn.util"
+        local wan_inet_src = uci:get("network", "wan", "inet_src")
+        local logical_name = product.dev_name_3g or "3g-wan"
+
+        if wan_inet_src == "wwan0" then
+            logical_name = wan_inet_src
+        end
+
+        local friendly = acn.logical_to_friendly(logical_name)
+
+        local status, msg = eth_status[logical_name], ''
+
+        icon_class = 'icon-exchange blue'
+        class_3g = "eth-container"
+
+        if status and status.linked then
+            msg = translate('Connection detected')
+        else
+            msg = translate('No connection detected')
+            icon_class = 'icon-ban-circle disabled-eth-icon'
+            class_3g = "hide"
+        end
+    %>
+        <div class="<%=class_3g%>">
+            <span class="status-icon"><i class="<%=icon_class%>"></i></span>
+
+            <div style="display:inline-block">
+               <div style="display: inline; ">
+                 <a href="<%=luci.dispatcher.build_url('admin/status/Internet')%>"><%=friendly%></a>
+               </div>
+
+               <div class="status-msg"><%= msg%></div>
+            </div>
+        </div>
+    <% end %>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span4 info-labels"  id="inet_info">
+        <h3><%:Internet Info%></h3>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Internet Status%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value">
+                    <%
+                      local inet_logic, is_wifi = acn.inet_src_to_logical(wan_info.inet_src)
+
+                      -- Inet source can be a wireless interface too...
+                      local link_status = true
+
+                      if is_wifi ~= "wifi" then
+                        link_status = eth_status[inet_logic].linked
+                      end
+
+                      local dev_name_mesh = product.dev_name_mesh
+                      local mesh_connected = mesh_status[dev_name_mesh] and mesh_status[dev_name_mesh].connected
+                      local mesh_enabled = uci:get("wireless", "wmesh", "disabled") == "0"
+                      local mesh_inet_src = false
+
+		      if not is_ethport_plugged then
+                          if mesh_enabled and wan_info.wan_ip then
+                              if mesh_connected then
+		                  link_status = true
+		                  mesh_inet_src = true
+		              end
+		          end
+		      end
+
+                      if wan_info.wan_down or not link_status then %>
+                        <span style="color: #AB0000;font-weight: bold;">
+                        <i class="icon-thumbs-down"></i>&nbsp;<%:No internet connection detected!%>
+                        </span>
+                    <% else %>
+                       <span class="status-green">
+                            <i class="icon-thumbs-up"></i>&nbsp;
+                            <%:Internet connection is up!%>
+                        </span>
+                    <% end %>
+
+                </div>
+            </div>
+
+<%
+local supports_l2tp = product.supports_l2tp()
+if supports_l2tp then
+%>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:VPN Status%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value">
+                    <%
+
+                      local ntm = require "luci.model.network".init()
+                      local l2tp_info = ntm:get_interface('l2tp-security')
+                      local l2tp_is_up
+                      if l2tp_info then
+                        l2tp_is_up = l2tp_info:is_up()
+                      end
+
+                      if l2tp_is_up then %>
+                        <span class="status-green">
+                            <i class="icon-thumbs-up"></i>&nbsp;
+                            <%:L2TP is connected!%>
+                        </span>
+                    <% else %>
+                        <span style="color: #AB0000;font-weight: bold;">
+                            <i class="icon-thumbs-down"></i>&nbsp;<%:L2TP is disconnected!%>
+                        </span>
+                    <% end %>
+                </div>
+            </div>
+<% end %>
+
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Internet Source%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value" id="inet_src">
+                    <%
+                    if mesh_inet_src then
+                    		print("Mesh")
+                    else
+                        local entry = acn.inet_src_member_label(wan_info.inet_src)
+
+                        if not entry then
+                            print(wan_info.inet_src)
+                        else
+                            luci.template.render('cbi/bridge_member_tag', {iface = entry, wrap=1})
+                        end
+                    end
+                    %>
+                </div>
+            </div>
+
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:IP Address%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value" id="ip_info">
+                     <%= wan_info.wan_ip %> 
+                      <% if wan_info.wan_ip_mode =="dhcp" then %>
+                       &nbsp; <a href="#" data-rel="tooltip" data-original-title="<%:Renew%>" 
+                       onclick="renew_dhcp()"><i class="icon-refresh"></i></a>
+                      <%end %>
+
+                 </div>
+            </div>
+
+            <div class="row-fluid">
+
+                <div class="info-label">
+                    <%:Mode%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value">
+                      <% if wan_info.wan_ip_mode then
+                            print( acn.friendly_proto(wan_info.wan_ip_mode))
+                        else print '-'
+                     end %>
+                </div>
+            </div>
+<% if has_ipv6 then %>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:IPv6 Address%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value" id="ipv6_info">
+                     <%= wan_info.wan6_ip %>
+                 </div>
+            </div>
+<% end %>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Netmask%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value">
+                    <% if wan_info.wan_ip_netmask then print(wan_info.wan_ip_netmask) else print('-') end %>
+                </div>
+            </div>
+
+            <div class="row-fluid">
+                <div class="info-label"> 
+                    <%:Gateway%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value">
+                     <%=wan_info.wan_gw %>
+                </div>
+            </div>
+
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:DNS%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value">
+                  <%
+                      if wan_info.wan_dns and #(wan_info.wan_dns) > 0 then
+                          local has_entries
+                          local dns = {}
+                          for d, addr in ipairs(wan_info.wan_dns) do
+                            if not dns[add] then
+                              dns[addr] = {}
+                          end
+                          end
+                          for k, _ in pairs(dns) do
+                            if has_entries then print (', ') end
+                            has_entries = 1
+                              print(k)
+                          end
+                      else
+                          print('-')
+                      end
+                         %>
+                </div>
+            </div>
+        </div>
+
+        <div class="span4 info-labels span-right"  id="device_info">
+            <h3><%:Device Info%></h3>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Firmware%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value"><%=acn_status.version()%></div>
+            </div>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Serial Num.%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value"><%=product.system_info("SN")%></div>
+            </div>
+            <div class="row-fluid">
+                <div class="info-label">
+                        <%:System Mac%>
+                    </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value"><%=main_mac_addr:upper()%></div>
+            </div> 
+            <div class="row-fluid">
+                <div class="info-label">
+                        <%:MTU%>
+                    </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value"><%=wan_info.mtu%></div>
+            </div>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Uptime%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value"><%=acn_status.format_uptime(luci.sys.uptime())%></div>
+            </div>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Load Avg%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value"><% local load1, load2, load3 = luci.sys.loadavg() %>
+                    <%=string.format("%.2f", load1)%>&nbsp;<%=string.format("%.2f",load2)%>&nbsp;<%=string.format("%.2f",load3)%></div>
+            </div>
+            <div class="row-fluid">
+                <div class="info-label">
+                    <%:Mem. Used%>
+                </div>
+                <i class="separator icon-caret-right"></i>
+                <div class="info-value"><%=string.format("%.0f%%", luci.sys.memused())%></div>
+            </div>
+        </div>
+
+        <div class="span4 info-labels span-right" id="iface_info">
+            <h3><%:Interface Info%></h3>
+            <div class="row-fluid">
+                <div class="info-label single-col">
+                    <%:Ports bridged to internet%>
+                    <i class="separator icon-caret-right"></i>
+               </div>
+                <div class="span12 ">
+                    <%
+                    local is_first = true
+                    wan_ports = wan_info.wan_ports or {}
+                    local member_count = 0
+
+                    for k, port in ipairs(wan_ports) do
+
+                        if port ~= wan_info.inet_src then
+
+                            local entry = acn.iface_member_label(port)
+
+                            if entry ~= nil then
+                                local lc_enabled = (uci:get("wireless", entry['logical_name'], "local_configurable") == "1")
+                                local msp_local_config = luci.util.msp_local_config(msp_disabled, lc_enabled)
+
+                                if root_user or msp_local_config then
+                                    -- Dont show WDS ports which are of the form wlanXwX
+                                    if not entry then
+                                        if not port:match(product.wifi_prefix .. "[%d,%p]+w%d+")
+                                            and port ~= 'bat0'
+                                            and port ~= 'wan'
+                                            and port ~= 'br-wan' then
+                                            print(port)
+                                            member_count  = member_count + 1
+                                        end
+                                    else
+
+                                        if not is_first then
+                                            print("&nbsp;&nbsp;")
+                                        end
+
+                                        member_count  = member_count + 1
+                                        luci.template.render('cbi/bridge_member_tag', {iface = entry})
+
+                                        is_first = false
+                                    end
+                                end
+                            end
+
+                        end
+                    end
+
+                    if member_count == 0 then
+                    %>
+
+                      <span style='font-style:italic'><%:(no additional interfaces)%></span>
+                    <%
+                    end
+                    %>
+                </div>
+            </div>
+
+             <div class="row-fluid">
+                <div class="span12  info-labels">
+                    <div class="row-fluid">
+                        <div class="info-label single-col" style="padding-top:15px"><%:Routed Ports%><i class="separator icon-caret-right"></i></div>
+
+                        <div class="span12  single-col-2">
+                            <div id="routed_ports">
+                            <span style='font-style:italic'><%:(no additional interfaces)%></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="row-fluid" style="padding-top:15px">
+        <div class="span12  info-labels">
+            <div class="row-fluid">
+               
+           </div>
+        </div>
+    </div>
+
+ 
+ 
+
+</div>

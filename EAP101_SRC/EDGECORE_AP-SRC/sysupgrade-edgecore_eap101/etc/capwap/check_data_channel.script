@@ -1,0 +1,59 @@
+#!/bin/sh
+
+FILE_NAME="/tmp/capwap/mgmt_ip"
+PING_ST="/tmp/capwap_ping"
+TUN_DEV="brTun999"
+TUN_DIR="/sys/class/net/${TUN_DEV}"
+SPLIT_ACT="/etc/capwap/split_tun_action.script"
+
+config_interface()
+{
+    local act="$1"
+    ${SPLIT_ACT} set_capwap_status "${act}"
+}
+
+while true; do
+    sleep 30
+    ping_st=1; [ -d "${TUN_DIR}" ] && ping_st=0
+    if [ -f "${PING_ST}" ]; then
+        ping_st_old=''; read ping_st_old < "${PING_ST}"
+        if [ ${ping_st} -eq 1 -a ${ping_st_old} -eq 0 ]; then
+            config_interface "down"
+            echo "1" > "${PING_ST}"
+            continue
+        fi
+    else
+        [ ${ping_st} -eq 1 ] && continue
+        echo "1" > "${PING_ST}"
+    fi
+
+    mgmt_ip=''; [ -f "${FILE_NAME}" ] && { read mgmt_ip < "${FILE_NAME}"; } 2>/dev/null
+    if [ -z "${mgmt_ip}" ]; then # prevent writer too slow, try again
+        sleep 5
+        [ -f "${FILE_NAME}" ] && { read mgmt_ip < "${FILE_NAME}"; } 2>/dev/null
+    fi
+    ping_st=1
+    if [ -n "${mgmt_ip}" ]; then
+        i=0
+        while [ $i -lt 10 ]; do
+            ping -I ${TUN_DEV} -c 1 -w 1 ${mgmt_ip} >/dev/null 2>&1 && { ping_st=0; break; }
+            i=$((i+1))
+        done
+    fi
+
+    if [ -f "${PING_ST}" ]; then
+        ping_st_old=''; read ping_st_old < "${PING_ST}"
+
+        if [ "${ping_st_old}" != "${ping_st}" ]; then
+            if [ ${ping_st} -eq 1 ]; then
+                logger "CAPWAP data channel disconnected"
+                config_interface "down"
+            else
+                logger "CAPWAP data channel connected"
+                config_interface "up"
+            fi
+            echo "${ping_st}" > "${PING_ST}"
+        fi
+    fi
+done
+

@@ -1,0 +1,2 @@
+#!/bin/sh
+blescan.sh | grep ibeacon | awk '{print $4 " " $5}' | sed 's/MFR=1AFF4C000215//g' | sed 's/\(.\{32\}\)\(.\{4\}\)\(.\{4\}\)\(.\{2\}\)\(.\{2\}\)/UUID=\1 MAJOR=\2 MINOR=\3 PWR=\4 RSSI=\5/g' | awk -F" " '!_[$1$2$3]++'

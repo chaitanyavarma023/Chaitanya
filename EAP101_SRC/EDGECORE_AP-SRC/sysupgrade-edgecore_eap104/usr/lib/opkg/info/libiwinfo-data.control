@@ -1,0 +1,12 @@
+Package: libiwinfo-data
+Version: 2021-06-09-c0414642-2.1
+Depends: libc
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/wifi-ax/iwinfo
+SourceName: libiwinfo-data
+License: GPL-2.0
+Section: opt
+SourceDateEpoch: 1690514510
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 2079
+Description:  libiwinfo Lua binding

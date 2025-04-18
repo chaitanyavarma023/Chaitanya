@@ -1,0 +1,7 @@
+<%+cbi/valueheader%>
+<div class="cfg-value">
+<%=os.date("%c") .. ' ' .. luci.util.split(luci.util.exec('cat /etc/TZ') or 'UTC', ',')[1]%>&nbsp;&nbsp; <% if self.show_time_cfg_link then %>
+    <a href='<%=luci.dispatcher.build_url("admin", "system", "services")%>'><%:Configure Network Time%></a>
+<% end %>
+</div>
+<%+cbi/valuefooter%>

@@ -1,0 +1,3 @@
+/etc/radcli/radiusclient.conf
+/usr/lib/libradcli.so.4
+/usr/lib/libradcli.so.4.3.0

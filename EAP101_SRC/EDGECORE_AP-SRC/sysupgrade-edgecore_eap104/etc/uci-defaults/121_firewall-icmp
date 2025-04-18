@@ -1,0 +1,31 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+check_icmp_include() {
+	local path
+
+	config_get path $1 path
+	if [ "$path" == "/etc/firewall.icmp" ]; then
+		uci_remove firewall $1
+	fi
+}
+
+add_firewall_icmp() {
+	config_load firewall
+	config_foreach check_icmp_include include
+
+	uci -q batch <<-EOF
+	delete firewall.icmp
+	set firewall.icmp=include
+	set firewall.icmp.path='/etc/firewall.icmp'
+	set firewall.icmp.reload='1'
+	set firewall.icmp.type='script'
+	EOF
+	uci_commit firewall
+}
+
+add_firewall_icmp
+
+exit 0
+

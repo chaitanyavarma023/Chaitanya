@@ -1,0 +1,33 @@
+#!/bin/sh
+
+MAX_RF=2
+MAX_VAP=16
+
+iptables -t filter -D zone_wan_input -p udp -m udp --sport 5246 -j ACCEPT
+[ "$(uci get acn.capwap.state)" != "1" ] && exit
+iptables -t filter -I zone_wan_input -p udp -m udp --sport 5246 -j ACCEPT
+flag=0
+for i in $(seq 0 $((MAX_RF-1)))
+do
+	for j in $(seq 1 ${MAX_VAP})
+	do
+		tun=$(uci get wireless.radio${i}_${j}.tun)
+		split_tun=$(uci get wireless.radio${i}_${j}.split_tun)
+		[ -z "${tun}" ] && continue
+		vid=$(uci get wireless.radio${i}_${j}.vid)
+		if [ "${flag}" = "0" ] && [ "${tun}" = "1" ] && [ -n "${vid}" ]; then
+			iptables -t filter -I FORWARD -i brTun+ -j ACCEPT
+			flag=1
+		fi
+		if [ "${tun}" = "1" ] && [ "${split_tun}" = "1" ]; then
+			if [ "${j}" = "1" ]; then
+				ifname="ath${i}"
+			else
+				ifname="ath${i}$((j-1))"
+			fi
+			iptables -t filter -I FORWARD -m physdev --physdev-in ${ifname} -j ACCEPT
+			iptables -t nat -I PREROUTING -m physdev --physdev-in ${ifname} -j ACCEPT
+		fi
+	done
+done
+

@@ -1,0 +1,14 @@
+/etc/config/fbwifi
+/usr/sbin/fbwifi_validate_token_db
+/usr/share/fbwifi/firewall.include
+/usr/sbin/fbwifi_get_config
+/usr/sbin/fbwifi_debug_dump
+/usr/share/fbwifi/uhttpd.json
+/usr/sbin/fbwifi_gateway_info_update
+/www/cgi-bin/fbwifi/v2.0/info
+/usr/sbin/fbwifi
+/etc/hotplug.d/iface/50-fbwifi
+/etc/init.d/fbwifi
+/usr/lib/lua/fbwifi.lua
+/www/cgi-bin/fbwifi/v2.0/auth
+/www/cgi-bin/fbwifi/v2.0/capport

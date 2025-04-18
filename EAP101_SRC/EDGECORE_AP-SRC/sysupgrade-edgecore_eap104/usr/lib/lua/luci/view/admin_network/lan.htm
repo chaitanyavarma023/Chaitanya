@@ -1,0 +1,125 @@
+<style>
+
+.lan_section .controls input {
+  width: 110px;
+}
+
+.lan_section .controls textarea {
+  width: 110px;
+}
+
+.lan_section .controls select {
+  width: 150px;
+}
+
+.lan_section .control-label {
+  width: 100px;
+}
+.lan_section .controls {
+  margin-left: 120px;
+}
+
+.lan_section fieldset {
+  display: inline-block;
+  vertical-align: top;
+}
+
+#btn_save {
+  margin-left: 0px;
+}
+
+#cbi-network h4 {
+  text-transform: none;
+}
+
+</style>
+
+<div style="padding-right:15px" id="lan_list">
+
+    <%  local isempty = true
+        acn = require("luci.acn.util")
+        local mgmt_enabled = (self.map.uci:get("acn", "mgmt", "enabled") == "1")
+        for i, k in ipairs(self:cfgsections()) do
+         local site_entity = self.map.uci:get(self.config, k, "__uid") and mgmt_enabled
+         section = k; isempty = false
+
+         -- Don't show loopback, wan, and mgmt
+
+         if not acn.hide_from_lan_page(section) then
+
+            local auto = self.map.uci:get('network', section, 'auto' ) or '1'
+            local custom = acn.is_custom_LAN(section, self.map.uci)
+            local title  = self.map.uci:get('network', section, 'title' ) or 'n/a'
+
+            local network_name
+
+            if custom  then
+                network_name = title
+            else
+                network_name = acn.friendly_network(section)
+            end
+         %>
+
+        <div class="widget-header" data-lan="<%=section%>" id="<%=section%>_title">
+            <h4><i class='icon-cloud'></i>
+            <% if custom then %>
+              <input title="" type="text" class="ace-tooltip" data-rel="tooltip"
+                  name="cbid.network.<%=section%>.title"
+                  id="cbid.network.<%=section%>.title"
+                  value="<%=network_name%>"
+                  cbi_datatype="uciname" cbi_optional="false" data-original-title=""
+              />
+            <% else %>
+                <%=network_name%>
+            <% end %>
+            </h4>
+
+            <span class="widget-toolbar">
+                <!--button type="button" class="btn-link" onclick="popupWindow('<%=controller%>/admin/status/ip_alias/<%=section:upper()%>')"><%:IP Aliases%></button-->
+                <input type="hidden" value="<%=auto%>" name="cbi.cbe.network.<%=section%>.auto" />
+
+                <input type="checkbox" class="ace-switch ace-switch-3 auto_button" data-lan="<%=section%>"
+                    data-off-label="disabled"
+                    data-on-label="enabled"
+                    name="cbid.network.<%=section%>.auto"  id="cbid.network.<%=section%>.auto"  onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)"
+                  <%
+                    if auto == '1' then 
+                      print(' value="1" checked="checked" ')
+                    else 
+                      print(' value="0" ')
+                    end %>
+                 >
+                 <span class="lbl"></span>
+
+                <% alias_btn_lbl = translate('IP Aliases') %>
+
+                <% if self.include_ipaliases then %>
+                    <%+cbi/ip_aliases_btn%>
+                <% end %>
+
+                <% if custom then %>
+                  <button data-lan="<%=section%>" class="btn btn-mini <% if not site_entity then print('btn-danger btn-delete-lan') else print('ace-tooltip disabled') end %>" <% if site_entity then print('  data-original-title="This item is managed by the cloud and cannot be deleted. Please disable it instead." onclick="return false"') end %>>
+  					      <i class="icon-trash"></i>
+				          </button>
+                <%- end %>
+            </span>
+        </div>
+
+        <%+cbi/tabmenu%>
+
+        <fieldset class="cbi-section-node<% if self.tabs then %> cbi-section-node-tabbed<% end %> lan_section" data-lan="<%=section%>" id="cbi-<%=self.config%>-<%=section%>" >
+            <%+admin_network/lan_item%>
+        </fieldset>
+
+    <%- end %>
+    <%- end %>
+
+</div>
+
+<button id="add_lan_btn" class="btn btn-info btn-small" style="margin-bottom:10px">
+    <i class="icon-plus"></i> <%:Add Custom LAN%>
+</button>
+
+<span id="alert_up_max" style="color:red; display:none">
+&nbsp;&nbsp;<%:The max number of allowed custom lan is%> <span id="maxLansNum">5</span>.
+</span>

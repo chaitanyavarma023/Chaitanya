@@ -1,0 +1,12 @@
+/lib/netperf/sctp_stream_script
+/etc/init.d/netserver
+/usr/bin/netperf
+/lib/netperf/tcp_range_script
+/lib/netperf/udp_stream_script
+/lib/netperf/tcp_stream_script
+/lib/netperf/packet_byte_script
+/lib/netperf/snapshot_script
+/lib/netperf/udp_rr_script
+/usr/bin/netserver
+/lib/netperf/arr_script
+/lib/netperf/tcp_rr_script

@@ -1,0 +1,15 @@
+Package: libssh
+Version: 0.9.6-1
+Depends: libc, libpthread, librt, zlib, libopenssl1.1
+Source: feeds/packages/libs/libssh
+SourceName: libssh
+License: LGPL-2.1-or-later BSD-2-Clause
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1711276820
+CPE-ID: cpe:/a:libssh:libssh
+Maintainer: Mislav Novakovic <mislav.novakovic@sartura.hr>
+Architecture: arm_cortex-a7
+Installed-Size: 154043
+Description:  libssh is a mulitplatform C library implementing the SSHv2 and SSHv1 protocol
+ for client and server implementations.

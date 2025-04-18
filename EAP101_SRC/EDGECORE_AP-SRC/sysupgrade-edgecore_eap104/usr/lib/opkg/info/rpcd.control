@@ -1,0 +1,13 @@
+Package: rpcd
+Version: 2021-11-04-d11ffe93-1
+Depends: libc, libubus20210809, libubox20210819, libuci20130104, libblobmsg-json20210819, libjson-c5
+Source: package/system/rpcd
+SourceName: rpcd
+License: ISC
+Section: utils
+SourceDateEpoch: 1734663185
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 23075
+Description:  This package provides the UBUS RPC backend server to expose various
+ functionality to frontend programs via JSON-RPC.

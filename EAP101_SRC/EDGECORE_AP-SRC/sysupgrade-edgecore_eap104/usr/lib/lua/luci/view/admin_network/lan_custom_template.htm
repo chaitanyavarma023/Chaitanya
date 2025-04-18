@@ -1,0 +1,213 @@
+
+<div id="lan_template" style="display:none;visibility:hidden">
+    <div class="widget-header" data-lan="%CUSTOM%" id="%CUSTOM%_title">
+
+        <h4 style="font-style: normal;"><i class="icon-cloud"></i>
+          <input title="" type="text" class="ace-tooltip" data-rel="tooltip"
+                name="cbid.network.%CUSTOM%.title"
+                id="cbid.network.%CUSTOM%.title"
+                value="%CUSTOM%"
+                cbi_datatype="uciname" cbi_optional="false" data-original-title="" />
+        </h4>
+
+        <span class="widget-toolbar">
+            <input type="hidden" value="1" name="cbi.cbe.network.%CUSTOM%.auto">
+
+            <input type="checkbox" class="ace-switch ace-switch-3 auto_button" data-off-label="disabled" data-on-label="enabled" name="cbid.network.%CUSTOM%.auto" id="cbid.network.%CUSTOM%.auto" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" value="1" checked="checked">
+
+            <span class="lbl"></span>
+
+            <div class="hide" id="row_%CUSTOM%">
+
+            </div>
+
+            <!--<a href="#" id="open_ip_aliases_%CUSTOM%" disabled="disabled" class="btn btn-small btn-info" class="ace-tooltip" data-original-title="Please save network first to configure IP aliases" data-rel="tooltip">IP aliases</a>-->
+            <script type="text/javascript">
+                var ipAliasesId = "open_ip_aliases_%CUSTOM%";
+                $("[id='"+ipAliasesId+"']").tooltip();
+            </script>
+
+            <a data-lan="%CUSTOM%" href="#" class="btn btn-small btn-danger btn-delete-lan">
+                 <i class="icon-trash"></i>
+            </a>
+
+        </span>
+     </div>
+
+    <fieldset class="cbi-section-node lan_section" data-lan="%CUSTOM%" id="cbi-network-%CUSTOM%">
+
+    <div class="well">
+        <div class="row-fluid">
+
+        <fieldset class="cbi-section-node">
+
+            <!-- IP Address -->
+            <div class="cbi-value" id="cbi-network-%CUSTOM%-ipaddr">
+                <label id="cbi-network-%CUSTOM%-ipaddr-tel" class="control-label" for="cbid.network.%CUSTOM%.ipaddr">
+                <%:IP Address%>
+
+                </label>
+                <div class="controls">
+                    <input title="" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.%CUSTOM%.ipaddr" id="cbid.network.%CUSTOM%.ipaddr" value="" cbi_datatype="ip4addr" cbi_optional="true" data-original-title="">
+                </div>
+            </div>
+
+            <!-- Subnet mask -->
+            <div class="cbi-value" id="cbi-network-%CUSTOM%-netmask">
+
+                <label id="cbi-network-%CUSTOM%-netmask-tel" class=" control-label" for="cbid.network.%CUSTOM%.netmask">
+                <%:Subnet Mask%>
+                </label>
+                 <div class="controls">
+                    <input title="" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.%CUSTOM%.netmask" id="cbid.network.%CUSTOM%.netmask" value="255.255.255.0" cbi_datatype="netmask" cbi_optional="false" data-original-title="" >
+
+                </div>
+
+            </div>
+
+            <!-- MTU -->
+            <div class="cbi-value" id="cbi-network-%CUSTOM%-mtu">
+
+                <label id="cbi-network-%CUSTOM%-mtu-tel" class=" control-label" for="cbid.network.%CUSTOM%.mtu">
+                <%:MTU Size%>
+                </label>
+
+                <div class="controls">
+                    <input title="" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.%CUSTOM%.mtu" id="cbid.network.%CUSTOM%.mtu" value="1500" cbi_datatype="range" cbi_optional="false" data-original-title="">
+
+                </div>
+            </div>
+
+        </fieldset>
+
+
+        <fieldset class="cbi-section-node">
+
+        <!-- DHCP -->
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-dhcp"><label id="cbi-network-%CUSTOM%-dhcp-tel" class=" control-label" for="cbid.network.%CUSTOM%.dhcp">
+        <%:DHCP Server%>
+        </label>
+
+
+         <div class="controls">
+
+
+            <input type="hidden" value="1" id="cbi.cbe.network.%CUSTOM%.dhcp" name="cbi.cbe.network.%CUSTOM%.dhcp">
+
+            <input title="" class="ace-tooltip ace-switch ace-switch-3 dhcp_button" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="checkbox" id="cbid.network.%CUSTOM%.dhcp" name="cbid.network.%CUSTOM%.dhcp" value="1" checked="checked">
+            <span class="lbl"></span>
+
+            </div>
+
+        </div>
+
+
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-dhcp_start" style=""><label id="cbi-network-%CUSTOM%-dhcp_start-tel" class=" control-label" for="cbid.network.%CUSTOM%.dhcp_start">
+        <%:DHCP Start%>
+        </label>
+
+         <div class="controls">
+
+            <input title="" type="text" class="ace-tooltip dhcp_%CUSTOM% dhcp_option" onchange="cbi_d_update(this.id)" name="cbid.network.%CUSTOM%.dhcp_start" id="cbid.network.%CUSTOM%.dhcp_start" value="100" data-original-title="">
+
+        </div>
+        </div>
+
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-dhcp_max" style=""><label id="cbi-network-mgmt-dhcp_max-tel" class=" control-label" for="cbid.network.%CUSTOM%.dhcp_max"><%:DHCP Limit%>
+        </label>
+
+            <div class="controls">
+
+            <input title="" type="text" class="ace-tooltip  dhcp_%CUSTOM% dhcp_option" onchange="cbi_d_update(this.id)" name="cbid.network.%CUSTOM%.dhcp_max" id="cbid.network.%CUSTOM%.dhcp_max" value="150" data-original-title="">
+
+            </div>
+        </div>
+
+        <!-- DHCP Lease Time -->
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-dhcp_leasetime" style="">
+            <label id="cbi-network-mgmt-dhcp_leasetime-tel" class=" control-label" for="cbid.network.%CUSTOM%.dhcp_leasetime">
+                <%:DHCP Lease Time%>
+            </label>
+
+            <div class="controls">
+                <select class="cbi-input-select dhcp_%CUSTOM%_lease dhcp_option" id="cbid.network.%CUSTOM%.dhcp_leasetime" name="cbid.network.%CUSTOM%.dhcp_leasetime" onchange="cbi_d_update(this.id)">
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-5m"   value="5m">   <%:5min%>  </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-30m"  value="30m">  <%:30min%> </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-1h"   value="1h">   <%:1hr%>   </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-3h"   value="3h">   <%:3hr%>   </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-6h"   value="6h">   <%:6hr%>   </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-8h"   value="8h">   <%:8hr%>   </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-12h"  value="12h" selected="selected"> <%:12hr%>  </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-24h"  value="24h">  <%:1 day%> </option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-72h"  value="72h">  <%:3 days%></option>
+                	<option id="cbid-network-%CUSTOM%-dhcp_leasetime-168h" value="168h"> <%:1 week%></option>
+                </select>
+            </div>
+        </div>
+
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-dhcp_dns" style="">
+            <label id="cbi-network-%CUSTOM%-dhcp_dns-tel" class=" control-label" for="cbid.network.%CUSTOM%.dhcp_dns"><%:Custom DHCP DNS Servers%></label>
+            <div class="controls">
+                <textarea rows="3" cols="20" class="ace-tooltip dhcp_%CUSTOM% dhcp_option" onchange="cbi_d_update(this.id)" name="cbid.network.%CUSTOM%.dhcp_dns" id="cbid.network.%CUSTOM%.dhcp_dns" data-original-title=""></textarea>
+            </div>
+        </div>
+
+        </fieldset>
+
+        <fieldset class="cbi-section-node">
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-circuit_id_data" style=""><label id="cbi-network-%CUSTOM%-circuit_id_data-tel" class=" control-label" for="cbid.network.%CUSTOM%.circuit_id_data">
+        <%:DHCP Relay Id%>
+        </label>
+
+         <div class="controls">
+
+            <input title="" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.%CUSTOM%.circuit_id_data" id="cbid.network.%CUSTOM%.circuit_id_data" value="" data-original-title="">
+
+        </div>
+        </div>
+
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-stp"><label id="cbi-network-%CUSTOM%-stp-tel" class=" control-label" for="cbid.network.%CUSTOM%.stp">
+        STP
+        </label>
+
+         <div class="controls">
+            <input type="hidden" value="0" name="cbi.cbe.network.%CUSTOM%.stp">
+
+            <input title="" class="ace-tooltip ace-switch ace-switch-3" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="checkbox" id="cbid.network.%CUSTOM%.stp" name="cbid.network.%CUSTOM%.stp" value="0">
+            <span class="lbl"></span>
+        </div>
+
+        </div>
+
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-upnp"><label id="cbi-network-%CUSTOM%-upnp-tel" class=" control-label" for="cbid.network.%CUSTOM%.upnp">
+        UPnP
+        </label>
+
+         <div class="controls">
+            <input type="hidden" value="0" name="cbi.cbe.network.%CUSTOM%.upnp">
+
+            <input title="" class="ace-tooltip ace-switch ace-switch-3" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="checkbox" id="cbid.network.%CUSTOM%.upnp" name="cbid.network.%CUSTOM%.upnp" value="0">
+            <span class="lbl"></span>
+        </div>
+
+        </div>
+
+        <div class="cbi-value" id="cbi-network-%CUSTOM%-smart_isolation"><label id="cbi-network-%CUSTOM%-smart_isolation-tel" class=" control-label" for="cbid.network.%CUSTOM%.smart_isolation">
+        <%:Smart Isolation%>
+        </label>
+        <div class="controls">
+            <select class="cbi-input-select" id="cbid.network.%CUSTOM%.smart_isolation" name="cbid.network.%CUSTOM%.smart_isolation" onchange="cbi_d_update(this.id)">
+            <option id="cbid-network-%CUSTOM%-smart_isolation-disable" value="0" selected="selected"><%:Disable (full access)%></option>
+            <option id="cbid-network-%CUSTOM%-smart_isolation-internet" value="1"><%:Internet access only%></option>
+            <option id="cbid-network-%CUSTOM%-smart_isolation-local" value="2"><%:LAN access only%></option>
+            <option id="cbid-network-%CUSTOM%-smart_isolation-internet-strict" value="3"><%:Internet access strict%></option>
+            </select>
+        </div>
+        </div>
+        </fieldset>
+
+         </div>
+    </div>
+
+    </fieldset>
+</div>

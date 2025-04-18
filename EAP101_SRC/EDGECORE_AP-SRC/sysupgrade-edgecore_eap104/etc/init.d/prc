@@ -1,0 +1,88 @@
+#!/bin/sh /etc/rc.common
+
+USE_PROCD=1
+START=99
+STOP=01
+
+PRC_DATA_DIR=/var/run/prc_files
+PROG=/usr/sbin/prc_relay.sh
+
+proximity_args=""
+use_pseudo_vap=""
+
+check_vap() {
+    local disabled device mode
+
+    config_get disabled $1 disabled
+    config_get device $1 device
+    config_get mode $1 mode
+
+    if [ "$device" == "$2" -a "$disabled" != "1" -a "$mode" == "sta" ]; then
+        use_pseudo_vap=1
+    fi
+}
+
+check_wifi() {
+    local cfg="$1"
+    local radio
+
+    # WiFi interface is enabled when no 'disabled' option
+    # config_get_bool wifi_disabled $cfg disabled 0
+    # [ -z "$wifi_disabled" -o "$wifi_disabled" != "0" ] && return 0;
+
+    # config_get_bool svc_disabled $cfg prc_disabled 1
+    # [ -z "$svc_disabled" -o "$svc_disabled" != "0" ] && return 0;
+
+    if echo $cfg | grep -q radio; then
+	    # Realtek radio
+	    radio_prefix="wlan"
+    else
+	    # Qualcomm radio
+	    radio_prefix="ath"
+    fi
+    radio=${cfg//${cfg%?}/$radio_prefix}
+
+    config_foreach check_vap wifi-iface $cfg
+    if [ "$use_pseudo_vap" == "1" ]; then
+        radio=proximity${cfg##*[a-z]}
+    fi
+
+    proximity_args="$proximity_args -w $radio"
+}
+
+start_service() {
+    config_load wireless
+    config_foreach check_wifi wifi-device
+
+    [ -z "$proximity_args" ] && return 0;
+
+    prc_relay_ID=$(ps ww | grep prc_relay.sh | grep -v grep | awk '{ print $1 }')
+    if [ "$prc_relay_ID" != "" ]; then
+        kill -9 ${prc_relay_ID}
+    fi
+
+    procd_open_instance
+    procd_set_param command "$PROG"
+    procd_close_instance
+}
+
+service_triggers() {
+    procd_add_reload_trigger wireless addon
+    procd_add_restart_trigger network
+}
+
+stop_service() {
+    rm -rf $PRC_DATA_DIR/*
+    prc_relay_ID=$(ps ww | grep prc_relay.sh | grep -v grep | awk '{ print $1 }')
+    if [ "$prc_relay_ID" != "" ]; then
+        kill -9 ${prc_relay_ID}
+    fi
+    sleep 10
+}
+
+reload_service()
+{
+    stop
+    start
+    return 0
+}

@@ -1,0 +1,48 @@
+<META http-equiv="expires" content="Sat, 1 Jan 2000 00:00:00 GMT">
+<META http-equiv="Pragma" content="no-cache">
+<META http-equiv="Cache-Control" content="no-cache">
+<META http-equiv="Connection" content="close">
+<META http-equiv="Content-Type" content="text/html">
+<html>
+<head>
+<title>__HTITLE</title>
+</head>
+<body>
+<table align='center' width='600' height='450'>
+  <tr id='punish_tr' style='display:none'><td height='400' align='center'>
+    <h1>__HTITLE</h1>
+    <p><span id='tx1'>__HALERT1 &nbsp;<span> </span> &nbsp;__HALERT2</span>&nbsp;
+    <span id='tx2'>__HBODY &nbsp;Now you can try again.</a></span></p>
+  </td></tr>
+  <tr id='noscript_tr'><td align='center'>
+    __JSCRIPT
+  </td></tr>
+</table>
+</body></html>
+
+<script>
+function init() {
+    document.getElementById('noscript_tr').style.display='none';
+    document.getElementById('punish_tr').style.display='';
+    show_run();
+}
+function show_run() {
+    var tx1 = document.getElementById('tx1');
+    var tx2 = document.getElementById('tx2');
+    var sec = tx1.getElementsByTagName('span').item(0);
+    if (ct) {
+	tx1.style.display = '';
+	tx2.style.display = 'none';
+	sec.innerHTML = --ct + " second";
+	if(ct>1)
+	    sec.innerHTML += "s";
+	setTimeout('show_run()', 1000);
+    }
+    else {
+	tx2.style.display = '';
+	tx1.style.display = 'none';
+    }
+}
+var ct = __HWAIT;
+init();
+</script>

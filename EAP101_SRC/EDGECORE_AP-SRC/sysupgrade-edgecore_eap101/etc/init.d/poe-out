@@ -1,0 +1,47 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2007 OpenWrt.org
+
+START=11
+USE_PROCD=1
+
+. /lib/functions.sh
+
+POE_EN_PIN=28
+POE_DET_PIN=38
+POE_OUT_PORT="lan4"
+
+is_lowcost="`acc hw get Model | awk -F"-" '{print $3}'`"
+
+poe_out_start() {
+	[ -d "/sys/class/gpio/gpio${POE_EN_PIN}" ] || {
+		echo ${POE_EN_PIN} > /sys/class/gpio/export
+		echo out > /sys/class/gpio/gpio${POE_EN_PIN}/direction
+	}
+
+	[ -d "/sys/class/gpio/gpio${POE_DET_PIN}" ] || {
+		echo ${POE_DET_PIN} > /sys/class/gpio/export
+		echo in > /sys/class/gpio/gpio${POE_DET_PIN}/direction
+	}
+
+	if [ "$(uci -q get ethernet.${POE_OUT_PORT}.poe_out)" = "0" ]; then
+		echo 1 > /sys/class/gpio/gpio${POE_EN_PIN}/value
+	else
+		if [ "$(cat /sys/class/gpio/gpio${POE_DET_PIN}/value)" = "0" ]; then
+			echo 0 > /sys/class/gpio/gpio${POE_EN_PIN}/value
+		else
+			echo 1 > /sys/class/gpio/gpio${POE_EN_PIN}/value
+		fi
+	fi
+}
+
+start_service() {
+	[ "$(board_name)" = "edgecore,eap104" -a "$is_lowcost" != "L" ] && poe_out_start
+}
+
+reload_service() {
+	[ "$(board_name)" = "edgecore,eap104" -a "$is_lowcost" != "L" ] && poe_out_start
+}
+
+service_triggers() {
+	[ "$(board_name)" = "edgecore,eap104" -a "$is_lowcost" != "L" ] && procd_add_reload_trigger "ethernet" 
+}

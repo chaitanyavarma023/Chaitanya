@@ -1,0 +1,11 @@
+Package: luci-i18n-base-en
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/luci/modules/luci-base
+SourceName: luci-i18n-base-en
+License: MIT
+Section: luci
+SourceDateEpoch: 1725353854
+Architecture: all
+Installed-Size: 669
+Description:  Translation for luci-base - English

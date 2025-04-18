@@ -1,0 +1,309 @@
+#!/bin/bash
+. /conf/etc/profile
+[ -z ${Auth_Server_Num} ] && Auth_Server_Num=5
+
+if false; then
+(
+  echo "==== `date` [$$] ===="
+  echo "$0 $*"
+  echo "---------------------"
+  env
+  echo "====================="
+) >> /tmp/exec.log
+fi
+
+v_getvalue() #args: VAR filename
+{
+  eval $1=''
+  if [ -n "$2" -a -f "$2" -a -r "$2" ]; then
+    eval read -r -d "''" $1 < "$2"
+    true
+  else
+    false
+  fi
+}
+getvalue() #args: filename
+{
+  local x
+  if v_getvalue x "$1"; then
+    echo "$x"
+  fi
+}
+
+v_trim() #args: VAR string
+{
+  case "$2" in
+  \"*\")
+    eval $1='${2#?}'
+    eval $1='${'$1'%?}'
+    ;;
+  *)
+    eval $1='$2'
+    ;;
+  esac
+  true
+}
+trim() #args: string
+{
+  local x
+  v_trim x "$1"
+  echo "$x"
+}
+
+v_muse() # args: VAR string ...
+{
+  case "$1" in
+  z)
+    local x=$1 y='' r=''
+    shift
+    v_muse y "$@"
+    r=$?
+    eval $x='$y'
+    return $r
+    ;;
+  esac
+
+  local z=$1
+  shift
+  eval $z=''
+  while [ $# -gt 0 ]; do
+    if [ -n "$1" ]; then
+      v_trim $z "$1"
+      return
+    fi
+    shift
+  done
+  false
+}
+muse() #args: string ...
+{
+  local x
+  v_muse x "$@"
+  echo "$x"
+}
+
+_dump_flag=
+dump() #args: attr_name attr_value [op]
+{
+  local op
+  if [ -n "$1" -a -n "$2" ]; then
+    op="$3"
+    if [ -z "$3" ]; then
+      op="="
+    fi
+    if [ -n "$_dump_flag" ]; then
+      echo -n ', '
+    fi
+    echo -n "$1 $op $2"
+    _dump_flag=1
+  fi
+}
+
+getsuffix() #args: user@suffix
+{
+  local suffix
+  suffix=`muse "$1" "${USER_NAME}"`
+  if [ "${suffix}" != "${suffix##*@}" ]; then
+    echo "${suffix##*@}"
+  fi
+}
+
+getmgmtname() #args: mgmtid
+{
+  local name
+  name=`getvalue "/db/subscriber/mgmt/$1/postfix"`
+  echo "${name}"
+}
+
+getutype() #args: mgmtid
+{
+  local utype
+  utype=`getvalue "/db/subscriber/mgmt/$1/utype"`
+  echo "${utype}"
+}
+
+getwapm_enable()
+{
+  local wapm_enable
+
+  wapm_enable=`getvalue "/db/od_emcd/od_emcd_en"`
+  [ -z "${wapm_enable}" ] && wapm_enable="Disabled"
+  echo "${wapm_enable}"
+}
+
+getmgmtid() #args: postfix user@suffix
+{
+  local realm user postfix i mgmtname len mgmtname_len mgmtid
+  realm="`muse "$1" "${REALM}"`"
+  user="`muse "$2" "${USER_NAME}"`"
+  postfix="`getsuffix "${user}"`"
+  mgmtid=""
+  
+  mgmtname_len="-1"
+  for i in $(seq 1 ${Auth_Server_Num}) 103; do
+    mgmtname=`getmgmtname "$i"`
+    if [ -n "${mgmtname}" ]; then
+      if [ "${mgmtname}" = "${realm}" -o "${mgmtname}" = "${postfix}" ]; then
+        mgmtid="$i"
+        break
+      elif [ -z "${mgmtname##.*}" ]; then
+        if [ -n "${realm##.*}" -o -n "${postfix##.*}" ]; then
+          if [ "${mgmtname}" = "." ]; then
+            if [ "${mgmtname_len}" -lt "0" ]; then
+              mgmtname_len="0"
+              mgmtid="$i"
+            fi
+          else
+            len="${#mgmtname}"
+            if [ "${len}" -gt "${mgmtname_len}" ]; then
+              if [ "${realm}" != "${realm%${mgmtname}}" -o "${postfix}" != "${postfix%${mgmtname}}" ]; then
+                mgmtname_len="${len}"
+                mgmtid="$i"
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  done
+  
+  if [ -z "${realm}" -a -z "${mgmtid}" ] && [ "${#user}" = "12" ]; then
+    MAC_addr=$(/ramfs/bin/stationid2mac ${user})
+    if [ -f "/db/online/${MAC_addr}" ]; then
+      unset un
+      i=0; while read "un[$i]"; do let i=i+1; done < "/db/online/${MAC_addr}"
+      [ "${un[22]}" = "MACAuth" ] && mgmtid="${un[5]}"
+    fi
+  fi
+
+  # NULL and postfix is not matched
+  if [ "${realm}" = "NULL" -a -z "${mgmtid}" ]; then
+    mgmtid=`getvalue "/db/subscriber/mgmt_index"`
+  fi
+
+  echo "${mgmtid}"
+}
+
+in_wide_apmgmt()
+{
+  local dev_id_and_status ip
+  ip="$1"
+
+  if [ "`getwapm_enable`" = "Enabled" ]; then
+    if [ -f "/db/od_emcd/ems.db" ]; then
+      dev_id_and_status="`/ramfs/bin/db /db/od_emcd/ems.db "select a.dev_id, b.status from device as a, device_tunnel as b where a.dev_id=b.dev_id and a.tunnel_ip='$ip';"`"
+      if [ -z "${dev_id_and_status}" ]; then
+        dev_id_and_status="`/ramfs/bin/db /db/od_emcd/ems.db "select a.dev_id, b.status from device as a, device_tunnel as b where a.dev_id=b.dev_id and a.ip='$ip';"`"
+      fi
+    fi
+  fi
+  echo "${dev_id_and_status}"
+}
+
+get_nas_info() #args: $client_ip
+{
+  local client_ip nas_info
+
+  client_ip="`muse "$1" "${CLIENT_IP_ADDRESS}"`"
+
+  if [ "${client_ip%.*}" = "127.18.12" ]; then
+    # local hostapd (PKG_SZ_WLAN == 1)
+    nas_info="2 127.18.12.0 24 12345678"
+  else
+    nas_info="`/usr/bin/awk -f /ramfs/bin/get_nas.awk /db "${client_ip}"`"
+  fi
+  echo "${nas_info}"
+}
+
+rad_log() #args: type username message
+{
+  . /ramfs/bin/syslogd.inc.sh
+  local LIMIT DT RT TYPE UNAME NASID NASIP NASPT MAC ASID AST T1 T2 T3 T4 MSG
+if true; then
+  LIMIT=500000
+  #Record Format:
+  #RecTime Type UserName NasIdentifier NasIPAddress NasPort CallingStationID AcctSessionID
+  #    AcctSessionTime AcctInputOctets AcctOutputOctets AcctInputPackets AcctOutputPackets Message
+  tn=( $(date "+%Y-%m-%d %H:%M:%S %s %z") )
+  DT="${tn[0]}"
+  RT="${tn[0]} ${tn[1]} ${tn[3]}"
+  
+  TYPE="$1"
+  UNAME=`trim "$2"`
+  NASID=`trim "${NAS_IDENTIFIER}"`
+  NASIP="${NAS_IP_ADDRESS}"
+  NASPT=`muse "${NAS_PORT}" "${NAS_PORT_ID}"`
+  MAC=`trim "$(echo ${CALLING_STATION_ID} |sed 's/-/:/g')"`
+  ASID=`trim "${ACCT_SESSION_ID}"`
+  AST=`muse "${ACCT_SESSION_TIME}" "0"`
+  T1=`muse "${ACCT_INPUT_OCTETS}" "0"`
+  if [ -n "${ACCT_INPUT_GIGAWORDS}" -a "${ACCT_INPUT_GIGAWORDS}" != "0" ]; then
+    T1="$((${ACCT_INPUT_GIGAWORDS}*4294967296 + ${T1}))"
+  fi
+  T2=`muse "${ACCT_OUTPUT_OCTETS}" "0"`
+  if [ -n "${ACCT_OUTPUT_GIGAWORDS}" -a "${ACCT_OUTPUT_GIGAWORDS}" != "0" ]; then
+    T2="$((${ACCT_OUTPUT_GIGAWORDS}*4294967296 + ${T2}))"
+  fi
+  T3=`muse "${ACCT_INPUT_PACKETS}" "0"`
+  T4=`muse "${ACCT_OUTPUT_PACKETS}" "0"`
+  if [ "$TYPE" = "Accept" -o "$TYPE" = "Reject" ]; then
+    MSG=`muse "$3" "${REPLY_MESSAGE}" "${ACCT_TERMINATE_CAUSE}"`
+  else
+    MSG=`muse "$3" "${ACCT_TERMINATE_CAUSE}" "${REPLY_MESSAGE}"`
+  fi
+  
+  log_msg="Roaming Out ${TYPE} Username=${UNAME}"
+  [ "$TYPE" != "Start" -a "$TYPE" != "Accept" ] && log_msg+=", PktsIn=${T3}, BytesIn=${T1}, PktsOut=${T4}, BytesOut=${T2}"
+  [ -n "$MSG" ] && log_msg+=", ${MSG}"
+  logger_write "ro" "${TYPE}" "" "${log_msg}"
+
+  ORI_NAME=$(echo $UNAME | cut -d '@' -f1 )
+  SEL=$(/ramfs/bin/db /db/user_db "select extid,reference from ondemandusers where name='$ORI_NAME';")
+  EXTID=${SEL%%,*}
+  REFERENCE=${SEL##*,}
+  
+  echo -e "${RT}\t${TYPE}\t${UNAME}\t${NASID}\t${NASIP}\t${NASPT}\t${MAC}\t${ASID}\t${AST}\t${T1}\t${T2}\t${T3}\t${T4}\t${MSG}\t${EXTID}\t${REFERENCE}\tRoaming Out\t" >> "/db/rohistory/$DT"
+fi
+}
+
+log_od_ra_file() #args: username postfix
+{
+  local uname mac asid nasid nasip ast currenttime_t currenttime logintime_t logintime t1 t2 t3 t4 nas
+
+  postfix="${2}"
+
+  od_ra_dir="/db/od_ra"
+  od_ra_file="${od_ra_dir}/${1}@${postfix}"
+  [ ! -d "${od_ra_dir}" ] && mkdir "${od_ra_dir}"
+  if [ -f ${od_ra_file} ]; then # for checking nas is valid or not
+      nas=$(grep "NAS_IP_ADDRESS=" ${od_ra_file} 2>/dev/null | cut -d "=" -f2)
+      [ "${nas}" != "${NAS_IP_ADDRESS}" ] && exit
+  fi
+  uname=$1
+  mac=$(/ramfs/bin/stationid2mac "${CALLING_STATION_ID}")
+  ip=`trim "${FRAMED_IP_ADDRESS}"`
+  asid=`trim "${ACCT_SESSION_ID}"`
+  nasid=$(/ramfs/bin/stationid2mac "${NAS_IDENTIFIER}")
+  nasip="${NAS_IP_ADDRESS}"
+  ast=`muse "${ACCT_SESSION_TIME}" "0"`
+  currenttime_t=$(date +%s)
+  currenttime=$(/ramfs/bin/trantime.sh ${currenttime_t})
+  logintime_t=$(( currenttime_t - ast ))
+  logintime=$(/ramfs/bin/trantime.sh ${logintime_t})
+  t1=`muse "${ACCT_INPUT_OCTETS}" "0"`
+  if [ -n "${ACCT_INPUT_GIGAWORDS}" -a "${ACCT_INPUT_GIGAWORDS}" != "0" ]; then
+    t1="$((${ACCT_INPUT_GIGAWORDS}*4294967296 + ${t1}))"
+  fi
+  t2=`muse "${ACCT_OUTPUT_OCTETS}" "0"`
+  if [ -n "${ACCT_OUTPUT_GIGAWORDS}" -a "${ACCT_OUTPUT_GIGAWORDS}" != "0" ]; then
+    t2="$((${ACCT_OUTPUT_GIGAWORDS}*4294967296 + ${t2}))"
+  fi
+  t3=`muse "${ACCT_INPUT_PACKETS}" "0"`
+  t4=`muse "${ACCT_OUTPUT_PACKETS}" "0"`
+
+  if [ "${ACCT_STATUS_TYPE}" = "Start" ]; then
+      echo -e "USER_NAME=${uname}\nCALLING_STATION_ID=${mac}\nFRAMED_IP_ADDRESS=${ip}\nLOGINTIME=${logintime}\nLAST_UPDATE_TIME=${currenttime}\nACCT_SESSION_ID=${asid}\nNAS_IDENTIFIER=${nasid}\nNAS_IP_ADDRESS=${nasip}\nACCT_SESSION_TIME=${ast}\nACCT_INPUT_OCTETS=${t1}\nACCT_OUTPUT_OCTETS=${t2}\nACCT_INPUT_PACKETS=${t3}\nACCT_OUTPUT_PACKETS=${t4}" > "${od_ra_file}"
+  else
+      sed -i "s/FRAMED_IP_ADDRESS=.*/FRAMED_IP_ADDRESS=${ip}/;s/LAST_UPDATE_TIME=.*/LAST_UPDATE_TIME=${currenttime}/;s/ACCT_SESSION_TIME=.*/ACCT_SESSION_TIME=${ast}/;s/ACCT_INPUT_OCTETS=.*/ACCT_INPUT_OCTETS=${t1}/;s/ACCT_OUTPUT_OCTETS=.*/ACCT_OUTPUT_OCTETS=${t2}/;s/ACCT_INPUT_PACKETS=.*/ACCT_INPUT_PACKETS=${t3}/;s/ACCT_OUTPUT_PACKETS=.*/ACCT_OUTPUT_PACKETS=${t4}/" "${od_ra_file}" 2>/dev/null
+  fi
+}

@@ -1,0 +1,142 @@
+#!/bin/sh
+
+## For sending the linkUp and linkDown for EAP104's LAN ports, based on swconfig
+
+trap_enable=$(uci -q get snmpd.snmp_trap.enable)
+server_ip=$(uci -q get snmpd.snmp_trap.server_ip)
+
+# linkDown:     snmptrap -v 2c -c public <server_ip> "" 1.3.6.1.6.3.1.1.5.3 1.3.6.1.2.1.2.2.1.1.<X> i <X>
+# linkUp:       snmptrap -v 2c -c public <server_ip> "" 1.3.6.1.6.3.1.1.5.4 1.3.6.1.2.1.2.2.1.1.<X> i <X>
+# X = interface number (ifIndex) as assigned in 'ip link command'
+
+# send traps only when enabled at /etc/config/snmpd
+if [ -n "$trap_enable" ] && [ -n "$server_ip" ]; then
+    sleep 5
+
+    while true; do
+        check1_prev=
+        check2_prev=
+        check3_prev=
+        check4_prev=
+
+        if [ "$(uci -P /var/state get snmpd.snmp_trap.lan1_status)" == "0" ]; then
+            check1_prev="link DOWN"
+        elif [ "$(uci -P /var/state get snmpd.snmp_trap.lan1_status)" == "1" ]; then
+            check1_prev="link UP"
+        fi
+
+        if [ "$(uci -P /var/state get snmpd.snmp_trap.lan2_status)" == "0" ]; then
+            check2_prev="link DOWN"
+        elif [ "$(uci -P /var/state get snmpd.snmp_trap.lan2_status)" == "1" ]; then
+            check2_prev="link UP"
+        fi
+
+        if [ "$(uci -P /var/state get snmpd.snmp_trap.lan3_status)" == "0" ]; then
+            check3_prev="link DOWN"
+        elif [ "$(uci -P /var/state get snmpd.snmp_trap.lan3_status)" == "1" ]; then
+            check3_prev="link UP"
+        fi
+
+        if [ "$(uci -P /var/state get snmpd.snmp_trap.lan4_status)" == "0" ]; then
+            check4_prev="link DOWN"
+        elif [ "$(uci -P /var/state get snmpd.snmp_trap.lan4_status)" == "1" ]; then
+            check4_prev="link UP"
+        fi
+
+        # get each LAN port status
+        lan1_status=$(swconfig dev switch1 port 1 show | grep "port:1")
+        lan2_status=$(swconfig dev switch1 port 2 show | grep "port:2")
+        lan3_status=$(swconfig dev switch1 port 3 show | grep "port:3")
+        lan4_status=$(swconfig dev switch1 port 4 show | grep "port:4")
+
+        # get ifIndex value from 'ip link'
+        ifIndex_val_lan1=$(ip link | grep -w "lan1" | cut -d ":" -f1)
+        ifIndex_val_lan2=$(ip link | grep -w "lan2" | cut -d ":" -f1)
+        ifIndex_val_lan3=$(ip link | grep -w "lan3" | cut -d ":" -f1)
+        ifIndex_val_lan4=$(ip link | grep -w "lan4" | cut -d ":" -f1)
+
+        # lan1
+        if [[ "$lan1_status" == "*link:down*" ]]; then
+            check1="link DOWN"
+        elif [[ "$lan1_status" == "*link:up*" ]]; then
+            check1="link UP"
+        fi
+
+        if [[ "$check1" != "$check1_prev" ]]; then
+            if [[ "$check1" == "link DOWN" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.3 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan1 i $ifIndex_val_lan1
+
+                uci -P /var/state revert snmpd.snmp_trap.lan1_status
+                uci -P /var/state set snmpd.snmp_trap.lan1_status='0'
+            elif [[ "$check1" == "link UP" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.4 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan1 i $ifIndex_val_lan1
+
+                uci -P /var/state revert snmpd.snmp_trap.lan1_status
+                uci -P /var/state set snmpd.snmp_trap.lan1_status='1'
+            fi
+        fi
+
+        #lan2
+        if [[ "$lan2_status" == "*link:down*" ]]; then
+            check2="link DOWN"
+        elif [[ "$lan2_status" == "*link:up*" ]]; then
+            check2="link UP"
+        fi
+
+        if [[ "$check2" != "$check2_prev" ]]; then
+            if [[ "$check2" == "link DOWN" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.3 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan2 i $ifIndex_val_lan2
+
+                uci -P /var/state revert snmpd.snmp_trap.lan2_status
+                uci -P /var/state set snmpd.snmp_trap.lan2_status='0'
+            elif [[ "$check2" == "link UP" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.4 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan2 i $ifIndex_val_lan2
+
+                uci -P /var/state revert snmpd.snmp_trap.lan2_status
+                uci -P /var/state set snmpd.snmp_trap.lan2_status='1'
+            fi
+        fi
+
+        #lan3
+        if [[ "$lan3_status" == "*link:down*" ]]; then
+            check3="link DOWN"
+        elif [[ "$lan3_status" == "*link:up*" ]]; then
+            check3="link UP"
+        fi
+
+        if [[ "$check3" != "$check3_prev" ]]; then
+            if [[ "$check3" == "link DOWN" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.3 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan3 i $ifIndex_val_lan3
+
+                uci -P /var/state revert snmpd.snmp_trap.lan3_status
+                uci -P /var/state set snmpd.snmp_trap.lan3_status='0'
+            elif [[ "$check3" == "link UP" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.4 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan3 i $ifIndex_val_lan3
+
+                uci -P /var/state revert snmpd.snmp_trap.lan3_status
+                uci -P /var/state set snmpd.snmp_trap.lan3_status='1'
+            fi
+        fi
+
+        #lan4
+        if [[ "$lan4_status" == "*link:down*" ]]; then
+            check4="link DOWN"
+        elif [[ "$lan4_status" == "*link:up*" ]]; then
+            check4="link UP"
+        fi
+
+        if [[ "$check4" != "$check4_prev" ]]; then
+            if [[ "$check4" == "link DOWN" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.3 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan4 i $ifIndex_val_lan4
+
+                uci -P /var/state revert snmpd.snmp_trap.lan4_status
+                uci -P /var/state set snmpd.snmp_trap.lan4_status='0'
+            elif [[ "$check4" == "link UP" ]]; then
+                snmptrap -v 2c -c public $server_ip "" 1.3.6.1.6.3.1.1.5.4 1.3.6.1.2.1.2.2.1.1.$ifIndex_val_lan4 i $ifIndex_val_lan4
+
+                uci -P /var/state revert snmpd.snmp_trap.lan4_status
+                uci -P /var/state set snmpd.snmp_trap.lan4_status='1'
+            fi
+        fi
+    done
+fi

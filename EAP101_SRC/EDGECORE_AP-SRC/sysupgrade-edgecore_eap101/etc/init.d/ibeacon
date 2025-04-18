@@ -1,0 +1,37 @@
+#!/bin/sh /etc/rc.common
+
+#start after dbus (60)
+START=61
+USE_PROCD=1
+
+start_service() {
+    local ibeacon_en
+    local command
+    config_load ibeacon
+    config_get ibeacon_en ibeacon enabled
+
+    if [ "$ibeacon_en" == "1" ]; then
+        #ibeacon-broadcaster.sh UUID MAJOR MINOR TXPWR
+        local UUID MAJOR MINOR TXPWR
+        local hex_UUID hex_MAJOR hex_MINOR hex_PWR
+
+        config_get UUID ibeacon uuid
+        config_get MAJOR ibeacon major
+        config_get MINOR ibeacon minor
+        config_get TXPWR ibeacon txpower
+
+        command="ibeacon-broadcaster.sh $UUID $MAJOR $MINOR $TXPWR"
+    fi
+
+    uci -q set tisbl.tisbl.command="$command"
+
+    uci commit tisbl
+
+    /etc/init.d/tisbl reload
+}
+
+
+service_triggers()
+{
+    procd_add_reload_trigger ibeacon
+}

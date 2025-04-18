@@ -1,0 +1,7 @@
+/ramfs/bin/private-mibs/ap_system_info.sh
+/ramfs/bin/private-mibs/snmp_pass_list.sh
+/ramfs/bin/private-mibs/system_info.sh
+/usr/sbin/snmp_download_rate.sh
+/ramfs/bin/private-mibs/ap_rf_info.sh
+/ramfs/bin/private-mibs/ap_ssid_info.sh
+/ramfs/bin/private-mibs/ap_sta_info.sh

@@ -1,0 +1,11 @@
+Package: luci-mod-system
+Version: git-24.354.35592-f754fbf-1
+Depends: libc, luci-base
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ec-private/luci/modules/luci-mod-system
+SourceName: luci-mod-system
+License: Apache-2.0
+Section: luci
+SourceDateEpoch: 1729188974
+Architecture: all
+Installed-Size: 69386
+Description:  LuCI Administration - Global System Settings

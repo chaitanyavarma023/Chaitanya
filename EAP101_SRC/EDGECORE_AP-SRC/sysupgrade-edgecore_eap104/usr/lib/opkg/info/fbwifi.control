@@ -1,0 +1,12 @@
+Package: fbwifi
+Version: 2-0
+Depends: libc, iptables, luasec, luasocket, libuci-lua, luaposix, lua-cjson, uhttpd
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/facebook/fbwifi
+SourceName: fbwifi
+License: GPL-2.0
+Section: net
+SourceDateEpoch: 1634126892
+Maintainer: Simon Kinane <skinane@fb.com>
+Architecture: all
+Installed-Size: 6794
+Description:  Facebook Wi-Fi, an AP authorisation solution

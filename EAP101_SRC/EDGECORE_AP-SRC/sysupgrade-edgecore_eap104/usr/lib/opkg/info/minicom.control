@@ -1,0 +1,14 @@
+Package: minicom
+Version: 2.7.1-2
+Depends: libc, libncurses6
+Source: feeds/packages/utils/minicom
+SourceName: minicom
+License: GPL-2.0
+LicenseFiles: COPYING
+Section: utils
+SourceDateEpoch: 1711276820
+CPE-ID: cpe:/a:minicom:minicom
+Maintainer: Álvaro Fernández Rojas <noltari@gmail.com>
+Architecture: arm_cortex-a7
+Installed-Size: 71224
+Description:  Terminal emulation program

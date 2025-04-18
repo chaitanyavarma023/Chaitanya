@@ -1,0 +1,2 @@
+config 'wianchor' 'wianchor'
+	option 'enabled' '0'

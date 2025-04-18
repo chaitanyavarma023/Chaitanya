@@ -1,0 +1,10 @@
+Package: qca-ssdk-shell
+Version: 1
+Depends: libc
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ipq807x/qca-ssdk-shell
+SourceName: qca-ssdk-shell
+Section: QCA
+SourceDateEpoch: 1616671187
+Architecture: arm_cortex-a7
+Installed-Size: 182822
+Description:  Shell application for QCA SSDK

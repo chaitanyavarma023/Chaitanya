@@ -1,0 +1,3 @@
+/etc/config/event
+/usr/sbin/ucentral-event
+/etc/init.d/ucentral-event

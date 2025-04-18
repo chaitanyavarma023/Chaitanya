@@ -1,0 +1,11 @@
+#!/bin/sh
+
+uci -q batch <<-EOT
+	delete firewall.capwap
+	set firewall.capwap=include
+	set firewall.capwap.type=script
+	set firewall.capwap.path=/usr/share/capwap/firewall.include
+	set firewall.capwap.family=any
+	set firewall.capwap.reload=1
+	commit firewall
+EOT

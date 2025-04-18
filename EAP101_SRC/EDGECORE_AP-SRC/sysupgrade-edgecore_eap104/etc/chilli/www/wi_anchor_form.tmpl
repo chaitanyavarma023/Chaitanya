@@ -1,0 +1,167 @@
+<!--
+  --  The login form
+  -->
+
+<div id="login-form">
+<table>
+<tr id="row_username">
+  <td>Username</td>
+  <td><INPUT NAME="username" ID="username" VALUE="$FORM_username"></td>
+</tr>
+<tr id="row_pass">
+  <td>Password</td>
+  <td><INPUT NAME="password" ID="password" VALUE="$FORM_password" TYPE="password"></td>
+</tr>
+<tr>
+    <td>登入身份 Login Identity</td>
+  <td>
+    <select name="id_type" id="id_type" onchange="type_change();">
+        <option value="employee">員工 Accton Group Employee</option>
+        <option value="guest">訪客 Accton Group Visitor</option>
+    </select>
+  </td>
+</tr>
+
+<tr id="row_employee">
+    <td>員工編號 Employee ID Number</td>
+  <td><INPUT NAME="emp_num" ID="emp_num" VALUE="$FORM_emp_num"></td>
+</tr>
+
+<tr id="row_guest_name">
+    <td>姓名 Name</td>
+  <td><INPUT NAME="guest_name" ID="guest_name" VALUE="$FORM_guest_name"></td>
+</tr>
+<tr id="row_guest_phone">
+    <td>行動電話 Cell Number Number</td>
+  <td><INPUT NAME="guest_phone" ID="guest_phone" VALUE="$FORM_guest_phone"></td>
+</tr>
+
+<tr id="row_os_type" style="display:none">
+  <td>註冊裝置OS Device OS</td>
+  <td>
+    <select name="os_type" id="os_type">
+        <option value="1">iOS</option>
+        <option value="2">Android</option>
+        <option value="3">Windows</option>
+        <option value="0" selected>Others 其他</option>
+    </select>
+  </td>
+</tr>
+
+<tr id="row_mac" style="display:none">
+  <td>MAC</td>
+  <td><INPUT NAME="phone_mac" ID="phone_mac" VALUE="$FORM_phone_mac"></td>
+</tr>
+<tr>
+  <td colspan="2" nowrap align="center">
+      <br>
+      <input type="submit" style="border:0px" id="login_btn" class="btn-primary" name="button" value="提交 Submit" onclick="return parseString()">
+      <br><br><br>
+  </td>
+</tr>
+</table>
+
+  <table>
+    <tr>
+      <td>
+        說明：智慧室內定位方案係由智邦集團開發，透過無線網路與行動裝置訊號傳輸，進行數據分析比對，提供接觸者篩選結果。
+      </td>
+    </tr>
+    <tr>
+      <td>
+        注意事項：請隨身攜帶已登錄的行動裝置，並連線至IgniteNet-Guest，可提升數據結果精準度。
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        若有任何問題：請洽分機1920/1196
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        Smart Indoor Location Solution is an application that the Accton group developed; it uses Wi-Fi data to analyze contact risk.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        Note: Please bring your logged-in mobile device with you in the office area and keep connected with Wi-Fi "IgniteNet-Guest" it will help improve the accuracy of contact screening results.
+      </td>
+    </tr>
+  </table>
+</div>
+
+<script type="text/javascript">
+   var show_username = "$SHOW_USERNAME";
+   var show_password = "$SHOW_PASSWORD";
+   var show_terms = "$SHOW_TERMS";
+
+  function getQueryStr(search_name) {
+    var search_str = window.location.search.substring(1);
+    var search_arr = search_str.split("&");
+    for (var i = 0 ; i < search_arr.length; i++) {
+      item = search_arr[i].split("=");
+      if (item[0] == search_name) {
+        return item[1];
+      }
+    }
+  }
+
+  document.getElementById('phone_mac').value = getQueryStr('mac').replace(/-/gi, '').toLowerCase();
+
+  function parseString() {
+    var id_type_val = document.getElementById('id_type').value;
+    if (id_type_val == "guest") {
+      var guestname_obj = document.getElementById('guest_name');
+      var phone_obj = document.getElementById('guest_phone');
+      guestname_obj.value = guestname_obj.value.replace(/ /gi, '_');
+      phone_obj.value = phone_obj.value.replace(/ /gi, '_')
+    } else {
+      var emp_num_obj = document.getElementById('emp_num');
+      emp_num_obj.value = emp_num_obj.value.replace(/ /gi, '_')
+    }
+  }
+
+  function type_change() {
+    document.getElementById('row_employee').style.display = "none";
+    document.getElementById('row_guest_name').style.display = "none";
+    document.getElementById('row_guest_phone').style.display = "none";
+    var id_type_val = document.getElementById('id_type').value;
+    if (id_type_val == "guest") {
+      document.getElementById('row_guest_name').style.display = "";
+      document.getElementById('row_guest_phone').style.display = "";
+    } else {
+      document.getElementById('row_employee').style.display = "";
+    }
+    document.getElementById('row_os_type').style.display = "";
+  }
+
+  type_change();
+
+   if(show_password != "1"){
+      document.getElementById('row_pass').style.display = "none";
+      document.getElementById('password').value = "default";
+   }
+   if(show_username != "1"){
+      document.getElementById('row_username').style.display = "none";
+      document.getElementById('username').value = "default";
+   }
+
+   if(show_terms == "1") {
+      document.getElementById('login_btn').onclick = function(e) {
+
+        if(document.getElementById('terms_checkbox').checked) {
+          return true;
+        } else {
+          document.getElementById('terms_error').style.display = "inline-block";
+          return false;
+        }
+      };
+
+   } else {
+      document.getElementById('terms_div').style.display = "none";
+   }
+
+</script>

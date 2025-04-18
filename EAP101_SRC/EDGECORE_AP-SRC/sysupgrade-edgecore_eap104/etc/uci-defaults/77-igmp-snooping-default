@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ "$(uci -q get network.lan)" == "" ]; then
+	uci set network.lan=interface
+fi
+
+uci set network.lan.igmp_snooping='0'
+
+uci commit network.lan
+
+exit 0

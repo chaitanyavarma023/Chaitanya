@@ -1,0 +1,82 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2007 OpenWrt.org
+
+#start after dbus (60)
+START=62
+USE_PROCD=1
+
+start_service() {
+  config_load ibeacon
+  config_get ibeacon_en ibeacon enabled
+  config_get zigbee_en ibeacon zigbee_enabled
+
+  # if both zigbee and BLE are disabled, load BLE firmware first for watchdog use
+  if [ "$zigbee_en" == "1" ]; then
+    firmware="$(uci -q get tisbl.tisbl.firmware_zigbee)"
+  else
+    firmware="$(uci -q get tisbl.tisbl.firmware)"
+  fi
+
+  tty="$(uci -q get tisbl.tisbl.tty)"
+  tichip="$(uci -q get tisbl.tisbl.tichip)"
+  baudrate="$(uci -q get tisbl.tisbl.baudrate)"
+  resetpin="$(uci -q get tisbl.tisbl.resetpin)"
+  backdoorpin="$(uci -q get tisbl.tisbl.backdoorpin)"
+  command="$(uci -q get tisbl.tisbl.command)"
+  wdt_enabled="$(uci -q get tisbl.tisbl.wdt_enabled)"
+
+  if [ "$(pidof zbrcv.bin)" ]; then
+    kill $(pidof zbrcv.bin)
+  fi
+
+  if [ "$(ps | grep 'sh ./[z]igbeeHAgw eap101')" ]; then
+    if [ "$ibeacon_en" == "1" ]; then  # change firmware from zigbee to ble, disjoin sensors
+      zbcli.sh listdev
+      sleep 1
+      if [ "$(ls /tmp | grep zigbee_sensor.join)" ]; then
+        n=$(sed -n '$=' /tmp/zigbee_sensor.join) # line number
+        while [ $n -gt 0 ]
+        do
+          mac=$(sed -n "$n,1p" /tmp/zigbee_sensor.join)
+          zbcli.sh rmdev $mac
+          n=$(($n-1))
+        done
+        rm -f /tmp/zigbee_sensor*
+      fi
+    fi
+
+    kill $(ps | grep 'sh ./[z]igbeeHAgw eap101' | awk '{print $1}')
+    sleep 5  # wait for killing related processes
+  fi
+
+  tisbl.sh $tty $baudrate $tichip $firmware $resetpin $backdoorpin
+  $command
+
+  sleep 1
+  if [ "$wdt_enabled" == "1" ]; then  
+    if [ "$(ps | grep '[w]dt_touch.sh')" ]; then
+      wdt_touch.sh active
+    else
+      exec 1000>&-
+      wdt_touch.sh >/dev/null 2>&1 &
+    fi 
+  fi
+
+  if [ "$zigbee_en" == "1" ]; then
+    cd /usr/lib/zstack/servers
+    exec 1000>&-
+    sh ./zigbeeHAgw eap101 >/dev/null 2>&1 &
+    sleep 10 # wait for gateway servers ready
+
+    config_get host ibeacon mqtt_host
+    config_get port ibeacon mqtt_port
+    config_get topic ibeacon mqtt_topic
+    cd /usr/lib/zstack/app/
+    ./zbrcv.bin "$host" $port "$topic" >/dev/null 2>&1 &
+  fi
+}
+
+service_triggers()
+{
+  procd_add_reload_trigger "tisbl" 
+}

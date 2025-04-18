@@ -1,0 +1,12 @@
+Package: libdbi
+Version: 0.9.0-5
+Depends: libc
+Source: feeds/packages/libs/libdbi
+SourceName: libdbi
+License: LGPL-2.1-or-later
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1711276820
+Architecture: arm_cortex-a7
+Installed-Size: 17175
+Description:  This package provides a database-independent abstraction layer library in C.

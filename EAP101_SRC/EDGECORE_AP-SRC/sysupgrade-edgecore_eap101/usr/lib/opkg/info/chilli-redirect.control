@@ -1,0 +1,12 @@
+Package: chilli-redirect
+Version: 1
+Depends: libc
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/third-party/chilli-redirect
+SourceName: chilli-redirect
+License: BSD-3-Clause
+Section: net
+SourceDateEpoch: 1634824948
+Maintainer: John Crispin <john@phrozen.org>
+Architecture: arm_cortex-a7
+Installed-Size: 1066
+Description:  Chilli Captive portal redirect support.

@@ -1,0 +1,13 @@
+Package: libiwinfo-lua
+Version: 2021-06-09-c0414642-2.1
+Depends: libc, libiwinfo20210430, liblua5.1.5
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/wifi-ax/iwinfo
+SourceName: libiwinfo-lua
+License: GPL-2.0
+Section: lang
+SourceDateEpoch: 1690514510
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 6997
+Description:  This is the Lua binding for the iwinfo library. It provides access to all enabled
+ backends.

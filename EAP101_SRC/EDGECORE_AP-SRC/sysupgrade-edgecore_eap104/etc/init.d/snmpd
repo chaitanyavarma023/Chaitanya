@@ -1,0 +1,434 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2008 OpenWrt.org
+START=50
+
+USE_PROCD=1
+PROG="/usr/sbin/snmpd"
+product_name=$(cat /proc/device-tree/model | cut -d " " -f 2)
+SEND_SNMP_TRAP_LINK="/usr/sbin/send_link_up_down_trap"
+SEND_SNMP_TRAP_START="/usr/sbin/send_cold_warm_start_trap"
+SEND_SNMP_TRAP_LINK_EAP104="/usr/sbin/send_link_up_down_trap_eap104"
+
+CONFIGFILE="/var/run/snmpd.conf"
+USER_SECLEVEL_CONFIGFILE="/etc/snmp/snmpd.conf"
+USER_SECMETHOD_CONFIGFILE="/etc/snmp/snmpd.conf"
+
+snmpd_enabled=""
+
+get_custom_sysObjectID() {
+	product_name=$(cat /proc/device-tree/model | cut -d " " -f 2)
+	case "$product_name" in
+		"EAP101")
+			custom_MIB="38"
+			;;
+		"EAP102"|"OAP103"*)
+			custom_MIB="39"
+			;;
+		"EAP104")
+			custom_MIB="40"
+			;;
+	esac
+
+	custom_sysObjectID=".1.3.6.1.4.1.259.10.3.$custom_MIB"
+	echo "$custom_sysObjectID"
+}
+
+snmpd_agent_add() {
+	local cfg="$1"
+	config_get snmpd_enabled "$cfg" enabled
+
+	if [ "$snmpd_enabled" = "" -o "$snmpd_enabled" = "0" ]; then
+		snmpd_enabled="0"
+
+		return 0
+	fi
+
+	config_get agentaddress "$cfg" agentaddress
+	[ -n "$agentaddress" ] || return 0
+	echo "agentaddress $agentaddress" >> $CONFIGFILE
+}
+
+snmpd_system_add() {
+	local cfg="$1"
+	# config_get syslocation "$cfg" sysLocation
+	# [ -n "$syslocation" ] && echo "sysLocation $syslocation" >> $CONFIGFILE
+	# config_get syscontact "$cfg" sysContact
+	# [ -n "$syscontact" ] && echo "sysContact $syscontact" >> $CONFIGFILE
+	# config_get sysname "$cfg" sysName
+	# [ -n "$sysname" ] && echo "sysName $sysname" >> $CONFIGFILE
+	config_get sysservice "$cfg" sysService
+	[ -n "$sysservice" ] && echo "sysService $sysservice" >> $CONFIGFILE
+	config_get sysdescr "$cfg" sysDescr
+	[ -n "$sysdescr" ] && echo "sysDescr $sysdescr" >> $CONFIGFILE
+	config_get sysobjectid "$cfg" sysObjectID
+	[ -n "$sysobjectid" ] && {
+		echo "sysObjectID $sysobjectid" >> $CONFIGFILE
+	} || {
+		sysobjectid=$(get_custom_sysObjectID)
+		[ -n "$sysobjectid" ] && echo "sysObjectID $sysobjectid" >> $CONFIGFILE
+	}
+}
+
+snmpd_community_add() {
+	local cfg="$1"
+	config_get permission "$cfg" permission
+	[ -n "$permission" ] || return 0
+	config_get name "$cfg" name
+	[ -n "$name" ] || return 0
+
+	config_get source "$cfg" source
+	config_get view "$cfg" view
+
+	if [ "$source" != "" ]; then
+		if [ "$view" != "" ]; then
+			if [ "$(echo "$view" | grep "[.]")" != "" ]; then
+				echo "${permission}community $name $source $view" >> $CONFIGFILE
+			else
+				echo "${permission}community $name $source -V $view" >> $CONFIGFILE
+			fi
+		else
+			echo "${permission}community $name $source" >> $CONFIGFILE
+		fi
+	else
+		echo "${permission}community $name" >> $CONFIGFILE
+	fi
+}
+
+snmpd_community6_add() {
+	local cfg="$1"
+	config_get permission "$cfg" permission
+	[ -n "$permission" ] || return 0
+	config_get name "$cfg" name
+	[ -n "$name" ] || return 0
+
+	config_get source "$cfg" source
+	config_get view "$cfg" view
+
+	if [ "$source" != "" ]; then
+		if [ "$view" != "" ]; then
+			if [ "$(echo "$view" | grep "[.]")" != "" ]; then
+				echo "${permission}community6 $name $source $view" >> $CONFIGFILE
+			else
+				echo "${permission}community6 $name $source -V $view" >> $CONFIGFILE
+			fi
+		else
+			echo "${permission}community6 $name $source" >> $CONFIGFILE
+		fi
+	else
+		echo "${permission}community6 $name" >> $CONFIGFILE
+	fi
+}
+
+snmpd_com2sec_add() {
+	local cfg="$1"
+	config_get secname "$cfg" secname
+	[ -n "$secname" ] || return 0
+	config_get source "$cfg" source
+	[ -n "$source" ] || return 0
+	config_get community "$cfg" community
+	[ -n "$community" ] || return 0
+	echo "com2sec $secname $source $community" >> $CONFIGFILE
+}
+
+snmpd_com2sec6_add() {
+	local cfg="$1"
+	config_get secname "$cfg" secname
+	[ -n "$secname" ] || return 0
+	config_get source "$cfg" source
+	[ -n "$source" ] || return 0
+	config_get community "$cfg" community
+	[ -n "$community" ] || return 0
+	echo "com2sec6 $secname $source $community" >> $CONFIGFILE
+}
+
+snmpd_group_add() {
+	local cfg="$1"
+	config_get group "$cfg" group
+	[ -n "$group" ] || return 0
+	config_get version "$cfg" version
+	[ -n "$version" ] || return 0
+	config_get secname "$cfg" secname
+	[ -n "$secname" ] || return 0
+	echo "group $group $version $secname" >> $CONFIGFILE
+}
+
+snmpd_view_add() {
+	local cfg="$1"
+	config_get viewname "$cfg" viewname
+	[ -n "$viewname" ] || return 0
+	config_get type "$cfg" type
+	[ -n "$type" ] || return 0
+	config_get oid "$cfg" oid
+	[ -n "$oid" ] || return 0
+	# optional mask
+	config_get mask "$cfg" mask
+
+	if [ "$mask" != "" ]; then
+		echo "view $viewname $type $oid $mask" >> $CONFIGFILE
+	else
+		echo "view $viewname $type $oid" >> $CONFIGFILE
+	fi
+}
+
+snmpd_access_add() {
+	local cfg="$1"
+	config_get group "$cfg" group
+	[ -n "$group" ] || return 0
+	config_get context "$cfg" context
+	[ -n $context ] || return 0
+	[ "$context" == "none" ] && context='""'
+	config_get version "$cfg" version
+	[ -n "$version" ] || return 0
+	config_get level "$cfg" level
+	[ -n "$level" ] || return 0
+	config_get prefix "$cfg" prefix
+	[ -n "$prefix" ] || return 0
+	config_get read "$cfg" read
+	[ -n "$read" ] || return 0
+	config_get write "$cfg" write
+	[ -n "$write" ] || return 0
+	config_get notify "$cfg" notify
+	[ -n "$notify" ] || return 0
+	echo "access $group $context $version $level $prefix $read $write $notify" >> $CONFIGFILE
+}
+
+snmpd_user_add() {
+	local cfg="$1"
+
+	config_get permission "$cfg" permission
+	[ -n "$permission" ] || return 0
+	config_get name "$cfg" name
+	[ -n "$name" ] || return 0
+	config_get seclevel "$cfg" seclevel
+	[ -n "$seclevel" ] || return 0
+
+	config_get view "$cfg" view
+	config_get authen "$cfg" authen
+	config_get authenpw "$cfg" authenpw
+	config_get encryp "$cfg" encryp
+	config_get encryppw "$cfg" encryppw
+
+	if [ "$view" != "" ]; then
+		if [ "$(echo "$view" | grep "[.]")" != "" ]; then
+			echo "${permission}user $name $seclevel $view" >> $USER_SECLEVEL_CONFIGFILE
+		else
+			echo "${permission}user $name $seclevel -V $view" >> $USER_SECLEVEL_CONFIGFILE
+		fi
+	else
+		echo "${permission}user $name $seclevel" >> $USER_SECLEVEL_CONFIGFILE
+	fi
+
+	case $seclevel in
+	noauth)
+		echo "createUser $name" >> $USER_SECMETHOD_CONFIGFILE
+		;;
+	auth)
+		echo "createUser $name $authen $authenpw" >> $USER_SECMETHOD_CONFIGFILE
+		;;
+	priv)
+		echo "createUser $name $authen $authenpw $encryp $encryppw" >> $USER_SECMETHOD_CONFIGFILE
+		;;
+	esac
+}
+
+snmpd_pass_add() {
+	local cfg="$1"
+	local pass='pass'
+
+	config_get miboid "$cfg" miboid
+	[ -n "$miboid" ] || return 0
+	config_get prog "$cfg" prog
+	[ -n "$prog" ] || return 0
+	config_get_bool persist "$cfg" persist 0
+	[ $persist -ne 0 ] && pass='pass_persist'
+	config_get priority "$cfg" priority
+	priority=${priority:+-p $priority}
+	echo "$pass $priority $miboid $prog" >> $CONFIGFILE
+}
+
+snmpd_pass_list_add() {
+    sh /ramfs/bin/private-mibs/snmp_pass_list.sh
+
+    while read pass_list; do
+        echo $pass_list >> $CONFIGFILE
+    done < /tmp/pass_list
+}
+
+snmpd_exec_add() {
+	local cfg="$1"
+
+	config_get name "$cfg" name
+	[ -n "$name" ] || return 0
+	config_get prog "$cfg" prog
+	[ -n "$prog" ] || return 0
+	config_get args "$cfg" args
+	config_get miboid "$cfg" miboid
+	echo "exec $miboid $name $prog $args" >> $CONFIGFILE
+}
+
+snmpd_disk_add() {
+        local cfg="$1"
+        local disk='disk'
+
+        config_get partition "$cfg" partition
+        [ -n "$partition" ] || return 0
+        config_get size "$cfg" size
+        [ -n "$size" ] || return 0
+        echo "$disk $partition $size" >> $CONFIGFILE
+}
+
+snmpd_engineid_add() {
+	local cfg="$1"
+
+	config_get engineid "$cfg" engineid
+	[ -n "$engineid" ] && echo "engineID $engineid" >> $CONFIGFILE
+	config_get engineidtype "$cfg" engineidtype
+	[ "$engineidtype" -ge 1 -a "$engineidtype" -le 3 ] && \
+		echo "engineIDType $engineidtype" >> $CONFIGFILE
+	config_get engineidnic "$cfg" engineidnic
+	[ -n "$engineidnic" ] && echo "engineIDNic $engineidnic" >> $CONFIGFILE
+}
+
+start_service() {
+	[ -f "$CONFIGFILE" ] && rm -f "$CONFIGFILE"
+	[ -f "$USER_SECLEVEL_CONFIGFILE" ] && rm -f "$USER_SECLEVEL_CONFIGFILE"
+
+	config_load snmpd
+
+	config_foreach snmpd_agent_add agent
+
+	[ "$snmpd_enabled" = "0" ] && return 0
+
+	config_foreach snmpd_system_add system
+	config_foreach snmpd_community_add ro_community
+	config_foreach snmpd_community_add rw_community
+	config_foreach snmpd_community6_add ro_community6
+	config_foreach snmpd_community6_add rw_community6
+	#config_foreach snmpd_com2sec_add com2sec
+	#config_foreach snmpd_com2sec6_add com2sec6
+	#config_foreach snmpd_group_add group
+	config_foreach snmpd_view_add view
+	#config_foreach snmpd_access_add access
+	config_foreach snmpd_user_add user
+	#config_foreach snmpd_pass_add pass
+	#config_foreach snmpd_exec_add exec
+	#config_foreach snmpd_disk_add disk
+	config_foreach snmpd_engineid_add engineid
+	snmpd_pass_list_add
+
+	procd_open_instance
+	procd_set_param command $PROG -Lf /dev/null -f
+	procd_set_param file $CONFIGFILE
+	procd_set_param respawn
+
+	for iface in $(ls /sys/class/net 2>/dev/null); do
+		procd_append_param netdev "$iface"
+	done
+
+	procd_close_instance
+
+	trap_enable=$(uci -q get snmpd.snmp_trap.enable)
+	server_ip=$(uci -q get snmpd.snmp_trap.server_ip)
+
+	if [ "${trap_enable}" == "1" ] && [ "${server_ip}" != "" ]; then
+		procd_open_instance
+		procd_set_param command $SEND_SNMP_TRAP_START
+		procd_close_instance
+
+		procd_open_instance
+		procd_set_param command $SEND_SNMP_TRAP_LINK
+		procd_close_instance
+
+		if [ "$product_name" == "EAP104" ]; then
+			procd_open_instance
+			procd_set_param command $SEND_SNMP_TRAP_LINK_EAP104
+			procd_close_instance
+		fi
+	fi
+}
+
+stop_service() {
+	[ -f "$CONFIGFILE" ] && rm -f "$CONFIGFILE"
+	[ -f "$USER_SECLEVEL_CONFIGFILE" ] && rm -f "$USER_SECLEVEL_CONFIGFILE"
+
+	# set snmpd.snmp_trap.start_send value '1' to avoid sending coldStart when snmpd reloads or restarts
+	uci -P /var/state revert snmpd.snmp_trap.start_send
+    uci -P /var/state set snmpd.snmp_trap.start_send='1'
+
+	# kill any send snmp trap scripts
+	snmp_trap_start_ID=$(ps ww | grep send_cold_warm_start_trap | grep -v grep | awk '{ print $1 }')
+    if [ "$snmp_trap_start_ID" != "" ]; then
+        kill -9 ${snmp_trap_start_ID}
+    fi
+
+	snmp_trap_link_ID=$(ps ww | grep send_link_up_down_trap | grep -v grep | awk '{ print $1 }')
+    if [ "$snmp_trap_link_ID" != "" ]; then
+        kill -9 ${snmp_trap_link_ID}
+    fi
+
+	snmp_trap_link_ID_eap104=$(ps ww | grep send_link_up_down_trap_eap104 | grep -v grep | awk '{ print $1 }')
+    if [ "$snmp_trap_link_ID_eap104" != "" ]; then
+        kill -9 ${snmp_trap_link_ID_eap104}
+    fi
+
+	# linkUp/linkDown status for LAN ports of EAP104
+	if [ "$product_name" == "EAP104" ]; then
+		trap_enable=$(uci -q get snmpd.snmp_trap.enable)
+		server_ip=$(uci -q get snmpd.snmp_trap.server_ip)
+
+		# set snmpd.snmp_trap.lanX_status values to avoid sending linkUp/linkDown when snmpd reloads or restarts
+		if [ "${trap_enable}" == "1" ] && [ "${server_ip}" != "" ]; then
+			lan1_status=$(swconfig dev switch1 port 1 show | grep "port:1")
+			lan2_status=$(swconfig dev switch1 port 2 show | grep "port:2")
+			lan3_status=$(swconfig dev switch1 port 3 show | grep "port:3")
+			lan4_status=$(swconfig dev switch1 port 4 show | grep "port:4")
+
+			if [[ "$lan1_status" == "*link:down*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan1_status
+				uci -P /var/state set snmpd.snmp_trap.lan1_status='0'
+			elif [[ "$lan1_status" == "*link:up*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan1_status
+				uci -P /var/state set snmpd.snmp_trap.lan1_status='1'
+			fi
+
+			if [[ "$lan2_status" == "*link:down*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan2_status
+				uci -P /var/state set snmpd.snmp_trap.lan2_status='0'
+			elif [[ "$lan2_status" == "*link:up*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan2_status
+				uci -P /var/state set snmpd.snmp_trap.lan2_status='1'
+			fi
+
+			if [[ "$lan3_status" == "*link:down*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan3_status
+				uci -P /var/state set snmpd.snmp_trap.lan3_status='0'
+			elif [[ "$lan3_status" == "*link:up*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan3_status
+				uci -P /var/state set snmpd.snmp_trap.lan3_status='1'
+			fi
+
+			if [[ "$lan4_status" == "*link:down*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan4_status
+				uci -P /var/state set snmpd.snmp_trap.lan4_status='0'
+			elif [[ "$lan4_status" == "*link:up*" ]]; then
+				uci -P /var/state revert snmpd.snmp_trap.lan4_status
+				uci -P /var/state set snmpd.snmp_trap.lan4_status='1'
+			fi
+		fi
+	fi
+}
+
+restart() {
+	stop
+	start
+}
+
+reload_service() {
+	stop
+	start
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger 'snmpd' 'wireless' 'ethernet' 'network'
+}

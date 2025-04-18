@@ -1,0 +1,86 @@
+
+<tr>
+<%
+local acn = require "luci.acn.util"
+local uci = acn.cursor()
+local fs  = require "nixio.fs"
+
+local capwap_enable = uci:get("acn", "capwap", "state") or '0'
+local capwap_running = luci.util.exec("ps | grep WTP")
+local capwap_status = translate('Disabled')
+local capwap_ip = ''
+local data_ch = translate('Disconnected')
+local capwap_ping = '1'
+
+user_name = luci.http.getcookie("user_name")
+root_user = luci.util.root_user(user_name)
+msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+
+local message
+if root_user or msp_disabled then
+    message = luci.i18n.translatef("The capwap service is currently disabled.")
+            .. luci.i18n.translatef("Go to <a href='%s'>system settings</a> to enable it.", luci.dispatcher.build_url('admin','system','system'))
+else
+    message = translate("The capwap service is currently disabled.")
+end
+
+local pw_icon_class = " "
+
+if capwap_enable == '1' then
+
+    if capwap_running then
+        pw_icon_class = ""
+        pw_alert_class = "padding-bottom-5 green"
+        message = luci.i18n.translatef("The capwap service is running.")
+
+        capwap_status, capwap_ip = luci.util.exec("/sbin/check_wtp"):match("(.+) (.+)")
+
+        if capwap_status == nil or capwap_ip == nil then
+            capwap_status = "DISCOVERY"
+            capwap_ip = "255.255.255.255"
+        end
+
+        capwap_ping = tonumber(luci.util.exec("cat /tmp/capwap_ping"))
+
+        if capwap_ping == 0 then
+            data_ch  = translate("Active")
+        end
+
+        -- status:DISCOVERY/JOIN/DATA_CHECK/RUN/CONFIGURE
+        message = luci.i18n.translatef("The capwap service is running.") .. " CAPWAP status: " .. capwap_status .. " (" .. luci.util.trim(capwap_ip) .. "), Data Channel: " .. data_ch
+    else
+        pw_icon_class = "icon-thumbs-down"
+        pw_alert_class = "alert alert-error error-msg-visible"
+        message = luci.i18n.translatef("The capwap service is enabled but not running.")
+    end
+end
+
+%>
+
+<!-- expandable footable button -->
+<td></td>
+
+<!-- NAME -->
+<td class="service-name">
+    <% if root_user or msp_disabled then %>
+        <a href="<%=luci.dispatcher.build_url('admin/system/system')%>"><%=product.company_name()%> EWS-Series Controller</a>
+    <% else %>
+        <a href="<%=luci.dispatcher.build_url('admin/system/system')%>" onclick="return false" oncontextmenu="return false"><%=product.company_name()%> EWS-Series Controller</a>
+    <% end %>
+</td>
+
+<!-- STATUS -->
+<td>
+    <% if capwap_enable == '1' then %>
+        <span style="color:#69aa46"><i class="icon-ok-circle"></i> &nbsp;</span><%:Enabled%>
+    <%else%>
+       <i class="icon-ban-circle"></i>&nbsp;<%:Disabled%>
+    <% end %>
+</td>
+
+
+<!-- STATUS MESSAGE + Info -->
+<td>
+        <%=message%>
+</td>
+</tr>

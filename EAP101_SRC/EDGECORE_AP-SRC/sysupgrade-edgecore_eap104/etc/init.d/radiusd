@@ -1,0 +1,59 @@
+#!/bin/sh /etc/rc.common
+#
+# Copyright (C) 2006-2015 OpenWrt.org
+#
+
+USE_PROCD=1
+
+PROXY_FILE=/etc/freeradius3/proxy.conf
+PROG=/usr/sbin/radiusd
+
+enable_external_login="0"
+
+parser_conifg() {
+	local external_login_url
+	config_get external_login_url "$1" external_login_url
+
+	[ -n "$external_login_url" ] && enable_external_login="1"
+}
+
+prepare_env() {
+	local proxy_ip
+	local proxy_port
+	local proxy_secret
+
+	config_load wireless
+	config_get proxy_ip global captive_portal_url
+	config_get proxy_port global captive_portal_port
+	config_get proxy_secret global captive_portal_secret
+	config_foreach parser_conifg wifi-iface
+	[ -z "$proxy_secret" ] && proxy_secret="radsec"
+	if [ -n $proxy_ip -a -n $ ]; then
+		cp $PROXY_FILE.tmpl $PROXY_FILE
+		sed -i "s/__CLOUD_IP__/${proxy_ip}/g" $PROXY_FILE
+		sed -i "s/__CLOUD_PORT__/${proxy_port}/g" $PROXY_FILE
+		sed -i "s/__CLOUD_SECRET__/${proxy_secret}/g" $PROXY_FILE
+		if [ "$enable_external_login" = "1" ]; then
+			sed -i "s/__CLOUD_SERVER__/externalradius/g" $PROXY_FILE
+		else
+			sed -i "s/__CLOUD_SERVER__/remoteradius/g" $PROXY_FILE
+		fi
+	fi
+	mkdir -p /var/log
+	mkdir -p /var/run
+	mkdir -p /var/db/radacct
+	mkdir -p /tmp/radius_exec
+}
+
+start_service() {
+	procd_open_instance
+	prepare_env
+	procd_set_param command "${PROG}"
+	procd_append_param command "-ft"
+	procd_set_param respawn # respawn automatically if something died
+	procd_close_instance
+}
+
+stop_service() {
+	killall radiusd
+}

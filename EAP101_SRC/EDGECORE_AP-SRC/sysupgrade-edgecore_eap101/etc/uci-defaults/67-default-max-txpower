@@ -1,0 +1,26 @@
+#!/bin/sh
+. /lib/functions.sh
+. /lib/acn/acn_functions.sh
+
+# country code is the 2nd column
+country_value="$(get_CNAME)"
+
+set_country_txp() {
+    config_get country_value $1 country
+    /sbin/setup_default_max_txpower.sh "${country_value}"
+}
+
+case $country_value in
+    "TH")
+        /sbin/setup_default_max_txpower.sh "${country_value}"
+        ;;
+    "WW"|*)
+        config_load wireless
+        config_foreach set_country_txp wifi-device
+        ;;
+esac
+
+uci commit wireless
+
+exit 0
+

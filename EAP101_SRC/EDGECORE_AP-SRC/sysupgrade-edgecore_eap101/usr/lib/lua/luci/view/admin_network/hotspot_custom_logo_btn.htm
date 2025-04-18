@@ -1,0 +1,20 @@
+    <% 
+
+    if self.has_custom_logo == "true" and self.hs_portal_custom_logo and self.hs_portal_custom_logo ~= "" then 
+        local fs  = require "nixio.fs"
+        local logo_file  = fs.readfile("/etc/chilli/www/" .. self.hs_portal_custom_logo) or ""
+
+        if logo_file ~= nil and logo_file ~= "" then 
+            luci.http.write(
+                '<img id="hs_logo_img" style="height:30px" alt="Embedded Image" src="data:image/png;base64,' .. nixio.bin.b64encode(logo_file) .. '"/>')
+         
+        end
+
+    end 
+
+    %>
+
+    <input type="button" class="btn btn-small btn-info" value="<%:Upload%>" onclick="{$('#form_logo').modal('show');}"  id="upload_btn" <% if self.is_disabled then write('disabled=disabled style="background-color:#eee"') end %> />
+    <input type="button" class="btn btn-small btn-info hidden" value="Remove"  id="remove_btn" <% if self.is_disabled then write('disabled=disabled style="background-color:#eee"') end %> />
+    <span id="remove_status" class="hidden"></span>
+

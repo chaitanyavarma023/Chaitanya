@@ -1,0 +1,390 @@
+#!/bin/sh /etc/rc.common
+
+START=97
+USE_PROCD=1
+NAME=capwap
+WTP_MODULE=/lib/WTP_module_EAP.so
+LOG_SIZE=50000
+DEFAULT_PATH=/etc/capwap
+WORKING_PATH=/tmp/capwap
+CUSTOMIZE_CERT_PATH=/data/certificate
+CUSTOMIZE_CAKEY=${CUSTOMIZE_CERT_PATH}/cakey.pem
+CUSTOMIZE_CACERT=${CUSTOMIZE_CERT_PATH}/cacert.pem
+CUSTOMIZE_TRUSTED=${CUSTOMIZE_CERT_PATH}/trusted.pem
+CONFIG_FILE=${WORKING_PATH}/config.wtp
+DHCP_OPT_FILE=${WORKING_PATH}/dhcp_opt.txt
+SRV_FILE=${WORKING_PATH}/srv.txt
+RESOLV_CONF=/etc/resolv.conf
+FILES="root.pem client.pem settings.wtp.txt"
+WTP=/sbin/WTP
+table_size=5
+
+wtp_status=/tmp/wtp_status
+wtp_log=/tmp/log/wtp.log.txt
+
+prepare(){
+	if [ ! -d "${WORKING_PATH}" ]; then
+		mkdir -p ${WORKING_PATH}
+	fi
+
+	for f in ${FILES}; do
+		cp ${DEFAULT_PATH}/$f ${WORKING_PATH}/
+	done
+
+	# Customize Certificates
+	if [ -f "${CUSTOMIZE_CAKEY}" ] && [ -f "${CUSTOMIZE_CACERT}" ]; then
+		cat ${CUSTOMIZE_CACERT} ${CUSTOMIZE_CAKEY} > ${WORKING_PATH}/client.pem
+	fi
+	if [ -f "${CUSTOMIZE_TRUSTED}" ]; then
+		cp ${CUSTOMIZE_TRUSTED} ${WORKING_PATH}/root.pem
+	fi
+}
+
+remove_iface_from_network_interface() {
+	local cfg="$1"; shift
+	local iface="$1"
+	local ifname
+
+	config_get ifname "$cfg" ifname
+
+	if [ -n "${ifname}" ] && [ "echo ${ifname} | grep $iface" != "" ]; then
+		brctl delif br-${cfg} ${iface}
+	fi
+}
+
+check_network_interface() {
+	local iface="$1"
+	config_load network
+	config_foreach remove_iface_from_network_interface interface "${iface}"
+}
+
+setup_complete_tunnel() {
+	local config="$1"
+	local tun split_tun vid
+
+	config_get tun "$config" tun 0
+	config_get split_tun "$config" split_tun 0
+	config_get vid "$config" vid 0
+
+	if [ "${tun}" = "1" ] && [ "${split_tun}" = "0" ] && [ "${vid}" -ge 1000 ] && [ "${vid}" -lt 2000 ]; then
+		check_network_interface ${config}
+
+		local network_bridge=brTun${vid}
+		brctl show brTun0
+		if [ "$?" != "0" ]; then
+			brctl addbr brTun0
+			ifconfig brTun0 up
+		fi
+		if [ ! -d "/sys/class/net/brTun0.${vid}" ]; then
+			vconfig add brTun0 $vid
+			ip link set vlan${vid} name brTun0.${vid}
+		fi
+
+		brctl show brTun${vid}
+		if [ "$?" != "0" ]; then
+			brctl addbr brTun${vid}
+		fi
+
+		if [ "$(brctl show brTun${vid} | grep brTun0.${vid})" = "" ]; then
+			brctl addif brTun${vid} brTun0.${vid}
+		fi
+		if [ "$(brctl show brTun${vid} | grep $config)" = "" ]; then
+			brctl addif brTun${vid} $config
+		fi
+		ifconfig brTun${vid} up
+		ifconfig brTun0.${vid} up
+
+		ifconfig "${config}" up
+		brctl addif brTun${vid} ${config}
+	fi
+}
+
+start_lan_tunnel() {
+	config_load ethernet
+	config_foreach setup_complete_tunnel eth_port
+}
+
+service_running() {
+	local ez_setup=$(uci -q get acn.wizard.ez_setup)
+	[ "$ez_setup" != "1" ] && return
+
+	## [#22651] ZTP setup (start)
+	local check_wan_ip=$(cat /tmp/wan_ip)
+
+	if [ "$check_wan_ip" != "" ]; then
+		if [ -f ${DHCP_OPT_FILE} ]; then
+			local capwap=$(uci -q get acn.capwap.state)
+			local dhcp_opt=$(uci -q get acn.capwap.dhcp_opt)
+			local controller_mode=$(uci -q get acn.mgmt.management)
+
+			# if capwap and dhcp_opt enabled; continue or else enable Cloud mgmt
+			if [ "${controller_mode}" == "2" ] && [ "${capwap}" == "1" ] && [ "${dhcp_opt}" == "1" ]; then
+				# check if WTP is running or not. Wait for 5 seconds if it ain't running
+				local count_wtp_wait=5
+				[ ! -S ${wtp_status} ] && {
+					local cnt_wtp_wait=0
+					while [ "$cnt_wtp_wait" -le "$count_wtp_wait" ]; do
+						if [ -S ${wtp_status} ]; then
+							sleep 1
+							break
+						fi
+
+						sleep 1
+						cnt_wtp_wait=$((cnt_wtp_wait+1))
+					done
+				}
+
+				# contoller management
+				local capwap_status_1=$(/sbin/check_wtp 2>&1)
+
+				if [[ "$capwap_status_1" == "*SULKING*" ]]; then
+					# resume mgmtd
+					uci set acn.mgmt.enabled='1'
+					uci set acn.mgmt.management='1'
+					uci commit acn
+					/etc/init.d/mgmt restart
+				elif [[ "$capwap_status_1" == "*DISCOVERY*" ]] || [[ "$capwap_status_1" == "*JOIN*" ]] || [[ "$capwap_status_1" == "*CONFIGURE*" ]] || [[ "$capwap_status_1" == "*DATA_CHECK*" ]] || [[ "$capwap_status_1" == "*RUN*" ]]; then
+					# check if WTP's log /tmp/log/wtp.log.txt exists; if not, wait for max 30 secs
+					local count_wtp_log=30
+					[ ! -f ${wtp_log} ] && {
+						local cnt_wtp_log=0
+						while [ "$cnt_wtp_log" -le $count_wtp_log ]; do
+							[ -f ${wtp_log} ] && {
+								sleep 1
+								break
+							}
+							sleep 1
+							cnt_wtp_log=$((cnt_wtp_log+1))
+						done
+					}
+
+					# wait for 90 sec for the WTP has JOIN/CONFIGURE/DATA_CHECK/RUN response
+					local count_run_wait=90
+					local cnt_run_wait=0
+
+					# set flag_run=1 if WTP has JOIN/CONFIGURE/DATA_CHECK/RUN response
+					local flag_run=0
+
+					# wait for 60 sec for the WTP DISCOVERY response
+					local count_wtp_read=60
+
+					# if /tmp/log/wtp.log.txt exists, check for WTP Discovery response
+					[ -f ${wtp_log} ] && {
+						# insert sleep time of 5s to wait for log to start in /tmp/log/wtp.log.txt file
+						sleep 5
+						
+						local cnt_wtp_read=0
+						# read log file to check response from controller
+						while read LINE; do
+							if [[ "$LINE" == "*WTP Receives Discovery Response*" ]]; then
+								while [ "$cnt_run_wait" -le "$count_run_wait" ]; do
+									local capwap_status_2=$(/sbin/check_wtp 2>&1)
+
+									# check if STATE is JOIN/CONFIGURE/DATA_CHECK
+									if [[ "$capwap_status_2" == "*JOIN*" ]] || [[ "$capwap_status_2" == "*CONFIGURE*" ]] || [[ "$capwap_status_2" == "*DATA_CHECK*" ]] || [[ "$capwap_status_2" == "*RUN*" ]]; then
+										flag_run=1
+
+										check_wiz_ez_setup=$(uci -q get acn.wizard.ez_setup)
+
+										if [ "$check_wiz_ez_setup" == "0" ]; then
+											# exit ZTP if config from the Setup wizard is already applied
+											break
+										else
+											# controller has responded; update acn config
+											uci set acn.mgmt.enabled='0'
+											uci set acn.mgmt.management='2'
+											uci set acn.wizard.ez_setup='0'
+											uci commit acn
+										fi
+
+										sleep 1
+										break
+									fi
+
+									sleep 1
+									cnt_run_wait=$((cnt_run_wait+1))
+								done
+							fi
+
+							# stop reading log if JOIN/CONFIGURE/DATA_CHECK/RUN state
+							[ "$flag_run" == "1" ] && break
+
+							sleep 1
+							cnt_wtp_read=$((cnt_wtp_read+1))
+
+							# stop reading log after 60 sec
+							if [ "$cnt_wtp_read" -gt "$count_wtp_read" ]; then
+								break
+							fi
+						done < "${wtp_log}"
+					}
+
+					# if WTP couldn't get JOIN/CONFIGURE/DATA_CHECK/RUN then resume mgmtd
+					if [[ "$flag_run" == "0" ]] || [[ "$cnt_wtp_log" -gt "$count_wtp_log" ]] || [[  "$cnt_wtp_read" -gt "$count_wtp_read" ]] || [[ "$cnt_run_wait" -gt "$count_run_wait" ]]; then
+						# resume mgmtd
+						uci set acn.mgmt.enabled='1'
+						uci set acn.mgmt.management='1'
+						uci commit acn
+						/etc/init.d/mgmt restart
+					fi
+				fi
+			else
+				# resume mgmtd
+				uci set acn.mgmt.enabled='1'
+				uci set acn.mgmt.management='1'
+				uci commit acn
+				/etc/init.d/mgmt restart
+			fi
+		# if /tmp/capwap/dhcp_opt.txt is not created, i.e. DHCP option 138 missing at the controller/switch
+		else
+			# resume mgmtd
+			uci set acn.mgmt.enabled='1'
+			uci set acn.mgmt.management='1'
+			uci commit acn
+			/etc/init.d/mgmt restart
+		fi
+	fi
+	## ZTP setup (end)
+}
+
+gen_config()
+{
+	local file="$1"
+	local addr
+	local port
+	local priority
+	local weight
+	local addresses=""
+	local i=0
+	local wtp_ipv6=0
+
+	srv_suffix=$(uci -q get acn.capwap.srv_suffix)
+	dhcp_opt=$(uci -q get acn.capwap.dhcp_opt)
+	unicast=$(uci -q get acn.capwap.unicast)
+
+	# 1. SRV records
+	if [ "${srv_suffix}" != "" ]; then
+		nslookup -q=SRV _capwap-control._udp.${srv_suffix} | tail -n 2 > ${SRV_FILE}
+		if [ -f ${SRV_FILE} ]; then
+			# The format of SRV file is "<Address> <port> <priority> <weight>"
+			while read addr port priority weight; do
+				# TODO: need to sort according to priority/weight ?
+				if [ -n "${addr}" ] && [ "${port}" = "5246" ]; then
+					addresses="${addresses} ${addr}"
+				fi
+			done < ${SRV_FILE}
+		fi
+	fi
+
+	# 2. DHCP option
+	if [ "${dhcp_opt}" = "1" ] && [ -f ${DHCP_OPT_FILE} ]; then
+	while read addr; do
+		addresses="${addresses} ${addr}"
+	done < ${DHCP_OPT_FILE}
+	fi
+
+	# 3. Static address
+	if [ "${unicast}" = "1" ]; then
+		while [ "$i" -lt "${table_size}" ]; do
+			addr=$(uci -q get acn.@capwap_ac[${i}].ip)
+			if [ ! -z ${addr} ]; then
+				addresses="${addresses} ${addr}"
+			fi
+			let "i++"
+		done
+	fi
+
+	# 4. multicast and broadcast
+	multicast=$(uci -q get acn.capwap.multicast)
+	broadcast=$(uci -q get acn.capwap.broadcast)
+	check_cert=$(uci -q get acn.capwap.check_cert)
+	addresses="${addresses} ${multicast} ${broadcast}"
+
+	echo "<AC_ADDRESSES>" > ${file}
+	for addr in ${addresses}; do
+		if [ "${addr}" != "0" ]; then
+			echo "${addr}" >> ${file}
+			ip -6 route get ${addr} > /dev/null 2>&1
+			if [ "$?" = "0" ]; then
+				wtp_ipv6=1
+			fi
+		fi
+	done
+	echo "</AC_ADDRESSES>" >> ${file}
+	echo "</AC_LOG_FILE_ENABLE> 1" >> ${file}
+	echo "</AC_LOG_FILE_SIZE> ${LOG_SIZE}" >> ${file}
+	echo "</WTP_USER_MOD_PATH>${WTP_MODULE}" >> ${file}
+	if [ "${check_cert}" != "1" ]; then
+		echo "</WTP_IGNORE_CERT_VALIDITY> 1" >> ${file}
+	fi
+	if [ "$wtp_ipv6" = "1" ]; then
+		echo "</WTP_LEV3_PROTOCOL> IPv6" >> ${file}
+		mtu=1200
+	fi
+	[ -z "${mtu}" ] && mtu=1400
+	if [ -n "${mtu}" -a "${mtu}" != "0" ]; then
+	echo "</WTP_DTLS_FORCE_MTU> ${mtu}" >> ${file}
+	fi
+}
+
+stop_udptap_bridge()
+{
+	local bridges="$(brctl show 2>&1 |awk '/(brTun[0-9][^\.])/{print $1}')"
+	local bridge
+	local id
+	for bridge in $bridges ; do
+		id=${bridge:5}
+		if [ "${id}" != "0" -a "${id}" != "999" ]; then
+			ifconfig $bridge down
+			brctl delbr $bridge
+		fi
+	done
+
+	local vlans="$(ls /sys/class/net/ | grep brTun0.)"
+	for vlan in $vlans ; do
+		if [ "${vlan}" != "brTun0.999" ]; then
+			vconfig rem $vlan
+		fi
+	done
+}
+
+start_service() {
+	## [#22651] ZTP
+	local ez_setup=$(uci -q get acn.wizard.ez_setup)
+	local controller_mode=$(uci -q get acn.mgmt.management)
+
+	if [ "${ez_setup}" == "1" ] && [ "${controller_mode}" != "2" ]; then
+		uci set acn.mgmt.management='2'
+		uci commit
+	fi
+	##
+
+	capwap=$(uci get acn.capwap.state)
+	if [ -x ${WTP} ] && [ "${capwap}" = "1" ]; then
+		/usr/sbin/udptap_init.sh
+		prepare
+		start_lan_tunnel
+		/etc/rc.d/rc.split_tunnel start
+		/etc/init.d/QosUserSrv start
+		gen_config ${CONFIG_FILE}
+		procd_open_instance
+		procd_set_param command ${WTP} ${WORKING_PATH}
+		procd_close_instance
+	fi
+	/etc/init.d/firewall reload
+}
+
+stop_service() {
+	capwap=$(uci -q get acn.capwap.state)
+	if [ "${capwap}" = "0" ]; then
+		/etc/rc.d/rc.split_tunnel stop
+		/etc/init.d/QosUserSrv stop
+		stop_udptap_bridge
+	fi
+
+	killall -15 WTP
+}
+
+service_triggers() {
+    procd_add_reload_trigger acn
+}

@@ -1,0 +1,16 @@
+Package: syslog-ng
+Version: 4.4.0-7
+Depends: libc, libpcre2, glib2, libopenssl1.1, libpthread, librt, zlib, libdbi, libjson-c5, libcurl4, libuuid1
+Source: feeds/packages/admin/syslog-ng
+SourceName: syslog-ng
+License: LGPL-2.1-or-later GPL-2.0-or-later
+LicenseFiles: COPYING LGPL.txt GPL.txt
+Section: admin
+SourceDateEpoch: 1734663430
+CPE-ID: cpe:/a:balabit:syslog-ng
+Maintainer: Josef Schlehofer <pepe.schlehofer@gmail.com>
+Architecture: arm_cortex-a7
+Installed-Size: 1067825
+Description:  syslog-ng reads and logs messages to the system console, log
+ files, other machines and/or users as specified by its
+ configuration file.

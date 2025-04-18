@@ -1,0 +1,20 @@
+global
+country TH: DFS-FCC
+        (2402 - 2482 @ 40), (N/A, 12), (N/A)
+        (5170 - 5250 @ 80), (N/A, 13), (N/A), AUTO-BW
+        (5250 - 5330 @ 80), (N/A, 13), (0 ms), DFS, AUTO-BW
+        (5735 - 5835 @ 80), (N/A, 20), (N/A)
+
+phy#1 (self-managed)
+country TH: DFS-FCC
+        (2402 - 2482 @ 40), (N/A, 12), (N/A)
+        (5170 - 5250 @ 80), (6, 13), (N/A), AUTO-BW
+        (5250 - 5330 @ 80), (6, 13), (0 ms), DFS, AUTO-BW
+        (5735 - 5835 @ 80), (6, 22), (N/A), AUTO-BW
+
+phy#0 (self-managed)
+country TH: DFS-FCC
+        (2402 - 2482 @ 40), (N/A, 12), (N/A)
+        (5170 - 5250 @ 80), (6, 13), (N/A), AUTO-BW
+        (5250 - 5330 @ 80), (6, 13), (0 ms), DFS, AUTO-BW
+        (5735 - 5835 @ 80), (6, 20), (N/A), AUTO-BW

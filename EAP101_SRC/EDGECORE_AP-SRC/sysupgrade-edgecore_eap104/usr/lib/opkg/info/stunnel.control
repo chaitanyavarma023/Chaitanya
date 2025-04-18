@@ -1,0 +1,18 @@
+Package: stunnel
+Version: 5.59-1
+Depends: libc, libopenssl1.1, zlib, libpthread
+Source: feeds/packages/net/stunnel
+SourceName: stunnel
+License: GPL-2.0-or-later
+LicenseFiles: COPYING.md COPYRIGHT.md
+Section: net
+SourceDateEpoch: 1734663429
+CPE-ID: cpe:/a:stunnel:stunnel
+Maintainer: Florian Eckert <fe@dev.tdt.de>
+Architecture: arm_cortex-a7
+Installed-Size: 80282
+Description:  Stunnel is a program that allows you to encrypt arbitrary TCP
+ connections inside SSL (Secure Sockets Layer) available on both Unix
+ and Windows. Stunnel can allow you to secure non-SSL aware daemons and
+ protocols (like POP, IMAP, LDAP, etc) by having Stunnel provide the
+ encryption, requiring no changes to the daemon's code.

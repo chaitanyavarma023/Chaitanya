@@ -1,0 +1,15 @@
+#!/bin/sh
+
+
+SECTION=$(uci show firewall |cut -d "=" -f 1 |grep dst_port |cut -d "." -f 2)
+if [ "${SECTION}" ]; then
+    for i in ${SECTION}
+    do
+        PORT=$(uci get firewall.$i.dst_port)
+        uci delete firewall.$i.dst_port
+        uci set firewall.$i.dest_port=$PORT
+    done
+    uci commit firewall
+fi
+
+exit 0

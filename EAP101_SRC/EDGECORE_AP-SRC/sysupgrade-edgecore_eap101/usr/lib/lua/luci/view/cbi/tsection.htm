@@ -1,0 +1,35 @@
+<% if self.title and #self.title > 0 then %>
+<div class="row-fluid">
+	<div class="span12">
+		<div class="widget-header widget-header-flat widget-header-small  acn-subtitle">
+			<h5 ><%=self.title%></h5> <!-- class="header smaller lighter blue" -->
+		</div>
+	</div>
+</div>
+<% end %>
+
+<div class="row-fluid">
+	<div class="span12">
+	<%  local isempty = true 
+	    for i, k in ipairs(self:cfgsections()) do
+		    if self.addremove then -%>
+    <div class="cbi-section-remove right">
+		  <input type="submit" name="cbi.rts.<%=self.config%>.<%=k%>" onclick="this.form.cbi_state='del-section'; return true" value="<%:Delete%>" class="cbi-button" />
+		</div>
+		<%- end %>
+
+		<%- section = k; isempty = false -%>
+
+		<%  if not self.anonymous then -%>
+		<h3 class="text-info"><%=section:upper()%></h3>
+		<%- end %>
+
+		<%+cbi/tabmenu%>
+
+		<fieldset class="cbi-section-node<% if self.tabs then %> cbi-section-node-tabbed<% end %>" id="cbi-<%=self.config%>-<%=section%>">
+			<%+cbi/ucisection%>
+		</fieldset>
+	<%- end %>
+	</div>
+</div>
+

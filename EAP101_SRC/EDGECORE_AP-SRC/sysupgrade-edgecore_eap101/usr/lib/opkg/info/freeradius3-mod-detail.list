@@ -1,0 +1,3 @@
+/etc/freeradius3/mods-enabled/detail
+/etc/freeradius3/mods-available/detail
+/usr/lib/freeradius3/rlm_detail.so

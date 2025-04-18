@@ -1,0 +1,136 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /usr/share/libubox/jshn.sh
+
+SPLIT_TUNNEL_IP_FILE="/tmp/capwap/split_tunnel_ip"
+MGMT_IP_FILE="/tmp/capwap/mgmt_ip"
+
+_update_nas_ip()
+{
+    local config="$1"
+    config_get disabled ${config} disabled
+    config_get tun ${config} tun
+    config_get ifname ${config} ifname
+    [ ! -e /sys/class/net/$ifname ] && continue
+    if [ "${disabled}" = "0" ] && [ "${tun}" = "1" ]; then
+        hostapd_cli -i ${ifname} reload_rad_conf
+        logger "hostapd_cli -i ${ifname} reload_rad_conf"
+    fi
+}
+
+#$1: ip address
+update_nas_ip()
+{
+    local own_ip=$1
+    local mgmt_ip=$2
+    [ -z ${own_ip} ] && usage && exit 1
+    [ -z ${mgmt_ip} ] && usage && exit 1
+
+    echo -n "${own_ip}" > ${SPLIT_TUNNEL_IP_FILE}
+    echo -n "${mgmt_ip}" > ${MGMT_IP_FILE}
+
+    config_load wireless
+    config_foreach _update_nas_ip wifi-iface ${own_ip} ${mgmt_ip}
+}
+
+_set_capwap_status()
+{
+    local config="$1"
+    local act="$2"
+    config_get disabled ${config} disabled
+    config_get tun ${config} tun
+    config_get ifname ${config} ifname
+    [ ! -e /sys/class/net/$ifname ] && continue
+    if [ "${disabled}" = "0" ] && [ "${tun}" = "1" ]; then
+        hostapd_cli -i ${ifname} set_capwap_status ${act}
+        logger "hostapd_cli -i ${ifname} set_capwap_status ${act}"
+    fi
+}
+
+#$1: ip address
+set_capwap_status()
+{
+    local act=0
+    [ "$1" = "up" ] && act=1
+    config_load wireless
+    config_foreach _set_capwap_status wifi-iface ${act}
+}
+
+get_iface_by_mac()
+{
+    local mac=$1
+    local aplist=
+    local iface=
+    config_load wireless
+    config_get tmplist "_phy0" aplist
+    aplist="$tmplist"
+    config_get tmplist "_phy1" aplist
+    aplist="$aplist $tmplist"
+    for ap in $aplist; do
+    iface=$(iw ${ap} station get ${mac} 2&>1 | grep Station | awk '{ print substr($NF, 1, length($NF)-1) }')
+    if [ -n "${iface}" ];then
+        echo "${iface}"
+        break
+    fi
+    done
+}
+
+split_login()
+{
+    local acct_ip=$1
+    local mac=$(echo $2 | tr '/a-f/' '/A-F/');
+    local dev_ip=$(ip -o -4 addr list brTun999 | awk '{print $4}' | cut -d/ -f1)
+    local file="$(ubus call luci getECDhcpList)"
+    json_load "$file"
+    json_select $mac
+    json_get_var ip ipv4
+    if [ -z "$ip" ]; then
+        #cannot get ip from ubus, try to get from /tmp/DAI_dhcp_file
+        ip=$(grep $mac /tmp/DAI_dhcp_file | awk -F'|' '{printf $2}')
+        [ -z "$ip" ] && ip="0.0.0.0"
+    fi
+    if [ -n "${mac} -a -n "${dev_ip} -a -n "${ip}" ]; then
+        logger "8021x login user ${mac}/${ip}"
+        wget -q -T5 -O- "http://${acct_ip}/split_tunnel_api.shtml?act=dynamic_vlan_login&mac=${mac}&devip=${dev_ip}&userip=${ip}"
+        ipset add online_user $mac
+        ipset add 8021x_split_tunnel $mac
+        ret=$(wget -q -T5 -O- "http://${acct_ip}/split_tunnel_api.shtml?act=get_qos&mac=${mac}")
+        if [ -n "$ret" ]; then
+            logger "add QOS ${mac} ${ret}"
+            /sbin/QosUserCli add ${mac} ${ret}
+        fi
+    fi
+
+}
+
+usage()
+{
+    echo "Usage : [update_nas_ip <own_ip_addr> <mgmt_ip_addr>]"
+    echo "        [get_iface_by_mac <sta_addr>]"
+    echo "        [split_login <acct_server_ip_addr> <client_mac>]"
+}
+
+cmd=$1
+case "$cmd" in
+    'update_nas_ip')
+	shift
+	update_nas_ip $*
+	;;
+    'get_iface_by_mac')
+	shift
+	get_iface_by_mac $*
+	;;
+    'split_login')
+	shift
+	split_login $*
+	;;
+    'set_capwap_status')
+	shift
+	set_capwap_status $*
+	;;
+    *)
+	usage
+	;;
+esac
+

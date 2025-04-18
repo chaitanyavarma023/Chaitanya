@@ -1,0 +1,98 @@
+#!/bin/sh /etc/rc.common
+# Copyright (c) 2014 OpenWrt.org
+
+START=80
+
+USE_PROCD=1
+PROG=/usr/sbin/mesh-discovery
+
+. /lib/functions.sh
+
+load_ifaces() {
+	#local network="$(uci get umdns.@umdns[-1].network)"
+	local network="lan"
+	for n in $network; do
+		local device
+		json_load "$(ifstatus $n)"
+		json_get_var device l3_device
+		echo -n "$device "
+	done
+}
+
+load_lan_ifaces() {
+	local key keys val
+	json_load_file "/etc/board.json"
+	json_select network
+	json_select lan
+	json_select ports
+	json_get_keys keys
+	for key in $keys; do
+		json_get_var val $key
+		echo -n "$val "
+	done
+	json_select ..
+	json_select ..
+	json_select ..
+}
+
+add_ifaces() {
+	json_init
+	json_add_array interfaces
+	for i in $(load_ifaces); do
+		json_add_string "" "$i"
+		echo 1 > /proc/sys/net/ipv4/conf/$i/accept_local
+	done
+	json_close_array
+
+	ubus call meshd set_config "$(json_dump)"
+}
+
+add_lan_ifaces() {
+	json_init
+	json_add_array interfaces
+	for i in $(load_lan_ifaces); do
+		json_add_string "" "$i"
+	done
+	json_close_array
+
+	ubus call meshd set_lan_config "$(json_dump)"
+}
+
+add_led_sysfs() {
+	local led_power="$(uci -q get system.led_power.sysfs)"
+	json_init
+	json_add_string name "$led_power"
+
+	ubus call meshd set_led_name "$(json_dump)"
+}
+
+reload_service() {
+	stop
+	start
+}
+
+start_service() {
+	mkdir -p /var/status
+	procd_open_instance
+	procd_set_param command "$PROG"
+	#procd_set_param respawn
+	procd_set_param stderr 1
+	procd_set_param stdout 1
+	procd_close_instance
+}
+
+service_started() {
+	ubus -t 10 wait_for meshd
+	[ $? = 0 ] && {
+		add_led_sysfs
+		add_ifaces
+		add_lan_ifaces
+	}
+}
+
+service_triggers() {
+	procd_add_interface_trigger "interface.*" "lan" /etc/init.d/meshd reload
+#	if [ "$(uci -q get acn.wizard.ez_setup)" = "0" ]; then
+#		procd_add_reload_trigger "wireless"
+#	fi
+}

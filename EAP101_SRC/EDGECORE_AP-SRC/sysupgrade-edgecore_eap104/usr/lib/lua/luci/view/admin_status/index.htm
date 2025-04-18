@@ -1,0 +1,414 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008-2011 Jo-Philipp Wich <xm@subsignal.org>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: index.htm 7810 2011-10-28 15:15:27Z jow $
+
+-%>
+
+<%
+    local fs = require "nixio.fs"
+    require "luci.tools.status"
+
+    product     = require "luci.acn.product"
+    acn         = require "luci.acn.util"
+    acn_status     = require "luci.acn.status"
+    local uci     = acn.cursor()
+
+    num_eth_ports    = product.num_eth_ports
+    num_radios         = product.num_wifi_radios
+    local inet_src  = uci:get("network", wan_network, "inet_src")
+    local wan_type_cfg = uci:get("network", "wan", "proto")
+    local wan_ifname_cfg = uci:get("network", "wan", "ifname")
+    local wan_ifname = acn_status.get_wan_device()
+    local wan_dhcp_res = "0"
+    local supports_3g = product.supports_3g() or false
+    local dev_name_3g = product.dev_name_3g or "3g-wan"
+    local supports_mesh = product.supports_mesh() or false
+    local dev_name_mesh = product.dev_name_mesh or "mesh0"
+    local linked_3g = false
+    local ntm = require "luci.model.network".init()
+    local has_ipv6 = acn.has_ipv6()
+    local devs = luci.sys.net and luci.sys.net.deviceinfo() or ""
+    local wan
+    local dr4 = luci.sys.net.defaultroute()
+    local members = {}
+    local wan_info = {}
+    local wan_network_info = nil
+    local fw_ver = acn_status.version()
+
+    if wan_type_cfg == "dhcp" and inet_src == "wwan0" then
+        dev_name_3g = inet_src
+    end
+
+    if wan_type_cfg == "3g" then
+        inet_src = dev_name_3g
+    end
+
+    if supports_3g then
+        linked_3g = acn.detected_dongle()
+    end
+
+    eth_status = acn_status.eth_status()
+    mesh_status = acn_status.mesh_status()
+
+    wan_info.wan_down = true
+    wan_info.inet_src = inet_src
+    wan_info.wan6_ip = "-"
+
+    local l2tp_info = ntm:get_interface('l2tp-security')
+    local l2tp_is_up
+    if l2tp_info then
+        l2tp_is_up = l2tp_info:is_up()
+    end
+
+    if dr4 and dr4.device then
+        wan_info.wan_down = false
+        if l2tp_is_up then
+            wan_ifname = wan_ifname_cfg
+        else
+            wan_ifname = dr4.device
+        end
+        wan = ntm:get_interface(wan_ifname)
+        local wan_network_info = wan and wan:get_network()
+
+        if wan_network_info then
+            wan_info.wan_ip_mode     = wan_network_info:proto()
+            wan_info.wan_ip         = wan_network_info:ipaddr()
+            wan_info.wan_ip_netmask = wan_network_info:netmask()
+            wan_info.wan_gw            = wan_network_info:gwaddr()
+            wan_info.wan_dns         = wan_network_info:dnsaddrs()
+        end
+    else
+        wan = ntm:get_interface(wan_ifname)
+        wan_network_info = wan and wan:get_network()
+    end
+
+    wan_info.mtu = luci.util.exec("cat /sys/class/net/" .. wan_ifname .."/mtu")
+
+    if wan then
+        if wan:is_bridge() then
+            members = wan:acn_ports()
+        elseif wan_network_info then
+            members[1] = wan_network_info:ifname()
+        end
+    end
+
+    wan_info.wan_ports = members
+
+    if not wan_info.wan_ip or #(wan_info.wan_ip) == 0 then wan_info.wan_ip = translate("-") end
+    if not wan_info.wan_ip_netmask or #(wan_info.wan_ip_netmask) == 0 then wan_info.wan_ip_netmask = translate("-") end
+    if not wan_info.wan_gw or #(wan_info.wan_gw) == 0 then wan_info.wan_gw = translate("-") end
+
+    if has_ipv6 then
+        local wan6_ip_Global = luci.util.exec("ifconfig " .. wan_ifname .. " | grep inet6 | grep Global | awk '{print $3}'")
+        local wan6_ip_Link = luci.util.exec("ifconfig " .. wan_ifname .. " | grep inet6 | grep Link | awk '{print $3}'")
+
+        if wan6_ip_Global and wan6_ip_Global ~= "" then
+            wan_info.wan6_ip = wan6_ip_Global
+        end
+
+        if wan6_ip_Link and wan6_ip_Link ~= "" then
+            if wan_info.wan6_ip ~= "-" then
+                wan_info.wan6_ip = wan_info.wan6_ip .. "<br>" .. wan6_ip_Link
+            else
+                wan_info.wan6_ip = wan6_ip_Link
+            end
+        end
+    end
+
+    -- main mac address
+    local eth    = product.eth(0)
+    local main_mac_addr = fs.readfile('/sys/class/net/' .. eth.logical_name .. '/address')
+
+    -- JS file for this page
+    luci.dispatcher.context.page_js =
+    "<script src='" .. media .. "/js/status.js?ver=" .. fw_ver .. "'></script>\n"
+    .. "<script src='" .. resource .. "/footable.min.js?ver=" .. fw_ver .. "'></script>\n"
+    .. "<script src='" .. resource .. "/common.js?ver=" .. fw_ver .. "'></script>\n"
+    .. "<link rel='stylesheet' href='" .. resource .. "/css/footable.core.min.css?ver=" .. fw_ver .. "' />\n"
+    .. "<link rel='stylesheet' href='" .. resource .. "/css/footable.standalone.min.css?ver=" .. fw_ver .. "' />\n"
+    .. "<link rel='stylesheet' href='" .. resource .. "/css/dashboard.css?ver=" .. fw_ver .. "' />\n"
+    .. "<script type='text/javascript'>\n"
+    ..    "var fw_ver = '" .. fw_ver .. "';\n"
+    ..    "var dev_name_3g = '" .. dev_name_3g .. "';\n"
+    ..    "var supports_3g = " .. tostring(supports_3g) .. ";\n"
+    ..    "var dev_name_mesh = '" .. dev_name_mesh .. "';\n"
+    ..    "var supports_mesh = " .. tostring(supports_mesh) .. ";\n"
+    ..    "var linked_3g = " .. tostring(linked_3g) .. ";\n"
+    .. "</script>\n"
+
+-%>
+
+ <%
+local radios = {}
+local wifi_real_up = {_up = {}, _up_idx = {}}
+local dev
+
+-- MAC address from /sys/devices
+local pat_mac = "([%x:]+)"
+local iwinfo  = require "iwinfo"
+local radio_num = 0
+
+function vap_is_created()
+    local maxvap_cnt = product.radio(radio_num).max_ssids
+    local radio_mode_cfg_prefix = product.radio(radio_num).device
+    local is_created = false
+
+    if (uci:get("wireless",  "wmesh", "device") == radio_mode_cfg_prefix and uci:get("wireless",  "wmesh", "disabled") == "0") then
+        is_created = true
+        return is_created
+    end
+
+    for j = 1, maxvap_cnt do
+        local created_val = (uci:get("wireless", radio_mode_cfg_prefix .. "_" .. j, "created") == "1")
+        if created_val then
+            is_created = true
+            break
+        end
+    end
+    return is_created
+end
+
+for _, dev in ipairs(ntm:get_wifidevs()) do
+
+    local radio = {
+        status   = nil,
+        radio_enabled = nil,
+        up_idx = nil,
+        vap_is_created = vap_is_created(),
+        networks = { }
+    }
+
+    local net
+    for w, net in ipairs(dev:get_wifinets()) do
+        local rifname = net:ifname()
+        local is_up = net:is_up()
+        if is_up then
+            radio.status = "is_up"
+            if not radio.up_idx then
+                radio.up_idx = #radio.networks+1
+            end
+        end
+        local state = ""
+        local mac = "-"
+        local remote_mac = "-"
+        local encryption = ""
+        radio.radio_enabled = uci:get("wireless", product.radio(radio_num).device, "disabled") == "0" and "true"
+        local mode = uci:get("wireless", product.radio(radio_num).device, "mode") or ""
+        local freq = uci:get("wireless", product.radio(radio_num).device, "supported_freq") or ""
+        local ieee_mode = uci:get("wireless", product.radio(radio_num).device, "hwmode" ) or ""
+        local country = uci:get("wireless", product.radio(radio_num).device, "country") -- iwinfo doesnt show country for qcawifi type
+        if mode == "ap" then
+            state = luci.util.exec("/usr/bin/iwinfo " .. rifname .. " assoclist")
+        else
+            state = luci.util.exec("/usr/bin/iwinfo " .. rifname .. " info"):match("Access Point: (%w+:%w+:%w+:%w+:%w+:%w+)")
+        end
+        if state and state ~= "" then
+            state = "up"
+        else
+            state = "down"
+        end
+        mac = ((fs.readfile("/sys/class/net/" .. rifname .. "/address") or ""):match(pat_mac)) or ""
+        encryption = acn.get_ifc_encryption_qca(dev.sid, rifname) or "-"
+
+        local ssid_cfg = uci:get("wireless", product.radio(radio_num).device .. "_1", "ssid")
+        radio.networks[#radio.networks+1] = {
+            up         = is_up,
+            mode       = mode,
+            ssid       = net:active_ssid(),
+            ssid_cfg   = ssid_cfg,
+            bssid      = net:active_bssid(),
+            encryption = encryption,
+            frequency  = net:frequency(),
+            channel    = net:channel(),
+            signal     = net:signal(),
+            quality    = net:signal_percent(),
+            noise      = net:noise(),
+            bitrate    = net:bitrate(),
+            ifname     = rifname,
+            country    = country or net:country(),
+            txpower    = net:txpower(),
+            chan_bw = acn_status.chan_bw(rifname),
+            state      = state,
+            local_mac  = mac,
+            ieee_mode  = ieee_mode,
+            iface_id   = net.sid,
+            remote_mac = net:remote_mac()
+        }
+    end
+    if not radio.up_idx then
+        radio.up_idx = 1
+    end
+
+    radios[#radios+1] = radio
+    radio_num = radio_num+1
+end
+
+%>
+
+<%
+luci.dispatcher.context.modal_template = luci.dispatcher.context.modal_template or {}
+luci.dispatcher.context.modal_template[#luci.dispatcher.context.modal_template + 1] = "cbi/arp_table_modal"
+luci.dispatcher.context.modal_template[#luci.dispatcher.context.modal_template + 1] = "cbi/dhcp_table_modal"
+%>
+
+<%+header%>
+
+<div id="upgrade_msg_placeholder" class="alert hide">
+  <i class="icon-exclamation-sign"></i>&nbsp;<span id="upgrade_msg"></span>
+</div>
+<div id="form_error_msg_placeholder" class="alert alert-error hide">
+  <i class="icon-remove"></i>&nbsp;<span id="form_error_msg"></span>
+</div>
+
+<div id="wizard_dialog_finished" class="modal hide fade in" style="display: none; height:auto;" data-backdrop="static" data-keyboard="true" >
+  <div class="modal-body">
+    <div>
+      <span id="restart_msg" class="hide"><%:Restarting services, this may take a few minutes...%></span>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">//<![CDATA[
+
+    var num_radios = <%=num_radios%>;
+    var num_eth_ports = <%=num_eth_ports%>;
+
+    var stats_api_url             = '<%=luci.dispatcher.build_url("admin", "acn_status", "traffic_graph_data")%>';
+    var client_api_url             = '<%=luci.dispatcher.build_url("admin", "acn_status", "connected_clients")%>';
+    var client_status_api_url     = '<%=luci.dispatcher.build_url("admin", "acn_status", "client_status")%>';
+    var rewnew_url                 = '<%=luci.dispatcher.build_url("admin", "acn_status", "renewdhcp")%>';
+    var newfw_version_api_url    = '<%=luci.dispatcher.build_url("admin", "acn_status", "remote_firmware_version")%>';
+
+    function popupWindow(url) {
+      var win = window.open(url,'popupWindow','toolbar=no,location=no,directories=no,status=no,bar=no,scrollbars=no,resizable=yes,copyhistory=no,width=850,height=590,screenX=100,screenY=0,top=0,left=100');
+      win.focus();
+    }
+
+    var wan_type_cfg = "<%=wan_type_cfg%>";
+    var wan_dhcp_res = "<%=wan_dhcp_res%>";
+    var wan_ip = "<%=wan_info.wan_ip%>";
+    var wan_ip_netmask = "<%=wan_info.wan_ip_netmask%>";
+    var wan_dhcp_warning_msg = ""
+
+    if(wan_type_cfg == "dhcp") {
+        if(wan_dhcp_res == "0" || wan_dhcp_res == "" ) { //valid ip
+            $('#form_error_msg_placeholder').addClass('hide');
+        } else {
+            if(wan_dhcp_res == "1") { //conflic with lan
+                wan_dhcp_warning_msg = "Your Internet IP address falls in the same subnet as the Default Local Network IP address.";
+            } else if(wan_dhcp_res == "2") { //conflic with guest lan
+                wan_dhcp_warning_msg = "Your Internet IP address falls in the same subnet as the Guest LAN IP address.";
+            } else if(wan_dhcp_res == "3") { //conflic with custom lan
+                wan_dhcp_warning_msg = "Your Internet IP address falls in the same subnet as one of your custom LAN IP addresses.";
+            } else {
+                wan_dhcp_warning_msg = "Internet IP address got unknown error.";
+            }
+            $('#form_error_msg').text(wan_dhcp_warning_msg);
+            $("#form_error_msg_placeholder").removeClass('hide');
+        }
+    }
+    var radioEnableChanged = false;
+    var radioChannelChanged = false;
+    var applyClicked = true;
+
+    $(function() {
+
+    var extra_msg = '';
+    <%
+      local has_ez_setup_landing_done =  nixio.fs.access("/tmp/.ez_setup_landing_done")
+      if has_ez_setup_landing_done then
+          os.execute("rm -f /tmp/.ez_setup_landing_done")
+      end
+
+      local has_ez_setup_network_done =  nixio.fs.access("/tmp/.ez_setup_network_done")
+      if has_ez_setup_network_done then
+          os.execute("rm -f /tmp/.ez_setup_network_done")
+      end
+
+      local has_ez_setup_alone_done =  nixio.fs.access("/tmp/.ez_setup_alone_done")
+      if has_ez_setup_alone_done then
+          os.execute("rm -f /tmp/.ez_setup_alone_done")
+          local config_ssid = uci:get("wireless", product.radio(0).device .. "_1", "ssid")
+    %>
+		$('#restart_msg').html('Please use the new configured SSID' + '<span style="color: #5C93B5;font-style: italic">' + '<%=config_ssid%>' + '</span>' + ' to connect to the WiFi.');
+		$('#restart_msg').modal();
+		$('#wizard_dialog_finished').modal();
+    <%
+      end
+
+      local has_ez_setup_alone =  nixio.fs.access("/tmp/.ez_setup_alone")
+      if has_ez_setup_alone then
+          os.execute("rm -f /tmp/.ez_setup_alone")
+    %>
+          extra_msg = 'Please use the new SSID to connect to Internet.';
+
+          function to_apply_wizard_changes() {
+              cnt++;
+
+              if ($('#uci-changes').length > 0 ) {
+                $('#uci-changes').click();
+                $('#_dialog').hide();
+                document.body.classList.remove('modal-overlay-active');
+                $('#_apply').click();
+                $('#_dialog').show();
+
+                clearInterval(setInterval_id);
+              }
+              if (cnt == 20) {
+                clearInterval(setInterval_id);
+              }
+          }
+
+          var cnt = 0;
+          var setInterval_id = setInterval(to_apply_wizard_changes, 500);
+    <%
+      end
+    %>
+
+    });
+//]]></script>
+<div>
+
+<div class="row-fluid">
+    <div class="tabbable tabs-top">
+        <div>
+            <ul id="dashboard_tabs" class="nav nav-tabs">
+                <li class=" active "><a data-toggle="tab" href="#tab_general" id="grneral_tab_btn"><%:General Status%></a></li>
+
+                <li class=""><a data-toggle="tab" href="#tab_lans" id="network_tab_btn"><%:Network Status%></a></li>
+                <li class=""><a data-toggle="tab" href="#tab_wireless" id="wifi_tab_btn"><%:Wireless Status%></a></li>
+                <li class=""><a data-toggle="tab" href="#tab_traffic" id="traffic_tab_btn"><%:Traffic Graphs%></a></li>
+                <li class="">
+                  <a data-toggle="tab" href="#tab_services" id="services_tab_btn">
+                    <i id="svc_alert_bell" class="icon-exclamation-sign error-badge-visible" style="display:none"></i><%:Services%>
+                  </a>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content" id="dashboard_tab_content">
+
+            <% luci.template.render('cbi/dashboard/tab_general', {acn=acn, eth_status=eth_status,num_eth_ports=num_eth_ports,wan_info=wan_info, acn_status=acn_status, mesh_status=mesh_status, product=product, main_mac_addr=main_mac_addr, has_ipv6=has_ipv6}) %>
+
+            <% luci.template.render('cbi/dashboard/tab_wireless', {acn=acn, num_radios=num_radios,product=product, ntm = ntm,acn_status=acn_status, radios=radios}) %>
+            <% luci.template.render('cbi/dashboard/tab_networks',
+                                        {acn = acn,ntm = ntm, devs = devs, product=product,
+                                         index_page = index_page }) %>
+
+            <% luci.template.render('cbi/dashboard/tab_graphs', {acn=acn,num_eth_ports=num_eth_ports,num_radios=num_radios,eth_status=eth_status,radios=radios,mesh_status=mesh_status,product=product}) %>
+
+            <% luci.template.render('cbi/dashboard/tab_services', {acn=acn,uci=uci, ntm=ntm}) %>
+
+        </div>
+    </div>
+</div>
+
+<%+footer%>

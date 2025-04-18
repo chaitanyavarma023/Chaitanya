@@ -1,0 +1,27 @@
+<div id="wifi_scan_modal" class="modal hide fade in" style="display: none;" data-backdrop="static" data-keyboard="true">
+    <div class="modal-header">   
+        <span class="pull-right">
+            <button  id="btn_wifi_scan" class="btn btn-info btn-small" style="margin-right:10px">
+                <%:Scan Now%>
+            </button>
+            <button type="button" class="close" style="float:none" data-dismiss="modal" aria-hidden="true">&times;</button>
+        </span>
+        <h3 class="green"><%:Wireless Scan%></h3>
+        <i class="red" style="font-size: 8pt"><%:Warning: If the current Channel list consists of DFS channels, there may be no scan results%></i>
+    </div>
+
+    <div style="padding:15px">
+        <div style="min-height:200px;max-height:300px;overflow-y:scroll;width:100%">
+  
+            <span id="spinner_scan_container" style="font-size:14pt; font-color:light-gray">
+                <i class="icon-spinner icon-spin" id="spinner_scan"></i><%:Loading...%>
+            </span>
+
+            <div id="scan_results">
+
+            </div>
+        </div>
+    </div>
+    
+</div>
+    

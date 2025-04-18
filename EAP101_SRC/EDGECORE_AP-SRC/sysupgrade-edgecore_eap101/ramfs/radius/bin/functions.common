@@ -1,0 +1,112 @@
+#!/bin/sh
+
+v_getvalue() #args: VAR filename
+{
+  eval $1=''
+  if [ -n "$2" -a -f "$2" -a -r "$2" ]; then
+    eval read -r -d "''" $1 < "$2"
+    true
+  else
+    false
+  fi
+}
+
+getvalue() #args: filename
+{
+  local x
+  if v_getvalue x "$1"; then
+    echo "$x"
+  fi
+}
+
+v_trim() #args: VAR string
+{
+  case "$2" in
+  \"*\")
+    eval $1='${2#?}'
+    eval $1='${'$1'%?}'
+    ;;
+  *)
+    eval $1='$2'
+    ;;
+  esac
+  true
+}
+
+trim() #args: string
+{
+  local x
+  v_trim x "$1"
+  echo "$x"
+}
+
+v_muse() # args: VAR string ...
+{
+  case "$1" in
+  z)
+    local x=$1 y='' r=''
+    shift
+    v_muse y "$@"
+    r=$?
+    eval $x='$y'
+    return $r
+    ;;
+  esac
+
+  local z=$1
+  shift
+  eval $z=''
+  while [ $# -gt 0 ]; do
+    if [ -n "$1" ]; then
+      v_trim $z "$1"
+      return
+    fi
+    shift
+  done
+  false
+}
+
+muse() #args: string ...
+{
+  local x
+  v_muse x "$@"
+  echo "$x"
+}
+
+_dump_flag=
+dump() #args: attr_name attr_value [op]
+{
+  local op
+  if [ -n "$1" -a -n "$2" ]; then
+    op="$3"
+    if [ -z "$3" ]; then
+      op="="
+    fi
+    if [ -n "$_dump_flag" ]; then
+      echo -n ', '
+    fi
+    echo -n "$1 $op $2"
+    _dump_flag=1
+  fi
+}
+
+v_getsuffix() #args: VAR user@suffix
+{
+  v_muse $1 "$2" "${USER_NAME}"
+  if eval [ '"${'$1'}"' != '"${'$1'##*@}"' ]; then
+    eval $1='${'$1'##*@}'
+    true
+  else
+    eval $1=''
+    false
+  fi
+}
+
+getsuffix() #args: user@suffix
+{
+  local suffix
+  if v_getsuffix suffix "$1"; then
+    echo "${suffix}"
+  fi
+}
+

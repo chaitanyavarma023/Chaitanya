@@ -1,0 +1,17 @@
+#!/bin/sh
+
+uci delete network.bat0.aggregated_ogms
+uci delete network.bat0.ap_isolation
+uci delete network.bat0.bonding
+uci delete network.bat0.fragmentation
+uci delete network.bat0.gw_mode
+uci delete network.bat0.log_level
+uci delete network.bat0.bridge_loop_avoidance
+uci delete network.bat0.network_coding
+uci delete network.bat0.hop_penalty
+uci delete network.bat0.isolation_mark
+
+[ "`uci -q get wireless.wmesh.mesh_id`" == "" ] && uci set wireless.wmesh.mesh_id='openmesh'
+uci delete wireless.wmesh.mesh_ttl
+
+uci commit network

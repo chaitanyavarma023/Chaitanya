@@ -1,0 +1,137 @@
+<div id="tab_traffic" class="tab-pane" style="overflow:visible">
+<% if product.supports_3g() then 
+    local acn = require "luci.acn.util"
+    local uci = acn.cursor()
+    local detected_3g = acn.detected_dongle()
+    
+    if detected_3g then
+%>
+    <h3 class="main-header"><%:3G/LTE Interfaces%></h3>
+    <div class="row-fluid">
+        <div class="span12">
+            <div class="widget-box transparent major-widget">
+                <div class="widget-body">
+                <%  
+                    local wan_inet_src = uci:get("network", "wan", "inet_src")
+                    local logical_name = product.dev_name_3g or "3g-wan"
+                    if wan_inet_src == "wwan0" then
+                        logical_name = wan_inet_src
+                    end
+                    local friendly = acn.logical_to_friendly(logical_name)
+                    local status, msg = eth_status[logical_name], ''
+                %> 
+                    <div class="row-fluid">
+                        <div class="span6">      
+                            <div class="fancy-shmancy"><%=friendly%></div>               
+                            <div id="tp_graph_<%=logical_name%>" class="stats-graph <% if not status.linked then print('link-down') end %> " iface_name="<%=friendly%>" style="width:200px;height:150px">
+                            </div>
+                        </div><!-- <div class="span6">-->
+                    </div><!-- <div class="row-fluid">-->
+                </div><!--widget-body-->
+            </div><!--widget-box transparent major-widget-->
+        </div><!--span12-->
+    </div><!--row-fluid-->
+<%  end
+end %>
+
+    <h3 class="main-header"><%:Wired Interfaces%></h3>
+    <div class="row-fluid">
+
+        <div class="span12">
+          <div class="widget-box transparent major-widget">
+              
+                <div class="widget-body">
+
+            <!-- GRAPHS -->
+
+            <%  for k=0, num_eth_ports - 1 do 
+                local eth    = product.eth(k)
+                local friendly = acn.logical_to_friendly(eth.logical_name)
+                local interface_index = k
+
+                local status, msg = eth_status[eth.logical_name], ''
+
+                local includeRowDiv = (k % 2 == 0)
+
+                %> 
+                <%if includeRowDiv then %><div class="row-fluid"><%end%>
+           
+                    <div class="span6">      
+                        <div class="fancy-shmancy">
+                            <%=friendly%> 
+                        </div>               
+                        <div id="tp_graph_eth<%=interface_index%>" class="stats-graph <% if not status.linked then print('link-down') end %>" iface_name="<%=friendly%>" style="width:200px;height:150px">
+                        </div>
+                    </div>
+
+                <%if not includeRowDiv then %></div><%end%>
+             <%end%>
+
+
+             <% if num_eth_ports % 2 == 1 then %>
+                </div>
+             <%end%>
+
+
+            <h3 class="main-header"><%:Wireless Interfaces%></h3>
+
+            <div class="row-fluid">
+                    <%  for k=0, num_radios -1 do 
+
+                        local friendly = acn.radio_to_friendly(k)   
+                        local radio = radios[k+1]
+                        local radio_status = false
+
+                        if radio and radio.networks[radio.up_idx] then
+                            radio_status = radio.networks[radio.up_idx].up
+                        end 
+                    %>  
+                        <div class="span6">  
+
+                            <div class="fancy-shmancy"><%=friendly%></div>                    
+                            <div id="tp_graph_radio<%=k%>" iface_name="<%=friendly%>"  class="stats-graph <% if not radio_status then print('link-down') end %> " style="width:200px;height:150px">
+                            </div>
+                            <!--
+                            <div class="center grey graph-label"><small>
+                            <a href="<%=luci.dispatcher.build_url('admin/status/wifi/radio' ..  k.. '.network1')%>"><%=friendly%></a></small>
+                            </div>
+                            -->
+                        </div>
+
+                    <%end%>
+                    </div>
+
+<% if product.supports_mesh() then%>
+            <h3 class="main-header"><%:Mesh Interface%></h3>
+
+            <div class="row-fluid">
+                <%
+                    local uci = acn.cursor()
+                    local dev_name_mesh = product.dev_name_mesh
+                    local mesh_st = mesh_status[dev_name_mesh]
+                    local mesh_device = uci:get("wireless", "wmesh", "device")
+                    local ifname = "Mesh"
+
+                    if mesh_device ~= nil then
+                        for k=0, num_radios -1 do
+                            local radio_info = product.radio(k)
+                            local radio_device = radio_info.device
+                            if radio_device and radio_device == mesh_device then
+                              ifname = ifname .. " (" .. acn.radio_freq_to_friendly(k) .. ")"
+                            end
+                        end
+                    end
+                %>
+                <div class="span6">
+
+                    <div class="fancy-shmancy"><%=ifname%></div>
+                    <div id="tp_graph_mesh0" class="stats-graph <% if not mesh_st.linked then print('link-down') end %> " iface_name="<%=ifname%>" style="width:200px;height:150px">
+                    </div>
+                </div>
+            </div>
+<%end%>
+                </div>  
+            </div>          
+        </div>
+    </div>
+</div>

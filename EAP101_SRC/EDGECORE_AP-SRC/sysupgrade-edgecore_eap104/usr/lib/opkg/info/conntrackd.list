@@ -1,0 +1,4 @@
+/usr/sbin/conntrackd
+/etc/conntrackd/conntrackd.conf
+/lib/upgrade/keep.d/conntrackd
+/etc/init.d/conntrackd

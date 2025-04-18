@@ -1,0 +1,6 @@
+#!/bin/sh
+
+[ -n "$IPKG_INSTROOT" ] || {
+/etc/init.d/syslog-ng disable
+/etc/init.d/syslog-ng stop
+}

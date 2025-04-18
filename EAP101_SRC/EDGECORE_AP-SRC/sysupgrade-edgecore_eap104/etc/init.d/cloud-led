@@ -1,0 +1,21 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+USE_PROCD=1
+PROG=/usr/sbin/check_cloud_status
+
+. /lib/functions.sh
+
+start_service() {
+	[ "$(board_name)" = "edgecore,eap104" ] || exit 0
+	procd_open_instance
+	procd_set_param command "$PROG"
+	procd_set_param respawn 0 60 0
+	procd_close_instance
+}
+
+service_triggers() {
+	procd_add_reload_trigger "acn" "system"
+}
+

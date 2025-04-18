@@ -1,0 +1,36 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+USE_PROCD=1
+NAME=cipgwsrv
+PROG=/ramfs/bin/cipgwsrv
+
+start_service() {
+	procd_open_instance
+
+	cat /sys/class/net/eth0/address | tr [a-z] [A-Z] > /tmp/wan_mac
+
+	#Init cipgwsrv status for ONLINE_USER_HARD_LIMIT              
+	STATUS=/tmp/online_user_hard_limit                            
+	rm -fr ${STATUS}                                              
+	mkdir -p ${STATUS}                                            
+	[ -z "${ONLINE_USER_HARD_LIMIT}" ] && ONLINE_USER_HARD_LIMIT=0
+	echo ${ONLINE_USER_HARD_LIMIT} > ${STATUS}/limit            
+	echo 0  > ${STATUS}/full                                    
+	echo 0  > ${STATUS}/online_number                           
+	echo 80 > ${STATUS}/threshold                               
+	chown -R 1001.1001 ${STATUS}                                
+	chmod -R 777 ${STATUS}                                      
+	mkdir -p /tmp/radius_exec
+
+	procd_set_param command "$PROG" "2"
+	procd_set_param respawn # respawn automatically if something died
+	procd_close_instance
+}
+
+stop_service() {
+	pid=$(< /var/run/cipgwsrv.pid)
+	[ -n "${pid}" ] && kill $pid
+}
+

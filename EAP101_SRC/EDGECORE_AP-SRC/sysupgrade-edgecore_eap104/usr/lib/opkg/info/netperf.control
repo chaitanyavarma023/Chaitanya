@@ -1,0 +1,13 @@
+Package: netperf
+Version: 2.7.0-2
+Depends: libc
+Source: feeds/packages/net/netperf
+SourceName: netperf
+License: Custom
+Section: net
+SourceDateEpoch: 1711276820
+CPE-ID: cpe:/a:netperf:netperf
+Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
+Architecture: arm_cortex-a7
+Installed-Size: 145515
+Description:  Network performance measurement tool

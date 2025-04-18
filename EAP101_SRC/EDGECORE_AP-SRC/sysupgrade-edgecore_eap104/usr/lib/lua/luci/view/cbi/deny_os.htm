@@ -1,0 +1,45 @@
+<%
+    local i, key
+    local v = self:valuelist(section) or {}
+-%>
+
+<%+cbi/valueheader%>
+<% if self.widget == "select" then %>
+    <select class="cbi-input-select" multiple="multiple" data-update="click change"<%=
+        attr("id", cbid) ..
+        attr("name", cbid) ..
+        ifattr(self.size, "size")
+    %>>
+        <% for i, key in pairs(self.keylist) do -%>
+            <option<%=
+                attr("id", cbid.."-"..key) ..
+                attr("value", key) ..
+                attr("data-index", i) ..
+                attr("data-depends", self:deplist2json(section, self.deplist[i])) ..
+                ifattr(luci.util.contains(v, key), "selected", "selected")
+            %>><%=pcdata(self.vallist[i])%></option>
+        <%- end %>
+    </select>
+<% elseif self.widget == "checkbox" then %>
+    <table>
+        <% for i, key in pairs(self.keylist) do %>
+            <tr>
+                <th>
+                    <input class="ace-tooltip ace-switch ace-switch-3" type="checkbox" <%=
+                        attr("id", cbid.."-"..key) ..
+                        attr("name", cbid) ..
+                        attr("value", key) ..
+                        ifattr(luci.util.contains(v, key), "checked", "checked")
+                    %> />
+                    <span class="lbl"></span>
+                </th>
+                <th>
+                    <label<%= attr("for", cbid.."-"..key)%> style="text-align:left;">
+                    &nbsp;<%=pcdata(self.vallist[i])%></label>
+                </th>
+            </tr>
+        <% end %>
+    </table>
+<% end %>
+<%+cbi/valuefooter%>
+

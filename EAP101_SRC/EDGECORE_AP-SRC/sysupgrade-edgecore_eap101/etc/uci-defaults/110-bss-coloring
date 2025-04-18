@@ -1,0 +1,16 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+set_bss_color() {
+    config_get he_bss_color $1 he_bss_color
+
+    [ "$he_bss_color" == "0" ] && uci set wireless.$1.he_bss_color='64'
+
+}
+
+config_load wireless
+config_foreach set_bss_color wifi-device
+uci commit wireless
+
+exit 0

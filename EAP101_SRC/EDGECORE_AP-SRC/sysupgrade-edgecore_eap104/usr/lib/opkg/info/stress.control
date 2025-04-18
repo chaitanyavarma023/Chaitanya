@@ -1,0 +1,14 @@
+Package: stress
+Version: 1.0.4-2
+Depends: libc
+Source: feeds/packages/utils/stress
+SourceName: stress
+License: GPL-2.0
+LicenseFiles: COPYING
+Section: utils
+SourceDateEpoch: 1711276820
+Maintainer: Alexandru Ardelean <ardeleanalex@gmail.com>
+Architecture: arm_cortex-a7
+Installed-Size: 8118
+Description:  stress is a simple tool that imposes certain types of compute \ stress on
+ UNIX-like operating systems.

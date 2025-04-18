@@ -1,0 +1,30 @@
+#!/bin/sh
+. /lib/functions.sh
+
+check_mcast2ucast() {
+	local multicast_to_unicast=0
+	local ap_isolate
+	local dynamic_vlan
+
+	config_get multicast_to_unicast $1 multicast_to_unicast
+	config_get ap_isolate $1 isolate
+	config_get dynamic_vlan $1 dynamic_vlan
+	[ "$1" != "wmesh" ] && [ "$multicast_to_unicast" == "" ] && {
+		if [ -z "$ap_isolate" ] || [ "$ap_isolate" -eq 0 ]; then
+			if [ "$(uci -q get acn.mgmt.management)" -ne 3 ] && [ -z "$dynamic_vlan" ] || [ "$dynamic_vlan" -eq 0 ]; then
+				multicast_to_unicast=1
+			fi
+		fi
+
+		uci set wireless.$1.multicast_to_unicast="$multicast_to_unicast"
+		changed=1
+	}
+}
+
+changed=0
+
+config_load wireless
+config_foreach check_mcast2ucast wifi-iface
+[ $changed -eq 1 ] && uci commit wireless
+
+exit 0

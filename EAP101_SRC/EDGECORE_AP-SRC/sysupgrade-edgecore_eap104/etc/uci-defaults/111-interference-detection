@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+set_interference_detection() {
+    config_get chan_util_delta $1 chan_util_delta
+
+    [ "$chan_util_delta" == "" ] && uci set wireless.$1.chan_util_delta='0'
+}
+
+config_load wireless
+config_foreach set_interference_detection wifi-device
+uci commit wireless
+
+exit 0

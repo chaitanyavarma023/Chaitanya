@@ -1,0 +1,149 @@
+'\" t
+.\"     Title: slogverify
+.\"    Author: [see the "Author" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 09/25/2023
+.\"    Manual: The slogverify manual page
+.\"    Source: 4.4
+.\"  Language: English
+.\"
+.TH "SLOGVERIFY" "1" "09/25/2023" "4\&.4" "The slogverify manual page"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+slogverify \- Verify cryptographically secured logs
+.SH "SYNOPSIS"
+.HP \w'\fBslogverify\fR\ 'u
+\fBslogverify\fR [options] [input\ file] [output\ file] [buffers]
+.SH "DESCRIPTION"
+.PP
+The
+\fBslogverify\fR
+utility is used to verify the integrity of cryptographically secured logs and to decrypt log entries produced in a
+\fBsyslog\-ng\fR
+secure logging environment\&.
+.PP
+Normal mode:
+\fBslogverify \-k <host key file> \-m <input MAC file> <input file> <output file> [buffers]\fR
+.PP
+Iterative mode:
+\fBslogverify \-i \-p <previous host key> \-r <previous MAC> \-m <current MAC> <input file> <output file> [buffers]\fR
+.SH "ARGUMENTS"
+.PP
+\fBinput file\fR
+.RS 4
+An encrypted log file from the syslog\-ng secure logging environment that will be verified\&.
+.RE
+.PP
+\fBoutput file\fR
+.RS 4
+The file that will contain the plain text log entries after decryption and verification\&.
+.RE
+.PP
+\fBbuffers\fR
+.RS 4
+Optional number of input buffers\&. The number of buffers can be used for performance adjustments in case the log file to be verified is very large and cannot be processed at once\&. It is a positive number of log entries that can be held in memory during verification\&. The minimum number if 10 and the maximum number is 4294967295\&. If this argument is not supplied the default of 1000 is used\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-iterative\fR or \fB\-i\fR
+.RS 4
+Iterative mode\&. This is useful in case the log files are periodically copied from the system on which they where generated to central collector\&. As log rotation, i\&.e\&. overwriting log files in order to preserve space cannot be done in a secure logging environment, the iterative mode can be used instead\&. This works as follows: If a certain storage limit is reached the log file together with the host key and the MAC file is copied to new destination and the old file is deleted\&. The verification is then performed in iterations, i\&.e\&. separately for each file that was retrieved from the log host\&. For this to work, it is important to always retrieve the corresponding host key and MAC files\&. The process can be automated, e\&.g\&. by calling slogverify in iterative mode from a script\&.
+.RE
+.PP
+\fB\-\-key\-file\fR or \fB\-k\fR
+.RS 4
+The initial host key (k0)\&. This option is used in normal mode only\&.
+.RE
+.PP
+\fB\-\-mac\-file\fR or \fB\-m\fR
+.RS 4
+The current MAC file used\&.
+.RE
+.PP
+\fB\-\-prev\-key\-file\fR or \fB\-p\fR
+.RS 4
+The host key corresponding to the previous log file\&. This option can be used in iterative mode only\&. In theory, this can be initial host key (k0) but using this key might generate warnings, as the gap between the first log entry ever (log entry 0) and the first log entry of the current log file might be large\&.
+.RE
+.PP
+\fB\-\-prev\-mac\-file\fR or \fB\-r\fR
+.RS 4
+The MAC file from the previous log file\&. This option can only be used in iterative mode\&.
+.RE
+.PP
+\fB\-\-help\fR or \fB\-h\fR
+.RS 4
+Display a help message\&.
+.RE
+.SH "FILES"
+.PP
+/usr/bin/slogverify
+.PP
+/etc/syslog\-ng\&.conf
+.SH "SEE ALSO"
+.PP
+\fBsyslog\-ng\&.conf\fR(5)
+.PP
+\fBsecure\-logging\fR(7)
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+.PP
+For the detailed documentation of see
+\m[blue]\fB\fBThe syslog\-ng Administrator Guide\fR\fR\m[]\&\s-2\u[1]\d\s+2
+.PP
+If you experience any problems or need help with syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng mailing list\fR\fR\m[]\&\s-2\u[2]\d\s+2\&.
+.PP
+For news and notifications about of syslog\-ng, visit the
+\m[blue]\fB\fBsyslog\-ng blogs\fR\fR\m[]\&\s-2\u[3]\d\s+2\&.
+.PP
+For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team <secure\-logging@airbus\&.com>\&.
+.sp .5v
+.RE
+.SH "AUTHOR"
+.PP
+This manual page was written by the Airbus Secure Logging Team <secure\-logging@airbus\&.com>\&.
+.SH "COPYRIGHT"
+.SH "NOTES"
+.IP " 1." 4
+\fBThe syslog-ng Administrator Guide\fR
+.RS 4
+\%https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html
+.RE
+.IP " 2." 4
+\fBsyslog-ng mailing list\fR
+.RS 4
+\%https://lists.balabit.hu/mailman/listinfo/syslog-ng
+.RE
+.IP " 3." 4
+\fBsyslog-ng blogs\fR
+.RS 4
+\%https://syslog-ng.org/blogs/
+.RE

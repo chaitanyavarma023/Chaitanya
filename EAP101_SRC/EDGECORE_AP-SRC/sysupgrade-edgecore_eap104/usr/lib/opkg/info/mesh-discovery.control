@@ -1,0 +1,12 @@
+Package: mesh-discovery
+Version: 8
+Depends: libc, libubox20210819, libubus20210809, libblobmsg-json20210819, libuci20130104, libnl-tiny1
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ec-private/tools/mesh-discovery
+SourceName: mesh-discovery
+License: GPL-2.0
+Section: IgniteNet
+SourceDateEpoch: 1694403210
+Maintainer: Dino Chang <dino_chang@accton.com>
+Architecture: arm_cortex-a7
+Installed-Size: 28657
+Description:  Accton Mesh Discovert Daemon

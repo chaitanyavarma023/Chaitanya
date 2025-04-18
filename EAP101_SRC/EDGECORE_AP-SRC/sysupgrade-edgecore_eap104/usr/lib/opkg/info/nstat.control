@@ -1,0 +1,13 @@
+Package: nstat
+Version: 5.11.0-3
+Depends: libc, libnl-tiny1
+Source: package/network/utils/iproute2
+SourceName: nstat
+License: GPL-2.0
+Section: net
+SourceDateEpoch: 1734663190
+CPE-ID: cpe:/a:iproute2_project:iproute2
+Maintainer: Russell Senior <russell@personaltelco.net>
+Architecture: arm_cortex-a7
+Installed-Size: 31893
+Description:  Network statistics utility

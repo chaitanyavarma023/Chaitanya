@@ -1,0 +1,19 @@
+<div id='hotspot-wallgarden-<%=self.config%>-<%=self.iface%>' class="modal hide fade in" style="display: none;">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3 class="green"><%=self.title%></h3>
+  </div>
+
+  <div class="cbi-section-node">
+    <div style="padding:15px">
+      <textarea style="width: 95%;" onchange="cbi_d_update(this.id)" name="cbid.<%=self.config%>.<%=self.iface%>.hs_wall" id="cbid.<%=self.config%>.<%=self.iface%>.hs_wall" rows="10"><%=self.map.uci:get(self.config, self.iface, "hs_wall") or ""%></textarea><br>
+      <small><%:Enter a list of space or newline-delimited hostnames and IPs.%><br><%:Example: 203.211.150.204 66.235.128.0/17 www.paypal.com%></small>
+    </div>
+
+    <div class="cbi-section-create cbi-tblsection-create">
+      <div class="modal-footer">
+        <input type="button" id= "cbi-<%=self.config%>-<%=self.iface%>-wallgardensavebtn" class="btn btn-small btn-info" value="Save Walled Garden Settings" onclick="{$('#hotspot-wallgarden-<%=self.config%>-<%=self.iface%>').click();$('#btn_save').click()}" />
+      </div>
+    </div>
+  </div><!--<div class="cbi-section-node">-->
+</div>

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ "$(uci -q get network.wan.mtu)" == "" ]; then
+	uci set network.wan.mtu='1500'
+fi
+if [ -z $(uci -q get network.bridge.type) -a "$(uci -q get network.wan.type)" == "" ]; then
+        uci set network.wan.type='bridge'
+fi
+if [ "$(uci -q get network.lan.mtu)" == "" ]; then
+        uci set network.lan.mtu='1500'
+fi
+uci commit network
+
+exit 0

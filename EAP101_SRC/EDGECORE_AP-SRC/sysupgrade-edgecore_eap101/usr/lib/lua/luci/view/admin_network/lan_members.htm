@@ -1,0 +1,22 @@
+<%
+uci = acn.cursor()
+local user_name = luci.http.getcookie("user_name")
+local root_user = luci.util.root_user(user_name)
+local msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+%>
+
+<%-
+local empty = true
+for n, iface in ipairs(acn.network_members(section or network)) do
+    empty = false
+ -%>
+  <%
+  lc_enabled = (uci:get("wireless", iface['logical_name'], "local_configurable") == "1")
+  local msp_local_config = luci.util.msp_local_config(msp_disabled, lc_enabled)
+
+  if root_user or msp_local_config then
+    luci.template.render('admin_network/bridge_member_tag', {iface = iface})
+  end
+  %>
+<%end-%>
+<% if empty then %><%:(None)%><%end%>

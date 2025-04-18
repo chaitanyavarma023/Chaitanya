@@ -1,0 +1,259 @@
+#!/bin/sh
+if [ -z "${Auth_Server_Num}" ]; then
+    Auth_Server_Num=5
+fi
+
+[ -z "${_common_flag}" ] && . /ramfs/radius/bin/functions.common
+
+get_nas_ip()
+{
+  local nas_ip
+  v_getvalue nas_ip "/tmp/ip"
+  echo "${nas_ip}"
+}
+
+v_getutype() #args: VAR mgmtid
+{
+  v_getvalue $1 "/db/subscriber/mgmt/$2/utype"
+}
+getutype() #args: mgmtid
+{
+  local utype
+  v_getutype utype "$1"
+  echo "${utype}"
+}
+
+v_getmgmtid() #args: VAR postfix user@suffix
+{
+  case "$1" in
+  z|realm|user|r|postfix|i|mgmtname|len|mgmtname_len)
+    local x=''
+    v_getmgmtid x "$2" "$3"
+    eval $1='$x'
+    return
+    ;;
+  esac
+
+  local z=$1
+  shift
+  # r: mgmtid
+  local realm user r=''
+  local postfix i mgmtname len mgmtname_len
+  v_muse realm "$1" "${REALM}"
+  v_muse user "$2" "${USER_NAME}"
+  v_getsuffix postfix "${user}"
+  v_getvalue r "/db/subscriber/mgmt_index"
+  mgmtname_len="-1"
+
+  # NULL and postfix is not matched
+  if [ "${realm}" = "NULL" -a -z "${postfix}" ]; then
+    eval $z='$r'
+    return
+  fi
+
+  for i in $(seq 1 ${Auth_Server_Num}) 103; do
+    v_getmgmtname mgmtname "$i"
+    if [ -n "${mgmtname}" ]; then
+      if [ "${mgmtname}" = "${realm}" -o "${mgmtname}" = "${postfix}" ]; then
+        r="$i"
+        break
+      elif [ -z "${mgmtname##.*}" ]; then
+        if [ -n "${realm##.*}" -o -n "${postfix##.*}" ]; then
+          if [ "${mgmtname}" = "." ]; then
+            if [ "${mgmtname_len}" -lt "0" ]; then
+              mgmtname_len="0"
+              r="$i"
+            fi
+          else
+            len="${#mgmtname}"
+            if [ "${len}" -gt "${mgmtname_len}" ]; then
+              if [ "${realm}" != "${realm%${mgmtname}}" -o "${postfix}" != "${postfix%${mgmtname}}" ]; then
+                mgmtname_len="${len}"
+                r="$i"
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  done
+
+  eval $z='$r'
+}
+getmgmtid() #args: postfix user@suffix
+{
+  local x
+  v_getmgmtid x "$1" "$2"
+  echo "$x"
+}
+
+                       
+
+getmgmtid() #args: postfix user@suffix
+{
+  local realm user postfix i mgmtname len mgmtname_len mgmtid
+  realm="`muse "$1" "${REALM}"`"
+  user="`muse "$2" "${USER_NAME}"`"
+  postfix="`getsuffix "${user}"`"
+  mgmtid=""
+
+  mgmtname_len="-1"
+  for i in $(seq 1 ${Auth_Server_Num}) 103; do
+    v_getmgmtname mgmtname "$i"
+    if [ -n "${mgmtname}" ]; then
+      if [ "${mgmtname}" = "${realm}" ] || [ "${mgmtname}" = "${postfix}" ]; then
+        mgmtid="$i"
+        break
+      elif [ -z "${mgmtname##.*}" ]; then
+        if [ -n "${realm##.*}" ] || [ -n "${postfix##.*}" ]; then
+          if [ "${mgmtname}" = "." ]; then
+            if [ "${mgmtname_len}" -lt "0" ]; then
+              mgmtname_len="0"
+              mgmtid="$i"
+            fi
+          else
+            len="${#mgmtname}"
+            if [ "${len}" -gt "${mgmtname_len}" ]; then
+              if [ "${realm}" != "${realm%${mgmtname}}" ] || [ "${postfix}" != "${postfix%${mgmtname}}" ]; then
+                mgmtname_len="${len}"
+                mgmtid="$i"
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  done
+
+  # NULL and postfix is not matched
+  if [ "${realm}" = "NULL" ] && [ -z "${mgmtid}" ]; then
+    v_getvalue mgmtid "/db/subscriber/mgmt_index"
+  fi
+
+  echo "${mgmtid}"
+}
+
+getszmgmt_enable() #args: mgmtid sz_id
+{
+  local mgmtid sz_id mgmt_enable mgmt_type sz_enable sz_mgmt_enable ret
+  mgmtid="$1"
+  sz_id="$2"
+  mgmt_enable=`< "/db/subscriber/mgmt/${mgmtid}/mgmt_enable"`
+  sz_enable=`< "/db/sz/${sz_id}/enabled"`
+  sz_mgmt_enable=`< "/db/sz/${sz_id}/mgmt_enable"`
+
+  ret=""
+  if [ "${mgmt_enable}" == "Enabled" -a "${sz_enable}" == "Enabled" ]; then
+    ret=`echo "${sz_mgmt_enable}" | while read line
+    do
+      if [ "${line}" == "${mgmtid}" ]; then
+        echo "Enabled"
+        break
+      fi
+    done`
+  fi
+  [ -z "${ret}" ] && ret="Disabled"
+  echo "${ret}"
+}
+
+get_nas_info() #args: $client_ip
+{
+  local client_ip nas_info nas_identifier
+
+  client_ip="`muse "$1" "${CLIENT_IP_ADDRESS}"`"
+
+  if [ "${client_ip%.*}" = "127.18.12" ]; then
+    # local hostapd (PKG_SZ_WLAN == 1)
+    nas_info="2 127.18.12.0 24 12345678"
+  else
+    nas_info="`/usr/bin/awk -f /ramfs/bin/get_nas.awk /db "${client_ip}"`"
+  fi
+  echo "${nas_info}"
+}
+
+mac2szid() #args: $mac
+{
+  echo 0
+}
+
+get_validate_ikev2() #args ret mgmtid
+{
+  local mgmtlist=''
+  local mgmtid=''
+  local mgmt_utype=''
+  local ret='1'
+  eval $1=''
+  v_getvalue mgmtlist "/db/ikev2/mgmt_enable"
+  if [ -n "${mgmtlist}" ]; then
+    for mgmtid_index in ${mgmtlist}
+    do
+        if [ "${mgmtid_index}" = "$2" ]; then
+            ret='0'
+            break
+        fi
+    done
+  fi
+  eval $1="$ret"
+}
+
+
+
+get_validate() #check validate in exec_auth
+{
+  # validate items
+  # 1. user name 
+  # 2. authentication server (mgmtid)
+  # 3. utype
+  # 4. service zone index
+  # 5. 8021X or Roaming Out for Local user enaled
+  # 6. cleint_ip
+  local username="$1"
+  local mgmtid="$2"
+  local utype="$3"
+  local sz_id="$4"
+  local nas_info="$5"
+  local client_ip="$6"
+  local szmgmt_enable nas_info_type type_path type_enabled
+
+  [ ${client_ip} == "127.0.0.1" ] && echo -n "0" && exit  # dont care local packet, it might come from remote/local vpn
+
+  [ -z "${username}" ] && echo -n "51" && exit
+
+  [ -z "${mgmtid}" ] && echo -n "52" && exit
+
+  if [ -n "${sz_id}" ]; then
+    szmgmt_enable="`getszmgmt_enable "${mgmtid}" "${sz_id}"`"
+    [ "${szmgmt_enable}" != "Enabled" ] && echo -n "53" && exit
+  fi
+
+  case "${nas_info}" in
+    "1")
+      nas_info_type="RoamingOut"
+      type_path="local_roamingout"
+      ;;
+    "2")
+      nas_info_type="8021X"
+      type_path="radius/8021x"
+      ;;
+    *)
+      echo -n "54" && exit
+      ;;
+  esac
+  type_enabled="$(< "/db/subscriber/mgmt/${mgmtid}/${type_path}")"
+
+  if [ "${utype}" = "LOCAL" ] || [ "${utype}" = "ONDEMAND" ]; then
+    if [ "${type_enabled}" != "Enabled" ]; then
+      [ "${nas_info_type}" = "RoamingOut" ] && echo -n "55" && exit
+      [ "${nas_info_type}" = "8021X" ] && echo -n "56" && exit
+    fi
+  elif [ "${utype}" = "RADIUS" ]; then
+    if [ "${type_enabled}" != "Enabled" ]; then
+      [ "${nas_info_type}" = "RoamingOut" ] && echo -n "57" && exit
+      [ "${nas_info_type}" = "8021X" ] && echo -n "58" && exit
+    fi
+  else
+      echo -n "59" && exit
+  fi
+
+  echo -n "0" && exit
+}

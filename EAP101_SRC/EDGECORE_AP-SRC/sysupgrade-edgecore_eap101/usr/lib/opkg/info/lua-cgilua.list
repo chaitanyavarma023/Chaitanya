@@ -1,0 +1,17 @@
+/usr/lib/lua/cgilua.lua
+/www/cgi-bin/examples/split_tunnel_api.lp
+/usr/lib/lua/cgilua/serialize.lua
+/usr/lib/lua/cgilua/session.lua
+/usr/lib/lua/cgilua/authentication.lua
+/usr/lib/lua/cgilua/cookies.lua
+/www/cgi-bin/examples/test1.lp
+/usr/lib/lua/cgilua/post.lua
+/usr/lib/lua/cgilua/loader.lua
+/usr/lib/lua/cgilua/urlcode.lua
+/usr/bin/cgilua.cgi
+/www/img/background.png
+/usr/lib/lua/cgilua/dispatcher.lua
+/usr/lib/lua/cgilua/readuntil.lua
+/usr/lib/lua/cgilua/lp.lua
+/usr/lib/lua/cgilua/mime.lua
+/www/cgi-bin/examples/test.lp

@@ -1,0 +1,449 @@
+#!/bin/sh
+
+v_get_file()
+{
+    eval $1=''
+    if [ -f "$2" ]; then
+	eval read -r -d "''" $1 < "$2"
+	true
+    else
+	false
+    fi
+}
+get_file()
+{
+    local file_path
+    file_path="$1"
+
+    if [ -f "${file_path}" ]; then
+	local x
+	read -r -d '' x < "${file_path}"
+        echo "$x"
+    else
+        echo ""
+    fi
+}
+
+get_username()
+{
+    local mgmt_index uname fullname original_name name_format
+    mgmt_index="$1"
+    uname="$2"
+    fullname="$3"
+    original_name="$4"
+
+    name_format="$(get_file "/db/subscriber/mgmt/${mgmt_index}/radius/fullname")"
+
+    if [ "${name_format}" == "DontCare" ]; then
+        echo "${original_name}"  # original name
+    elif [ "${name_format}" == "Enabled" ]; then
+        echo "${fullname}"   # full name
+    elif [ "${name_format}" == "Disabled" ]; then
+        echo "${uname}"   # pure name
+    else
+        echo ""
+    fi
+}
+
+get_username_by_online_file()
+{
+    local user_mac user mgmt_index uname fullname original_name username
+    user_mac="$1"
+
+    [ -z "${user_mac}" -o ! -f "/db/online/${user_mac}" ] && exit
+    unset user
+    i=0; while read "user[$i]"; do let i=i+1; done < "/db/online/${user_mac}"
+
+    mgmt_index="${user[5]}"
+    uname="${user[1]}"
+    fullname="${user[2]}"
+    original_name="${user[24]}"
+    
+    username=`get_username ${mgmt_index} ${uname} ${fullname} ${original_name}`
+    
+    echo "${username}"
+}
+
+get_auth_server_ip()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/server_ip_${srv_index}\"`"
+}
+
+get_auth_server_port()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+    
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/auth_port_${srv_index}\"`"
+}
+
+get_auth_server_key()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+    
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/secret_key_${srv_index}\"`"
+}
+
+get_auth_server_method()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+    
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/authen_method${srv_index}\"`"
+}
+
+get_acct_enable()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/account_service${srv_index}\"`"
+}
+
+get_acct_server_ip()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/acct_server_ip_${srv_index}\"`"
+}
+
+get_acct_server_port()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/account_port_${srv_index}\"`"
+}
+
+get_acct_server_key()
+{
+    local mgmt_index srv_index
+    mgmt_index="$1"
+    srv_index="$2"
+
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/acct_secret_key_${srv_index}\"`"
+}
+
+get_acct_delay_time()
+{
+    local mgmt_index
+    mgmt_index="$1"
+
+    echo "`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/account_delay_time\"`"
+}
+
+#################   get radius common attributes section     ################
+get_service_type()
+{
+    local mgmt_index
+    mgmt_index="$1"
+    echo $(get_file "/db/subscriber/mgmt/${mgmt_index}/radius/service_type")
+}
+
+get_calledid()
+{
+    local active_wan active_wan_mac
+    active_wan="$(get_file "/tmp/status/active_wan")"
+    active_wan_mac="$(get_file "/db/$active_wan/mac")"
+
+    echo "${active_wan_mac//:/-}"
+}
+
+get_callingid()
+{
+    local user_mac callingid
+    user_mac="$1"
+
+    if [ -z "${user_mac##*:*}" ]; then
+        callingid=$(echo "${user_mac}" | sed 's/:/-/g')
+    elif [ -z "${user_mac##*.*}" ]; then
+        callingid=$(echo "${user_mac}" | sed 's/^/IPv4-/')
+    else
+        callingid="${user_mac}"
+    fi
+    
+    echo "${callingid}"
+}
+
+get_nas_ip()
+{
+    echo "$(get_file "/tmp/ip")"
+}
+
+get_nas_id()
+{
+    local nas_id mgmt_index sz_id vlan_id callingid sz_if client_if
+    mgmt_index="$1"
+    sz_id="$2"
+    vlan_id="$3"
+    callingid="$4"
+
+    # get nas-id from PLM or Tunnel PLM
+    sz_if="$(get_file "/db/vlan/${sz_id}/if")"
+    client_if="$(/usr/sbin/brctl findmac ${sz_if} "${callingid}" | awk 'END{print $1}')"
+
+    # get nas-id from Tunnel PLM
+    [ -f /db/tunportmap/${client_if}/nas_id ] && nas_id="$(get_file "/db/tunportmap/${client_if}/nas_id")"
+
+    # get nas-id from PLM
+    if [ -z "${nas_id}" ]; then
+        if [ "$(get_file "/tmp/status/portmap")" == "1" ]; then
+            [ -z ${vlan_id} ] && vlan_id="${client_if#*.}"
+            [ -f /db/portmap/${vlan_id}/nas_id ] && nas_id="$(get_file "/db/portmap/${vlan_id}/nas_id")"
+        fi
+    fi
+
+    # get nas-id from MGMT
+    if [ -z "${nas_id}" ]; then
+        nas_id="`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/nas_id\"`"
+    fi
+    if [ -z "${nas_id}" ]; then
+        nas_id="`get_calledid`"
+    fi
+
+    echo "${nas_id}"
+}
+
+v_get_nas_port()
+{
+    case "$1" in
+    z|user_ip|user_mac|r|sz_id|sz_if|sz_vlan|client_if|VLAN_PART_1|VLAN_PART_2|portmap)
+	local x=''
+	v_get_nas_port x "$2" "$3"
+	eval $1='$x'
+	return
+	;;
+    esac
+    
+    local z=$1
+    shift
+    # r: nas_port
+    local user_ip="$1" user_mac="$2" r
+    local sz_id sz_if sz_vlan client_if VLAN_PART_1 VLAN_PART_2 portmap
+    v_get_file vlan_type "/db/vlan/vlan_type"
+    if [ -f "/tmp/online/${user_mac}" ]; then
+	sz_id="$(sed -n 27p /tmp/online/${user_mac})"
+    else
+	sz_id="$(/ramfs/bin/ip2sz.sh ${user_ip})"
+    fi
+    if [ "${sz_id}" -ge "0" -a "${vlan_type}" = "802.1Q" ]; then
+	v_get_file sz_if "/db/vlan/${sz_id}/if"
+	v_get_file sz_vlan "/db/vlan/${sz_id}/vlan_tag"
+	client_if="$(/usr/sbin/brctl findmac "${sz_if}" "${user_mac}" | awk 'END{print $1}')"
+	if [ "${client_if:0:2}" = "tl" ]; then
+	    VLAN_PART_2="${client_if##*.}"
+	    VLAN_PART_1=${client_if%%.*}
+	    let r=${VLAN_PART_1##*tlo}*4096+31932000+${VLAN_PART_2}
+	elif [ "${client_if:0:3}" = "tgw" ]; then
+	    let r=sz_id+31932000
+        else
+	    v_get_file portmap "/tmp/status/portmap"
+	    if [ "$portmap" = "1" ]; then
+		r="$(/ramfs/bin/getVID.sh ${sz_id} ${user_mac})"    
+	    else
+		r="${sz_vlan}"
+	    fi
+        fi
+    fi
+    if [ -z "$r" ]; then
+        r="0"
+    elif [ "$r" -lt "0" ]; then
+        r="0"
+    fi
+    eval $z='$r'
+}
+get_nas_port()
+{
+    local x
+    v_get_nas_port x "$1" "$2"
+    echo "$x"
+}
+
+get_nas_port_id()
+{
+    echo "Controlled"
+}
+
+get_nas_port_type()
+{
+    local mgmt_index nas_port_type
+    mgmt_index="$1"
+    nas_port_type="`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/nas_port_type\"`"
+    [ -z "${nas_port_type}" ] && nas_port_type="19"
+
+    echo "${nas_port_type}"
+}
+
+get_wispr_location_id()
+{
+    local sz_id vid callingid sz_if client_if location_id auth_method
+    sz_id="$1"
+    vid="$2"
+    callingid="$3"
+    auth_method="$4"
+
+    sz_if="$(get_file "/db/vlan/${sz_id}/if")"
+    client_if="$(/usr/sbin/brctl findmac ${sz_if} "${callingid}" | awk 'END{print $1}')"
+
+    # get location id from Tunnel PLM
+    location_id="$(get_file "/db/tunportmap/${client_if}/room_number")"
+
+    # get location id from PLM
+    if [ -z "${location_id}" ]; then
+        if [ "$(get_file "/tmp/status/portmap")" == "1" ]; then
+            [ -z ${vid} ] && vid="${client_if#*.}"
+            location_id="$(get_file "/db/portmap/${vid}/room_number")"
+        fi
+    fi
+
+    # get location id from sz
+    if [ -z "${location_id}" ]; then
+        location_id="$(get_file "/db/sz/${sz_id}/location_id")"
+    fi
+
+    # get location id from pptp
+    if [ -z "${location_id}" ]; then
+        [ "${auth_method}" = "PPTP" ] && location_id="$(get_file "/db/pptp/location_id")"
+    fi
+    echo "${location_id}"
+}
+
+get_wispr_location_name()
+{
+    local sz_id vid callingid sz_if client_if location_name auth_method
+    sz_id="$1"
+    vid="$2"
+    callingid="$3"
+    auth_method="$4"
+
+    sz_if="$(get_file "/db/vlan/${sz_id}/if")"
+    client_if="$(/usr/sbin/brctl findmac ${sz_if} "${callingid}" | awk 'END{print $1}')"
+
+    # get location name from Tunnel PLM
+    location_name="$(get_file "/db/tunportmap/${client_if}/remark")"
+
+    # get location name from PLM
+    if [ -z "${location_name}" ]; then
+        if [ "$(get_file "/tmp/status/portmap")" == "1" ]; then
+            [ -z ${vid} ] && vid="${client_if#*.}"
+            location_name="$(get_file "/db/portmap/${vid}/remark")"
+        fi
+    fi
+
+    # get location name from sz
+    if [ -z "${location_name}" ]; then
+        location_name="$(get_file "/db/sz/${sz_id}/location_name")"
+    fi
+
+    # get location name from pptp
+    if [ -z "${location_name}" ]; then
+        [ "${auth_method}" = "PPTP" ] && location_name="$(get_file "/db/pptp/location_name")"
+    fi
+    echo "${location_name}"
+}
+
+get_wispr_logoff_url()
+{
+    echo "http://1.1.1.1/"
+}
+
+get_auth_method()
+{
+    local umac
+    local method
+    umac="$1"
+    method="`grep 'AUTH-METHOD' /tmp/ra/\"${umac}\" | cut -d '=' -f 2`"
+    echo ${method}
+}
+
+get_http_user_agent()
+{
+    local umac
+    local agent
+    umac="$1"
+    agent="`grep 'HTTP-USER-AGENT' /tmp/ra/\"${umac}\" | cut -d '=' -f 2`"
+    echo ${agent}
+}
+
+get_acctCnt()
+{
+    local acctCnt
+    [ ! -f "/db/acctCnt" ] && echo -n "0" > /db/acctCnt
+    acctCnt=$(get_file "/db/acctCnt")
+    echo ${acctCnt}
+}
+
+get_wispr_billing_time()
+{
+    local ip
+    local time
+    local sz_id
+    ip="$1"
+    time="$2"  # hour or minute
+    sz_id=$(/ramfs/bin/ip2sz.sh "${ip}")
+    time=$(get_file "/db/sz/${sz_id}/wsteod_${time}")
+    echo $time
+}
+
+get_wispr_end_of_day()
+{
+    local mgmt_id
+    mgmt_id="$1"
+    eod=$(get_file "/db/subscriber/mgmt/${mgmt_id}/radius/loc_wsteod")
+    echo ${eod}
+}
+
+get_attr_class()
+{
+    local attr_class mgmt_index sz_id vlan_id callingid sz_if client_if
+    mgmt_index="$1"
+    sz_id="$2"
+    vlan_id="$3"
+    callingid="$4"
+    auth_method="$5"
+
+    # get Class from PLM or Tunnel PLM
+    sz_if="$(get_file "/db/vlan/${sz_id}/if")"
+    client_if="$(/usr/sbin/brctl findmac ${sz_if} "${callingid}" | awk 'END{print $1}')"
+
+    # get Class from Tunnel PLM
+    [ -f /db/tunportmap/${client_if}/attr_class ] && attr_class="$(get_file "/db/tunportmap/${client_if}/attr_class")"
+
+    # get Class from PLM
+    if [ -z "${attr_class}" ]; then
+        if [ "$(get_file "/tmp/status/portmap")" == "1" ]; then
+            [ -z ${vlan_id} ] && vlan_id="${client_if#*.}"
+            [ -f /db/portmap/${vlan_id}/attr_class ] && attr_class="$(get_file "/db/portmap/${vlan_id}/attr_class")"
+        fi
+    fi
+
+    # get Class from sz
+    if [ -z "${attr_class}" ]; then
+        attr_class="$(get_file "/db/sz/${sz_id}/attr_class")"
+    fi
+
+    # get Class from pptp
+    if [ -z "${attr_class}" ]; then
+        [ "${auth_method}" = "PPTP" ] && attr_class="$(get_file "/db/pptp/attr_class")"
+    fi
+
+    # get Class from MGMT
+    if [ -z "${attr_class}" ]; then
+        attr_class="`get_file \"/db/subscriber/mgmt/${mgmt_index}/radius/attr_class\"`"
+    fi
+
+    echo "${attr_class}"
+}
+#################   get radius attributes section     ################

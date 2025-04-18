@@ -1,0 +1,79 @@
+
+<div id="tab_services" class="tab-pane">
+
+    <h3 class="main-header"> <%:Services%></h3>
+    <div class="row-fluid">
+        <div class="span12">
+            <div class="widget-box transparent major-widget">
+
+                <div class="widget-body">
+                    <div class="widget-body-inner">
+                        <div class="row-fluid">
+                            <table class="table network-table table-bordered margin-bottom-0 footable">
+
+                                <thead>
+                                    <tr>
+                                        <th data-class="expand"><span></span></th>
+                                        <th><%:Name%></th>
+                                        <th style='min-width:150px' data-hide="phone"><%:Status%></th>
+                                        <th style='min-width:100px' data-hide="phone"><%:More Info%></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services_list">
+
+                                    <%
+                                    local product = require("luci.acn.product")
+                                    local is_OAP103 = product.is_OAP103()
+                                    local has_mgmtd =  nixio.fs.access("/usr/sbin/mgmtd")
+                                    local has_chilli =  nixio.fs.access("/usr/sbin/chilli")
+                                    local has_ping_watchdog = nixio.fs.access("/usr/bin/ping_watchdog.lua")
+                                    local has_capwap =  nixio.fs.access("/sbin/WTP")
+
+                                    --local ps    = luci.util.exec("ps")
+                                    local ps_table = luci.sys.process.list()
+
+                                    -- local hs_running    = luci.util.exec("ps | grep chilli | grep -v grep")
+                                    %>
+
+                                    <% if has_mgmtd then %>
+
+                                    <% if not is_OAP103 then %>
+                                    <% luci.template.render('cbi/dashboard/mgmtd', {acn = acn, acn_status = acn_status})
+                                    %>
+                                    <% end %>
+
+                                    <% end %>
+
+                                    <% if has_chilli then %>
+
+                                    <% luci.template.render('cbi/dashboard/hotspot', { ntm = ntm, acn = acn, ps_table = ps_table})
+                                    %>
+
+                                    <% end %>
+
+
+                                    <% if has_ping_watchdog then %>
+
+                                    <% luci.template.render('cbi/dashboard/pingwatchdog', { ntm = ntm, acn = acn, ps_table = ps_table})
+                                    %>
+
+                                    <% end %>
+
+                                    <% if has_capwap then %>
+
+                                    <% luci.template.render('cbi/dashboard/capwap', { acn = acn, acn_status = acn_status})
+                                    %>
+
+                                    <% end %>
+
+                                </tbody>
+
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

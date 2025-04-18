@@ -1,0 +1,229 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=16
+
+USE_PROCD=1
+
+. /lib/functions/network.sh
+
+lan_iptables=0
+wan_iptables=0
+IF_FILE="/tmp/authport_ifname"
+CLOUD_DN="cloud.ignitenet.com staging.ignitenet.com"
+
+init_var() {
+	local rf_id device
+	config_get device "$1" device
+	rf_id=${device: -1}
+	eval "[ -z \$vap$rf_id ] && vap$rf_id=0"
+}
+
+check_hs20_portal_enable() {
+	local hs20_en hs20_profile
+	local iw_section_name iw_portal_en
+	config_get hs20_en "$1" hs20 "0"
+
+	if [ "$hs20_en" = "0" ]; then
+		echo "0"
+		return
+	fi
+
+	config_get hs20_profile "$1" hs20_profile
+
+	if [ -z "$hs20_profile" ]; then
+		echo "0"
+		return
+	fi
+
+	iw_section_name=$(uci -q show hotspot20 | grep "$hs20_profile" | grep "name" | awk -F '.' '{print $2}')
+	if [ -z "$iw_section_name" ]; then
+		echo "0"
+		return
+	fi
+
+	iw_portal_en=$(uci_get hotspot20 "$iw_section_name" iw_portal_enable 0)
+	if [ -z "$iw_portal_en" ] || [ "$iw_portal_en" = "0" ]; then
+		echo "0"
+		return
+	else
+		echo "1"
+		return
+	fi
+}
+
+parser_conifg() {
+	local device rf_id vap_id ifname network
+	local encryption auth_server auth_port
+	local cloud_aaa=0
+	local disabled ssid
+	local iw_portal_en=0
+
+	config_get device "$1" device
+	config_get ifname "$1" ifname
+	config_get cloud_aaa "$1" cloud_aaa
+	config_get disabled "$1" disabled
+	config_get ssid "$1" ssid
+
+	rf_id=${device: -1}
+	eval "vap_id=\$vap$rf_id"
+	if [ "${vap_id}" = "0" ]; then
+		ifname=wlan${rf_id}
+	else
+		ifname=wlan${rf_id}-${vap_id}
+	fi
+
+	if [ "${disabled}" = "0" ]; then
+		#21098:Binding SSID enhancement
+		/sbin/get_binding_ssid.sh "$ssid"
+		binding_status=$?
+
+		iw_portal_en=$(check_hs20_portal_enable "$1")
+		if [ "$binding_status" == "0" -o "${cloud_aaa}" = "1" -o "$iw_portal_en" = "1" ]; then
+			config_get network "$1" network
+			if [ "${network}" = "lan" -o "${network}" = "guest" ]; then
+				lan_iptables=1
+			elif [ "${network}" = "wan" ]; then
+				wan_iptables=1
+			fi
+			echo "${ifname}=${1}" >> $IF_FILE
+		fi
+		# AAA and 802.1X
+		config_get encryption "$1" encryption
+		config_get auth_server "$1" auth_server
+		config_get auth_port "$1" auth_port
+
+		if [ "$binding_status" == "0" -o "${cloud_aaa}" = "1" -o "$iw_portal_en" = "1" -a "${encryption}" = "ap-wpa2+ccmp" -a "${auth_server}" != "" -a "${auth_port}" != "" ]; then
+			pid=$(ps | grep hostapd_cli | grep -w $ifname | grep hostapd_8021x | grep -v grep | awk '{print $1}')
+			if [ "${pid}" = "" ]; then
+				hostapd_cli -i $ifname -a /ramfs/bin/hostapd_8021x.sh -p /var/run/hostapd-$device -B
+			fi
+		else
+			pid=$(ps | grep hostapd_cli | grep -w $ifname | grep hostapd_8021x | grep -v grep | awk '{print $1}')
+			[ -n "${pid}" ] && kill ${pid}
+		fi
+		if [ "${network:0:4}" = "vlan" ]; then
+			local network_dev
+			if [ -n "$(uci -q get network.bridge.type)" ]; then
+				network_dev=$(uci -q get network.${network}.device)
+			else
+				network_dev=br-${network}
+			fi
+		(
+			if [ -z $(ps | grep udhcpc-${network_dev} | grep -v grep | awk -F' ' '{print $1}' | head -1) ]; then
+				for fd in $(ls /proc/self/fd); do eval "exec $fd>&-"; done
+				exec </dev/null >/dev/null 2>&1
+				exec udhcpc -f -p /var/run/udhcpc-${network_dev}.pid -i ${network_dev} -s /ramfs/bin/dhcpc.sh
+			else
+				kill -USR1 $(cat /var/run/udhcpc-${network_dev}.pid)
+			fi
+		) &
+		fi
+	fi
+	eval "vap$rf_id=\$((vap$rf_id+1))"
+}
+
+prepare() {
+	local wan_ip
+	local lan_ip
+	local ip
+
+	local wan_dev
+	local lan_dev
+	network_get_physdev wan_dev "wan"
+	network_get_physdev lan_dev "lan"
+	[ -z "${wan_dev}" ] && wan_dev="br-wan"
+	[ -z "${lan_dev}" ] && lan_dev="br-lan"
+
+	echo -n "" > $IF_FILE
+
+	#clean br-vlan udhcpc
+	local inet_src=$(uci -q get network.wan.inet_src)
+	if [ -n "${inet_src}" ]; then
+		udhcpc_list=$(ps | grep udhcpc| grep -v udhcpc-br-wan | grep -v udhcpc-${inet_src}. | grep -v grep | awk -F' ' '{print $1}')
+	else
+		udhcpc_list=$(ps | grep udhcpc| grep -v udhcpc-br-wan | grep -v grep | awk -F' ' '{print $1}')
+	fi
+
+	if [ -n "${udhcpc_list}" ]; then
+		for id in $udhcpc_list
+		do
+			kill $id
+		done
+	fi
+
+	#init br-vlan ip
+	vlan_list=$(ifconfig | grep br-vlan | awk -F' ' '{print $1}')
+
+	if [ -n "${vlan_list}" ]; then
+		for vlan in $vlan_list
+		do
+			ifconfig $vlan 0.0.0.0
+		done
+	fi
+
+	config_load wireless
+	config_foreach init_var wifi-iface
+	config_foreach parser_conifg wifi-iface
+
+	. /lib/functions/network.sh
+
+	network_get_ipaddr wan_ip "wan"
+	network_get_ipaddr lan_ip "lan"
+
+	if [ "$(uci -q get acn.wizard.ez_setup)" != "0" ]; then
+		lan_iptables=1
+	fi
+	echo -n $wan_iptables > /sys/class/net/$wan_dev/bridge/nf_call_iptables
+	echo -n $lan_iptables > /sys/class/net/$lan_dev/bridge/nf_call_iptables
+	echo -n $wan_iptables > /sys/class/net/$wan_dev/bridge/nf_call_ip6tables
+	echo -n $lan_iptables > /sys/class/net/$lan_dev/bridge/nf_call_ip6tables
+
+	ipset list zone_ip >/dev/null 2>&1 || ipset create zone_ip hash:net
+	ipset list wan_ip >/dev/null 2>&1 || ipset create wan_ip hash:ip
+	ipset list wizard_ip >/dev/null 2>&1 || ipset create wizard_ip hash:net
+
+	ipset add zone_ip ${wan_ip}
+	ipset add zone_ip ${lan_ip}
+	ipset add wan_ip ${wan_ip}
+	ipset add wizard_ip ${wan_ip}
+
+	if [ "$(uci -q get acn.wizard.ez_setup)" = "0" ]; then
+		ipset add wizard_ip ${lan_ip}
+
+		for dn in $CLOUD_DN
+		do
+			for ip in $(nslookup "${dn}" 8.8.8.8 |  awk '/Name:/{val=$NF;flag=1;next} /Address/ && flag{print $NF}')
+			do
+				if expr "$ip" : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null; then
+					ipset add wizard_ip $ip
+				fi
+			done
+		done
+	fi
+}
+
+start_service() {
+	procd_open_instance
+	prepare
+	procd_set_param command "/ramfs/bin/run_uamd.sh"
+	procd_append_param command "$IF_FILE"
+	procd_close_instance
+}
+
+#service_triggers() {
+#	procd_add_reload_trigger "network" "wireless"
+#}
+
+stop_service() {
+	while read item;
+	do
+		[ -z "${item}" ] && continue
+		interface=$(echo $item | cut -d "=" -f1)
+		ip link set ${interface} group 0
+		echo 0 > /sys/class/net/${interface}/brport/macauth
+	done < $IF_FILE
+	killall proxy
+	ipset flush zone_ip
+}
+

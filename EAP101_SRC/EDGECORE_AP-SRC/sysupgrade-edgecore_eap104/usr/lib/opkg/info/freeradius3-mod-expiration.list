@@ -1,0 +1,3 @@
+/etc/freeradius3/mods-available/expiration
+/etc/freeradius3/mods-enabled/expiration
+/usr/lib/freeradius3/rlm_expiration.so

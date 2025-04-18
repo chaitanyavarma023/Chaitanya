@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+if [ -n "$(uci_get firewall lan_fw)" ]; then
+	uci_remove firewall lan_fw
+fi
+uci_commit firewall
+
+if [ -z "$(uci_get network lan smart_isolation)" ]; then
+	uci_set network lan smart_isolation '0'
+fi
+uci_commit network
+
+exit 0

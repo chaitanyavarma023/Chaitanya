@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "$(uci -q get acn.settings.msp_enable)" == "" ]; then
+        uci set acn.settings.msp_enable='0'
+fi
+
+exit 0

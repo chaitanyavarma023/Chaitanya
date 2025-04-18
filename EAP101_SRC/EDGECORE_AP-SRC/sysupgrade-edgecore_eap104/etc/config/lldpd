@@ -1,0 +1,3 @@
+config lldpd config
+
+	option lldp_class 4

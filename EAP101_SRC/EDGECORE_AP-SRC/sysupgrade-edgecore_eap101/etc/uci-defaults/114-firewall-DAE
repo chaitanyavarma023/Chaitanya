@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+
+migrate_dae_firewall_rules() {
+    local dae_port_val
+    local dae_enable_val
+
+    config_get dae_port_val $1 dae_port
+    config_get dae_enable_val $1 dae_enable
+
+    if [ "${dae_enable_val}" == "1" ]; then
+        uci set firewall.$1=rule
+        uci set firewall.$1.enabled='1'
+        uci set firewall.$1.name=DAE-Allowd
+        uci set firewall.$1.src='wan'
+        uci set firewall.$1.proto='udp'
+        uci set firewall.$1.dest_port=$dae_port_val
+        uci set firewall.$1.target='ACCEPT'
+        uci set firewall.$1.family='ipv4'
+    fi
+}
+
+config_load wireless
+config_foreach migrate_dae_firewall_rules wifi-iface
+uci commit firewall
+
+exit 0

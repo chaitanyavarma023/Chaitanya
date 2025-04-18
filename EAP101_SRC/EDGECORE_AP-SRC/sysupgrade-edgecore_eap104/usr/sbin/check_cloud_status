@@ -1,0 +1,61 @@
+#!/bin/sh
+
+. /lib/functions/leds.sh
+
+CLOUD_LED="green:cloud"
+ECCLOUD_STATUS_FILE="/tmp/mgmtd_status"
+
+connected=0
+
+check_ecCloud_status() {
+	[ ! -f "$ECCLOUD_STATUS_FILE" ] && {
+		connected=0
+		return
+	}
+
+	[ -n "$(grep -e ^CONNECTED $ECCLOUD_STATUS_FILE)" ] && {
+		connected=1
+	} || {
+		connected=0
+	}
+}
+
+check_ucentral_status() {
+	[ -n "$(ubus call ucentral status|jsonfilter -e '@.connected')" ] && {
+		connected=1
+	} || {
+		connected=0
+	}
+}
+
+turn_led_onoff() {
+	case "$connected" in
+		0)
+			[ "$(cat /sys/class/leds/$CLOUD_LED/brightness)" != "0" ] && led_off $CLOUD_LED
+			;;
+		1)
+			[ "$(cat /sys/class/leds/$CLOUD_LED/brightness)" = "0" ] && led_on $CLOUD_LED
+			;;
+	esac
+}
+
+if [ "$(uci -q get system.@system[0].led_enable)" != "1" ] || [ "$(uci -q get system.@system[-1].leds_off)" = "1" ]; then
+	connected=0
+	turn_led_onoff
+	exit 0
+fi
+
+case "$(uci -q get acn.mgmt.management)" in
+	1)
+		check_ecCloud_status
+		;;
+	3)
+		check_ucentral_status
+		;;
+	*)
+		connected=0
+		;;
+esac
+
+turn_led_onoff
+

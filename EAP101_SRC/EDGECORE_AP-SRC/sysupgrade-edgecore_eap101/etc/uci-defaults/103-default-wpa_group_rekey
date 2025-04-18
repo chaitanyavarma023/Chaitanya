@@ -1,0 +1,25 @@
+#!/bin/sh
+. /lib/functions.sh
+
+check_wpa_group_rekey() {
+	local encryption_val
+	local wpa_group_rekey
+	local wpa_strict_rekey
+
+	config_get vap_device $1 device
+	config_get encryption_val $1 encryption
+
+	if [ `echo $1 | grep -c "$vap_device" ` -gt 0 -a "$encryption_val" != "none" ]; then
+		config_get wpa_group_rekey $1 wpa_group_rekey
+		[ "$wpa_group_rekey" = "" ] && uci set wireless.$1.wpa_group_rekey=86400
+
+		uci set wireless.$1.wpa_strict_rekey=0
+		uci set wireless.$1.eap_reauth_period=0
+	fi
+}
+
+config_load wireless
+config_foreach check_wpa_group_rekey wifi-iface
+uci commit wireless
+
+exit 0

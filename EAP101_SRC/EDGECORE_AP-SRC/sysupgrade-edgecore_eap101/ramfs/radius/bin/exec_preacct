@@ -1,0 +1,18 @@
+#!/bin/sh
+#exec_auth arg: User-Name
+
+. /ramfs/radius/bin/functions
+
+client_ip=$(muse "${CLIENT_IP_ADDRESS}" "${NAS_IP_ADDRESS}")
+[ "${client_ip}" = "127.0.0.1" ] && exit
+
+n=$(getmgmtid "${REALM}" "${USER_NAME}")
+utype=$(getutype ${n})
+
+if [ "${utype}" = "RADIUS" ]; then
+    nas_info=$(/usr/bin/awk -f /ramfs/bin/get_nas.awk /db "${client_ip}")
+    if [ "${nas_info%% *}" = "2" ]; then
+        #Redirect RADIUS accounting from AP to /dev/null (Black hole)
+        dump "Proxy-To-Realm" "__FAKE__SERVER__" ":="
+    fi
+fi

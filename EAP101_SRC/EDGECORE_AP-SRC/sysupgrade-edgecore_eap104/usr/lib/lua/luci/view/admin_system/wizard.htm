@@ -1,0 +1,352 @@
+<%
+
+local acn = require ("luci.acn.util")
+local brand = require ("luci.acn.brand")
+local product = require "luci.acn.product"
+local uci = acn.cursor()
+local reg = require ("luci.acn.reg")
+local radio_info = product.radio(0)
+
+local fcc_locked = product.fcc_locked()
+local thai_locked = product.thai_locked()
+local wiz_flag = uci:get("acn", "wizard", "enabled")
+local default_country = uci:get("wireless", radio_info.device, "country") or "US"
+%>
+
+
+<% if wiz_flag == "1" then  %>
+
+<style>
+
+#wizard_dialog .control-group {
+  padding-top: 10px;
+}
+
+#wizard_dialog .modal-body {
+  padding-top: 0px;
+  margin: 10px;
+  margin-bottom: 0px;
+}
+
+#wizard_dialog select {
+  margin: 0px;
+}
+
+#wizard_dialog .help-text {
+  margin-left: 0px;
+}
+
+#wizard_data {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+@media (min-width: 614px) {
+  #wizard_dialog .controls {
+    margin-left: 200px;
+  }
+  #wizard_dialog .control-label {
+    width: 180px;
+  }
+}
+
+@media (max-width: 614px) {
+  #wizard_dialog .control-label {
+    width: auto;
+  }
+  #wizard_dialog .controls {
+    margin-left: 0px;
+  }
+}
+
+#wizard_dialog hr {
+  margin-bottom: 5px;
+}
+
+#wizard_data {
+  margin-bottom: 0px;
+}
+
+.lbl-mode {
+  font-size: 11pt;
+}
+
+</style>
+
+<script type="text/javascript">
+
+function sort_country_list() {
+  var my_options = $('#country_list option');
+
+  my_options.sort(function (a, b) {
+    if (a.text > b.text) {
+      return 1;
+    } else if (a.text < b.text) {
+      return -1;
+    } else {
+      return 0;
+    }
+  });
+
+  $('#country_list').empty().append( my_options );
+}
+
+$(function () {
+
+  var country_list_res = <%= reg.country_list(radio_info.wifi_iface) %>;
+  //var country_list = country_list_res.split(";");
+
+  for (var i = 0; i < country_list_res.length; i++) {
+    var _val = country_list_res[i].ccode;
+    if (_val && _val != '') {
+        var _text = (country_list_res[i].name != ''? country_list_res[i].name : 'unknown');
+        $('#country_list').append($('<option></option>').attr('value', _val).text(_text));
+    }
+  }
+
+  // Sort after add additional options
+  sort_country_list();
+
+  $('#country_list').val('<%=default_country%>');
+
+  $('#wizard_dialog').modal();
+
+  var $radios = $('input:radio[name=radio_controller]');
+  $radios.filter('[value=controlled]').prop('checked', true);
+
+  // Handle controlled vs stand alone mode
+  $('.controller-btn').click(function () {
+    $('#wiz_easy_options').fadeOut(200) ;
+    $('#wiz_adv_options').fadeOut(200) ;
+    if ( $('input[name=radio_controller]:checked').val() != 'controlled') {
+      /* hide Setup mode section */
+      //$("#wiz_btn_bar").hide() ;
+      //$("#wiz_section_mode").fadeIn(200) ;
+      $('.setup-mode-btn').prop('checked', false);
+    } else {
+      $('#div_error').hide();
+      $('#wiz_btn_bar').show() ;
+      $('#wiz_section_mode').fadeOut(200) ;
+    }
+  });
+
+  // Handle easy mode vs adv mode selection
+  $('.setup-mode-btn').click(function () {
+    $('#wiz_btn_bar').show() ;
+
+    if ( $('input[name=radio_mode]:checked').val() == 'easy') {
+      $('#wiz_easy_options').fadeIn(200) ;
+      $('#wiz_adv_options').fadeOut(200) ;
+    } else {
+      $('#div_error').hide();
+      $('#wiz_easy_options').fadeOut(200) ;
+      $('#wiz_adv_options').fadeIn(200) ;
+    }
+
+  });
+
+  $('#wiz_done_btn').click(function () {
+    if ( $('input[name=radio_controller]:checked').val() == 'standalone') {
+      if ( $('input[name=radio_mode]:checked').val() == 'easy') {
+        // Save SSID info here
+        var psk_key = $( '#psk_key' ).val();
+        var guest_key = $( '#guest_psk_key' ).val();
+        var ssid_val = $( '#ssid' ).val();
+        var guest_ssid = $( '#guest_ssid' ).val();
+        var error = '';
+
+        if ( ssid_val.length == 0 ) {
+          error = '<%:Please enter a wireless network name!%>';
+        } else if ( !psk_check(psk_key) ) {
+          error = '<%:Invalid wifi network key!  It must be a value between 8 and 63 ASCII characters long, OR must be a string of 64 hex characters.%>';
+        } else if ( !psk_check(guest_key) ) {
+          error = '<%:Invalid guest network key!  It must be a value between 8 and 63 ASCII characters long, OR must be a string of 64 hex characters.%>';
+        }
+
+        if (error != '') {
+          $('#div_error').show();
+          $('#error_txt').text(error);
+          return;
+        }
+      }
+    }
+
+    // Nothing to validate for advanced
+    $('#div_error').hide();
+    submit_form();
+  });
+
+  $('#show_key').change(function () {
+    if ($('#show_key').prop('checked')) {
+      $('#psk_key').prop('type', 'text');
+    } else {
+      $('#psk_key').prop('type', 'password');
+    }
+  });
+
+  $('#guest_show_key').change(function () {
+    if ($('#guest_show_key').prop('checked')) {
+      $('#guest_psk_key').prop('type', 'text');
+    } else {
+      $('#guest_psk_key').prop('type', 'password');
+    }
+  });
+
+  //#7425: force to select country/cloud-control before entering advanced setting GUI.
+  $('#country_list,#radio_mode_controller,#radio_mode_standalone').keyup(function (e) {
+    if (e.keyCode == 27) { // escape key maps to keycode `27`
+      return false;
+    }
+  });
+});
+
+function submit_form() {
+  $('#wizard_data').submit();
+  $('#wizard_dialog').modal('hide');
+}
+
+function psk_check(psk_key) {
+  if ( psk_key.length == 64 ) {
+    return (psk_key.match(/^[a-fA-F0-9]{64}$/) != null);
+  } else if ( psk_key.length == 0 ) {
+    return true;
+  } else {
+    return (psk_key.length >= 8) && (psk_key.length <= 63);
+  }
+}
+
+</script>
+<div id="wizard_dialog" class="modal hide fade in" style="display: none; height:auto;" data-backdrop="static" data-keyboard="true" >
+
+    <form action="<%=controller%>/admin/system/set_wizard" class="form-horizontal" method="post" name="wizard_data"  id="wizard_data">
+        <div id="page_wizard">
+             <div class="modal-header">
+                <h3 class="green"><%:Setup Wizard%></h3>
+            </div>
+
+            <div class="modal-body">
+<% if not fcc_locked and not thai_locked then %>
+                <!-- Country section -->
+                <div id="wiz_section_country">
+                    <h4><%:Select Your Country%></h4>
+                    <div>
+                        <%:Please select your location. This setting will be used to determine your country's regulatory rules. This selection can only be changed if you reset to defaults.%>
+                    </div>
+                    <div class="control-group">
+                        <select id="country_list" name="country_list"> </select>   
+                    </div>
+                </div>
+                <hr/>
+<% end %>
+                <!-- Controller section -->
+                <div id="wiz_section_controller">
+                    <h4><%:Will this product be cloud managed?%></h4>
+                    <div class="control-group">
+                        <label>
+                            <input name="radio_controller" id="radio_mode_controller"  class="controller-btn" 
+                                type="radio" value="controlled">
+                            <span class="lbl lbl-mode"> <%:Yes, I will manage this device with the%> <%=product.company_name()%>  <%:Cloud controller.%></span>
+                        </label>
+                         <label>
+                             <input name="radio_controller" id="radio_mode_standalone" class="controller-btn"  
+                                type="radio" value="standalone">
+                             <span class="lbl lbl-mode"> <%:No, I will be operating this device in stand-alone mode.%></span>
+                        </label>
+                    </div>
+                </div>
+                <hr/>
+
+                <!-- Setup mode section -->
+                <div id="wiz_section_mode" style="display:none">
+                <h4><%:How do you want to configure this product?%></h4>
+                <div class="control-group">
+                    <label>
+                        <input name="radio_mode" id="radio_mode_easy"  class="setup-mode-btn" type="radio" value="easy" >
+                            <span class="lbl lbl-mode"> <%:Easy Setup%></span>
+                        </input>
+                    </label>
+                    <label>
+                        <input name="radio_mode" id="radio_mode_adv" class="setup-mode-btn"  type="radio" value="advanced"></input>
+                            <span class="lbl lbl-mode"> <%:Advanced Setup%></span>
+                        </input>
+                    </label>
+                </div>
+
+                <!-- Advanced mode options -->
+                <div id="wiz_adv_options" style="display:none">
+                    <hr/>
+                    <h4><%:Select Networking Mode%></h4>
+                    <div class="control-group">
+                        <select id="mode_template" name="mode_template" style="width:275px" > 
+                            <option value="ap-router"><%:AP Router%></option>
+                            <option value="ap-bridge"><%:AP Bridge%></option>
+                            <option value="none" selected="selected"><%:None (I'll manually configure everything)%></option>
+                            <!-- XXX TODO: only allow this for single radio operation -->
+                            <!-- <option value="client-router"><%:Client Router%></option>-->
+                            <!-- <option value="client-bridge"><%:Client Bridge%></option>-->
+                        </select>
+                    </div>
+               </div><!-- end wiz_adv_options -->
+
+                <!-- Easy mode options -->
+               <div id="wiz_easy_options" style="display:none">
+                    <hr/>
+                    <h4><%:Wireless Network Setup%></h4>
+                    <div class="control-group">
+                        <label class="control-label" for="ssid"><%:Wireless network name%></label>
+                        <div class="controls">  
+                            <input name="ssid" id="ssid" type="text" >
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="psk_key"><%:Wireless password%></label> 
+
+                        <div class="controls">  
+                            <input name="psk_key" id="psk_key" type="password" >&nbsp;&nbsp;
+                            <input name="show_key" id="show_key" type="checkbox" >
+                            <label class="lbl" for="show_key"> <%:Show Key%></label>
+                            <div class="help-text">(<%:If you don't want to password protect your wifi, leave this field blank%>)</div>
+                            
+                        </div>
+                    </div>
+                    <hr/>
+
+                    <h4><%:Guest Network Setup (Optional)%></h4>
+                    <div>
+                        <%:Use the fields below to create a second SSID for guest users on your network.
+                        Guests won't have access to your local network, only the internet.%>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="guest_ssid"><%:Wireless network name%></label> 
+                        <div class="controls">  
+                            <input name="guest_ssid" id="guest_ssid" type="text" ></input>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="guest_psk_key"><%:Wireless password%></label> 
+
+                        <div class="controls">  
+                            <input name="guest_psk_key" id="guest_psk_key" type="password" >&nbsp;&nbsp;
+                            <input name="guest_show_key" id="guest_show_key" type="checkbox">
+                            <label class="lbl" for="guest_show_key"> <%:Show Key%></label>
+                            <div class="help-text">(<%:If you don't want to password protect your wifi, leave this field blank%>)</div>
+                        </div>
+                    </div>
+               </div><!-- end wiz_easy_options -->
+            </div> <!-- end wizard mode section -->
+
+            <div id="div_error" class="alert alert-error" style="display:none">
+                <i class="icon-exclamation-sign"></i>&nbsp;
+                <span id="error_txt"></span></div>
+            </div>
+
+            <div id="wiz_btn_bar" class="modal-footer">
+                <a id="wiz_done_btn" class="btn" ><%:Done%></a>
+            </div>
+        </div>
+    </form>
+</div>
+<% end %>

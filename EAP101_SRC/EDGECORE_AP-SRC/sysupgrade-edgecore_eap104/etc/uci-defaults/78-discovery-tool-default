@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ "$(uci -q get acn.discovery)" == "" ]; then
+        uci set acn.discovery='acn'
+        uci set acn.discovery.enabled='1'
+fi
+
+uci commit acn.discovery
+
+exit 0

@@ -1,0 +1,5 @@
+/etc/config/umdns
+/etc/uci-defaults/58_umdns-add-wan-support
+/usr/sbin/umdns
+/etc/init.d/umdns
+/etc/seccomp/umdns.json

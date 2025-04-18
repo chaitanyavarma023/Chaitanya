@@ -1,0 +1,88 @@
+#!/bin/sh
+. /lib/acn/acn_functions.sh
+
+product_name="$(get_MID)"
+is_lowcost="`acc hw get Model | awk -F"-" '{print $3}'`"
+
+case $product_name in
+	"EAP101"*)
+		if [ "$(uci -q show ethernet)" == "" ]; then
+			touch '/etc/config/ethernet'
+			uci -q batch <<-EOF >/dev/null
+				set ethernet.eth0='eth_port'
+				set ethernet.eth0.status='1'
+				set ethernet.eth0.auto_nego='1'
+				set ethernet.eth0.link_speed='2.5Gbps'
+				set ethernet.eth0.full_duplex='1'
+				set ethernet.eth1='eth_port'
+				set ethernet.eth1.status='1'
+				set ethernet.eth1.auto_nego='1'
+				set ethernet.eth1.link_speed='1Gbps'
+				set ethernet.eth1.full_duplex='1'
+				set ethernet.eth2='eth_port'
+				set ethernet.eth2.status='1'
+				set ethernet.eth2.auto_nego='1'
+				set ethernet.eth2.link_speed='1Gbps'
+				set ethernet.eth2.full_duplex='1'
+				commit ethernet
+			EOF
+		fi
+		;;
+
+	"EAP102"*|"OAP103"*)
+		if [ "$(uci -q show ethernet)" == "" ]; then
+			touch '/etc/config/ethernet'
+			uci -q batch <<-EOF >/dev/null
+				set ethernet.eth0='eth_port'
+				set ethernet.eth0.status='1'
+				set ethernet.eth0.auto_nego='1'
+				set ethernet.eth0.link_speed='2.5Gbps'
+				set ethernet.eth0.full_duplex='1'
+				set ethernet.eth1='eth_port'
+				set ethernet.eth1.status='1'
+				set ethernet.eth1.auto_nego='1'
+				set ethernet.eth1.link_speed='2.5Gbps'
+				set ethernet.eth1.full_duplex='1'
+				commit ethernet
+			EOF
+		fi
+		;;
+	"EAP104"*)
+		if [ "$(uci -q show ethernet)" == "" ]; then
+			touch '/etc/config/ethernet'
+			uci -q batch <<-EOF >/dev/null
+				set ethernet.eth0='eth_port'
+				set ethernet.eth0.status='1'
+				set ethernet.eth0.auto_nego='1'
+				set ethernet.eth0.link_speed='1Gbps'
+				set ethernet.eth0.full_duplex='1'
+				set ethernet.lan1='eth_port'
+				set ethernet.lan1.status='1'
+				set ethernet.lan1.auto_nego='1'
+				set ethernet.lan1.link_speed='1Gbps'
+				set ethernet.lan1.full_duplex='1'
+				set ethernet.lan2='eth_port'
+				set ethernet.lan2.status='1'
+				set ethernet.lan2.auto_nego='1'
+				set ethernet.lan2.link_speed='1Gbps'
+				set ethernet.lan2.full_duplex='1'
+				set ethernet.lan3='eth_port'
+				set ethernet.lan3.status='1'
+				set ethernet.lan3.auto_nego='1'
+				set ethernet.lan3.link_speed='1Gbps'
+				set ethernet.lan3.full_duplex='1'
+				set ethernet.lan4='eth_port'
+				set ethernet.lan4.status='1'
+				set ethernet.lan4.auto_nego='1'
+				set ethernet.lan4.link_speed='1Gbps'
+				set ethernet.lan4.full_duplex='1'
+				set ethernet.lan4.poe_out='1'
+				commit ethernet
+			EOF
+			[ "$is_lowcost" == "L" ] && uci set ethernet.lan4.poe_out='0'
+			uci commit ethernet.lan4
+		fi
+		;;
+esac
+
+exit 0

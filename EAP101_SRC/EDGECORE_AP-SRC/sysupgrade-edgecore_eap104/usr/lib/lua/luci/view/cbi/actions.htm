@@ -1,0 +1,483 @@
+
+<%
+    local acn_status = require "luci.acn.status"
+    local product   = require("luci.acn.product")
+    local supports_l2tp = product.supports_l2tp()
+%>
+<%+header%>
+<script src="<%=media%>/js/actions.js?ver=<%=acn_status.version()%>"></script>
+
+<script type="text/javascript">
+
+var firmware_family = '<%=product.firmware_family%>';
+
+function refresh_log() {
+  var url = '<%=luci.dispatcher.build_url("admin", "system", "syslog", "text_only")%>';
+  $('#btn_refresh_log i').addClass('grey');
+  $.get( url,
+          function ( data ) {
+            //to avoid login page inside strange window frame, so redirect the login page to top location.
+            if (data.search('<form method="post" name="login"') != -1) {
+              top.location.href = '<%=luci.dispatcher.build_url("admin", "system", "actions")%>';
+              return;
+            }
+              $('#syslog').val(data);
+              $('#btn_refresh_log i').removeClass('grey');
+          }
+     );
+}
+
+function view_log() {
+  refresh_log();
+  $('#log_alert').modal();
+}
+
+<% if supports_l2tp then %>
+function refresh_vpn_log() {
+  var url = '<%=luci.dispatcher.build_url("admin", "system", "vpnlog", "text_only")%>';
+  $('#btn_refresh_vpn_log i').addClass('grey');
+  $.get( url,
+
+          function ( data ) {
+              $('#vpnlog').val(data);
+              $('#btn_refresh_vpn_log i').removeClass('grey');
+          }
+     );
+}
+
+function view_vpn_log() {
+  refresh_vpn_log();
+  $('#vpn_log_alert').modal();
+}
+<% end %>
+function start_upgrade() {
+  $('#bad-image-alert').hide();
+  $('#upgrade_alert').modal();
+}
+
+function start_restore() {
+  $('#bad-cfg-alert').hide();
+  $('#restore_alert').modal();
+}
+
+function confirm_reset() {
+  $('#resetdef_alert').modal();
+}
+
+function confirm_reboot() {
+  $('#reboot_alert').modal();
+}
+
+function getFile(filePath) {
+  return filePath.substr(filePath.lastIndexOf('\\') + 1);
+}
+
+$(function () {
+
+   $('#firmware_file, #config_file').ace_file_input({
+    no_file:_('No File ...'),
+    btn_choose:_('Choose'),
+    btn_change:_('Change'),
+    droppable:false,
+    onchange:null,
+    thumbnail:false
+  });
+
+  <% if restore_in_progress then %>
+    $('#restore_alert').modal();
+
+    <% if not config_invalid then %>
+      apply_action('restore', _('Restoring configuration files, this may take a few minutes...'));
+      // Wait until device comes back
+      checking_time = 0;
+      try_contact_device(25 * 1000, 5 * 1000, 120 * 1000);
+    <% end %>
+
+  <% end %>
+
+  <% if upgrade_in_progress then %>
+    $('#upgrade_alert').modal();
+
+    <% if not image_invalid then %>
+      apply_action('upgrade', _('Upgrading now, do NOT power device off...'));
+      // Wait until device comes back
+      checking_time = 0;
+      try_contact_device(30 * 1000, 5 * 1000, 200 * 1000);
+    <% end %>
+  <% end %>
+
+  $('#upgrade_btn').click(function () {
+    var filename = $('#firmware_file').val();
+    if (filename == null || filename == '' || $(this).hasClass('disabled')) {
+      return;
+    }
+
+    //ticket https://redmine.ignitenet.com/issues/24000
+    //EAP101-v12.4.0-959-a3f2189c-edgecore_eap101-squashfs-sysupgrade.tar
+    var keep_config = $('#keep').is(':checked');
+    var pattern=/(v\d.+\d.+\d-\d+-)/
+    var input_version = filename.match(pattern); //v12.4.0-959-
+    if (input_version[1] != '') {
+      var ver_arr = input_version[1].split('-');
+      var mainver = ver_arr[0];
+      var subver = parseInt(ver_arr[1], 10);
+
+      var current_full_version = '<%=require("luci.acn.status").version()%>'; //12.4.1-132
+      var current_full_version_arr = current_full_version.split('-');
+      var current_ver = 'v' + current_full_version_arr[0];
+      var current_subver = parseInt(current_full_version_arr[1], 10);
+
+      var compare1 = (mainver < current_ver);
+      var compare2 = (subver < current_subver);
+
+      if ((compare1 || (mainver == current_ver && compare2)) && keep_config) {
+        $('#bad-image-alert').hide();
+        $('#downgrade_msg').show();
+        $('#keep').prop('checked', false);
+        return false;
+      }
+    }
+
+    $('#bad-image-alert').hide();
+    $('#select_fw_span').addClass('hide');
+    $('#fw_name').text(getFile($('#firmware_file').val()));
+    $('#upgradeing_fw_name').removeClass('hide');
+    $('#upgrade_btn').hide();
+    $('#upgrade_cancel_btn').hide();
+    $('#upgrade_msg').html('<i class="icon-spinner icon-spin"></i> ' + _('Uploading file....'));
+    filename = filename.toLowerCase();
+    document.getElementById('form_upgrade').submit();
+  });
+
+  $('#restore_btn').click(function () {
+    var filename = $('#config_file').val();
+    if (filename == null || filename == '' || $(this).hasClass('disabled')) {
+      return;
+    }
+    $('#bad-cfg-alert').hide();
+    $('#select_cfg_span').addClass('hide');
+    $('#restore_btn').hide();
+    $('#restore_cancel_btn').hide();
+    $('#upgrade_cfg_msg').html('<i class="icon-spinner icon-spin"></i> ' + _('Uploading configuration file....'));
+    filename = filename.toLowerCase();
+    document.getElementById('form_restore').submit();
+  });
+
+  $('#cont_fw_warning_btn').click(function () {
+    document.getElementById('form_upgrade').submit();
+  });
+
+  $('#reboot_btn').click(function () {
+    apply_action('reboot', _('Rebooting, this may take a few minutes...'));
+    var url = '<%=luci.dispatcher.build_url("admin", "system")%>/acn_reboot/';
+    $.get(url, null);
+    // Wait until device comes back
+    checking_time = 0;
+    try_contact_device(25 * 1000, 5 * 1000, 120 * 1000);
+  });
+
+  $('#reset_btn').click(function () {
+    apply_action('reset', _('Updating and rebooting, this may take a few minutes...'));
+    var url = '<%=luci.dispatcher.build_url("admin", "system")%>/reset_def/';
+    $.post(url, null);
+    // Wait until device comes back
+    checking_time = 0;
+    try_contact_device(25 * 1000, 5 * 1000, 120 * 1000);
+  });
+});
+
+function apply_action(type, message) {
+  $('#' + type + '_btn').hide();
+  $('#' + type + '_cancel_btn').hide();
+  $('#' + type + '_success .msg').text(message);
+  $('#' + type + '_success').fadeIn().removeClass('hidden');
+  $('#' + type + '_spinner').addClass('icon-spin').removeClass('hidden');
+}
+</script>
+
+<style>
+@media only screen and (max-width:700px) {
+  .action-text {
+    display: block;
+    padding-top: 5px;
+  }
+}
+
+.btn-action {
+  width: 170px ;
+  margin-right:10px;
+}
+</style>
+<!--===================================================================================================-->
+
+    <!--Syslog output -->
+
+    <div id="log_alert" class="modal hide fade in" style="display: none; ">
+        <div class="modal-header">
+            <h3 class="blue"><%:System log%></h3>
+        </div>
+        <div class="modal-body">
+            <h4><%:Syslog output%>&nbsp;<a href="javascript:void(0);"  id="btn_refresh_log" onclick="refresh_log()"><i class='icon-refresh green'></i></a></h4>
+
+           <textarea id="syslog" class="limited" readonly="readonly" wrap="off" rows="25" style="width:100%;height:300px;font-size:8pt;font-family:monospace !important">
+
+           </textarea>
+
+        </div>
+        <div class="modal-footer">
+            <a  href="<%=luci.dispatcher.build_url("admin", "system", "syslog")%>" target="_blank"><%:Open in new window%></a>&nbsp;
+            <a href="#" class="btn" data-dismiss="modal"><%:Close%></a>
+        </div>
+    </div>
+<% if supports_l2tp then %>
+    <!--VPNlog output -->
+
+    <div id="vpn_log_alert" class="modal hide fade in" style="display: none; ">
+        <div class="modal-header">
+            <h3 class="blue"><%:VPN log%></h3>
+        </div>
+        <div class="modal-body">
+            <h4><%:VPN Log output%>&nbsp;<a href="javascript:void(0);"  id="btn_refresh_vpn_log" onclick="refresh_vpn_log()"><i class='icon-refresh green'></i></a></h4>
+
+           <textarea id="vpnlog" class="limited" readonly="readonly" wrap="off" rows="25" style="width:100%;height:300px;font-size:8pt;font-family:monospace !important">
+
+           </textarea>
+
+        </div>
+        <div class="modal-footer">
+            <a  href="<%=luci.dispatcher.build_url("admin", "system", "vpnlog")%>" target="_blank"><%:Open in new window%></a>&nbsp;
+            <a href="#" class="btn" data-dismiss="modal"><%:Close%></a>
+        </div>
+    </div>
+<% end %>
+    <!--Reset to default alert message box-->
+
+    <div id="resetdef_alert"  data-backdrop="static"  data-keyboard="false"  class="modal hide fade in" style="display: none; ">
+        <div class="modal-header">
+            <h3 class="blue"><%:Reset to defaults%></h3>
+        </div>
+        <div class="modal-body">
+            <h4><%:Confirmation%></h4>
+            <p><%:Are you sure you want to erase the current configuration for this device?%></p>
+            <div  id="reset_status">
+                    <div class="green hidden" id="reset_success">
+                          <i class="icon-ok"></i>
+                          <span class="msg"></span>
+                          <i id="reset_spinner" class="hidden icon-spinner green bigger-125"></i>
+                      </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <a id="reset_btn" name="reset" class="btn btn-success"><%:Yes%></a>
+            <a href="#" class="btn" id="reset_cancel_btn" data-dismiss="modal"><%:Cancel%></a>
+        </div>
+    </div>
+
+
+    <div id="reboot_alert" data-backdrop="static"  data-keyboard="false"  class="modal hide fade in" style="display: none; ">
+        <div class="modal-header">
+            <h3 class="blue"><%:Reboot your device%></h3>
+        </div>
+        <div class="modal-body">
+            <h4><%:Confirmation%></h4>
+            <p><%:Are you sure you want to reboot your device?%></p>
+              <div  id="reboot_status">
+                    <div class="green hidden" id="reboot_success">
+                          <i class="icon-ok"></i>
+                          <span class="msg"></span>
+                          <i id="reboot_spinner" class="hidden icon-spinner green bigger-125"></i>
+                      </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a id="reboot_btn" name="reboot" class="btn btn-success"><%:Yes%></a>
+            <a href="#" class="btn" id="reboot_cancel_btn" data-dismiss="modal"><%:Cancel%></a>
+        </div>
+    </div>
+
+
+    <form method="post" id="form_restore" name="form_restore" action="<%=REQUEST_URI%>" enctype="multipart/form-data">
+    <div id="restore_alert" data-backdrop="static"  data-keyboard="false"  class="modal hide fade in" style="display: none; ">
+        <div class="modal-header">
+            <h3 class="blue"><%:Upload new configuration%></h3>
+        </div>
+        <div class="modal-body">
+            <h4 id="upgrade_cfg_msg">
+            <% if restore_in_progress and not config_invalid then %>
+                  <%:Config restore in progress%>
+            <% else %>
+                  <%:Select file%>
+            <% end %>
+            </h4>
+
+            <% if config_invalid or not restore_in_progress then %>
+                <span id="select_cfg_span">
+                    <p><%:Please select the config file you'd like to upload.%></p>
+                    <input id="config_file"  name="config_file" type="file"/>
+                </span>
+            <% end %>
+
+              <div  id="restore_status">
+                    <div class="green hidden" id="restore_success">
+                          <i class="icon-ok"></i>
+                          <span class="msg"></span>
+                          <i id="restore_spinner" class="hidden icon-spinner green bigger-125"></i>
+                      </div>
+                    <% if config_invalid then %>
+                        <div id="bad-cfg-alert" class="alert alert-error""><%:The uploaded configuration file does not contain a supported format.%></div>
+                    <% end %>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button id="restore_btn" name="restore" class="btn btn-success"><%:Apply%></button>
+            <button class="btn" id="restore_cancel_btn" data-dismiss="modal"><%:Cancel%></button>
+        </div>
+    </div>
+   </form>
+
+   <form method="post" id="form_upgrade" name="form_upgrade" action="<%=REQUEST_URI%>" enctype="multipart/form-data">
+    <div id="upgrade_alert"  data-backdrop="static"  data-keyboard="false"  class="modal hide fade in" style="display: none; ">
+        <div class="modal-header">
+            <h3 class="blue"><%:Upgrade device firmware%></h3>
+        </div>
+        <div class="modal-body" style="overflow-y:unset">
+            <h4 id="upgrade_msg">
+            <% if upgrade_in_progress and not image_invalid then %>
+                  <%:Firmware upgrade in progress%>
+            <% else %>
+                  <%:Select file%>
+            <% end %>
+            </h4>
+
+            <% if image_invalid or not upgrade_in_progress then %>
+              <span id="select_fw_span">
+                <p><%:Please select the new firmware image file.%></p>
+
+                <input id="firmware_file" name="image" type="file"/>
+
+                <%:Keep current settings after upgrade%>
+
+                <input type="checkbox" name="keep" id="keep" checked="checked" class="ace-switch ace-switch-6"/>
+                <span class="lbl"></span><br>
+                <span>
+                <%:If you downgrade firmware, please don't select "Keep current settings". It could cause unknown issue.%>
+                </span>
+                <div id="downgrade_msg" class="hide alert alert-error"">
+                  <%:The uploaded firmware is older than the current version. The device has been forced to uncheck "Keep current settings". Please click the "Upgrade" button again.%>
+                </div>
+              </span>
+              <span id="upgradeing_fw_name" class="hide">
+                  <p id="fw_name" style="padding-left:20px"><%:Firmware image file:%></p>
+              </span>
+            <% end %>
+
+              <div  id="upgrade_status">
+                    <div class="green hidden" id="upgrade_success">
+                          <i class="icon-ok"></i>
+                          <span class="msg"></span>
+                          <i id="upgrade_spinner" class="hidden icon-spinner green bigger-125"></i>
+                      </div>
+
+                    <% if image_invalid then %>
+                        <div id="bad-image-alert" class="alert alert-error""><%:The uploaded image file does not contain a supported format.%></div>
+                    <% end %>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button id="upgrade_btn" name="upgrade" class="btn btn-success"><%:Upgrade%></button>
+            <button class="btn" id="upgrade_cancel_btn" data-dismiss="modal"><%:Cancel%></button>
+        </div>
+    </div>
+   </form>
+
+    <div class="cbi-map form-horizontal">
+
+        <h2><%:System Actions%></h2>
+
+
+        <fieldset class="cbi-section">
+
+        <div class="row-fluid">
+                <button type="button" class="btn btn-action"  onclick="view_log()">
+                    <%:View Log%>
+                </button>
+                <span class="action-text"><%:View system log%></span>
+        </div>
+        <div class="spacer"></div>
+<% if supports_l2tp then %>
+        <div class="row-fluid">
+                <button type="button" class="btn btn-action"  onclick="view_vpn_log()">
+                    <%:View VPN Log%>
+                </button>
+                <span class="action-text"><%:View VPN log%></span>
+        </div>
+        <div class="spacer"></div>
+<% end %>
+        <form method="post" id="sys_act" action="<%=pcdata(luci.http.getenv("REQUEST_URI"))%>">
+            <div class="row-fluid">
+                <button class="btn btn-action" type="submit" name="download_troubleshooting">
+                    <%:Diagnostics Log%>
+                </button>
+                <span class="action-text"><%:Download this device's diagnostics log%></span>
+            </div>
+
+        <div class="spacer">
+
+            <div class="row-fluid">
+                <button type="button" class="btn btn-success btn-action" value="test" onclick="confirm_reboot()">
+                    <%:Reboot%>
+                </button>
+                <span class="action-text"><%:Reboot your device%></span>
+            </div>
+
+            <div class="spacer">
+
+            <div class="row-fluid">
+                <button class="btn  btn-success btn-action" type="button" name="reset" onclick="confirm_reset()">
+                    <%:Reset%>
+                </button>
+                <span class="action-text"><%:Reset to factory default settings%></span>
+            </div>
+
+
+            <div class="spacer">
+
+            <div class="row-fluid">
+                <button class="btn btn-info btn-action" type="submit" name="backup">
+                    <%:Backup%>
+                </button>
+                <span class="action-text"><%:Download this device's configuration settings%></span>
+            </div>
+
+            <div class="spacer">
+
+
+            <div class="row-fluid">
+
+                <button class="btn btn-info btn-action" type="button" onclick="start_restore()">
+                    <%:Restore%>
+                </button>
+
+                <span class="action-text"><%:Restore the configuration settings of this device%></span>
+
+            </div>
+
+            <div class="spacer">
+        </form>
+
+            <div class="row-fluid">
+
+                <button class="btn btn-warning btn-action" type="button" onclick="start_upgrade()">
+                    <%:Upgrade%>
+                </button>
+
+                <span class="action-text"><%:Upgrade your device's firmware (current version is%> <%=require('luci.acn.status').version()%>) </span>
+            </div>
+
+
+        </fieldset>
+    </div>
+    <%+footer%>

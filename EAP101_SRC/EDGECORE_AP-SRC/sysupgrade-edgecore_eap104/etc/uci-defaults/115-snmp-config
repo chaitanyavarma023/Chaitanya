@@ -1,0 +1,135 @@
+#!/bin/sh
+
+[ -z "$(uci -q get snmpd.@agent[0])" ] && {
+    uci add snmpd agent
+    uci set snmpd.@agent[-1].enabled='1'
+    uci set snmpd.@agent[-1].agentaddress='UDP:161,UDP6:161'
+}
+
+[ -z "$(uci -q get snmpd.public)" ] && {
+    uci set snmpd.public=com2sec
+    uci set snmpd.public.secname='ro'
+    uci set snmpd.public.source='default'
+    uci set snmpd.public.community='public'
+}
+
+[ -z "$(uci -q get snmpd.private)" ] && {
+    uci set snmpd.private=com2sec
+    uci set snmpd.private.secname='rw'
+    uci set snmpd.private.source='default'
+    uci set snmpd.private.community='private'
+}
+
+[ -z "$(uci -q get snmpd.public_v1)" ] && {
+    uci set snmpd.public_v1=group
+    uci set snmpd.public_v1.group='public'
+    uci set snmpd.public_v1.version='v1'
+    uci set snmpd.public_v1.secname='ro'
+}
+
+[ -z "$(uci -q get snmpd.public_v2c)" ] && {
+    uci set snmpd.public_v2c=group
+    uci set snmpd.public_v2c.group='public'
+    uci set snmpd.public_v2c.version='v2c'
+    uci set snmpd.public_v2c.secname='ro'
+}
+
+[ -z "$(uci -q get snmpd.public_usm)" ] && {
+    uci set snmpd.snmpd.public_usm=group
+    uci set snmpd.public_usm.group='public'
+    uci set snmpd.public_usm.version='usm'
+    uci set snmpd.public_usm.secname='ro'
+}
+
+[ -z "$(uci -q get snmpd.private_v1)" ] && {
+    uci set snmpd.private_v1=group
+    uci set snmpd.private_v1.group='private'
+    uci set snmpd.private_v1.version='v1'
+    uci set snmpd.private_v1.secname='rw'
+}
+
+[ -z "$(uci -q get snmpd.private_v2c)" ] && {
+    uci set snmpd.private_v2c=group
+    uci set snmpd.private_v2c.group='private'
+    uci set snmpd.private_v2c.version='v2c'
+    uci set snmpd.private_v2c.secname='rw'
+}
+
+[ -z "$(uci -q get snmpd.private_usm)" ] && {
+    uci set snmpd.private_usm=group
+    uci set snmpd.private_usm.group='private'
+    uci set snmpd.private_usm.version='usm'
+    uci set snmpd.private_usm.secname='rw'
+}
+
+[ -z "$(uci -q get snmpd.all)" ] && {
+    uci set snmpd.all=view
+    uci set snmpd.all.viewname='all'
+    uci set snmpd.all.type='included'
+    uci set snmpd.all.oid='.1'
+}
+
+[ -z "$(uci -q get snmpd.public_access)" ] && {
+    uci set snmpd.public_access=access
+    uci set snmpd.public_access.group='public'
+    uci set snmpd.public_access.context='none'
+    uci set snmpd.public_access.version='any'
+    uci set snmpd.public_access.level='noauth'
+    uci set snmpd.public_access.prefix='exact'
+    uci set snmpd.public_access.read='all'
+    uci set snmpd.public_access.write='none'
+    uci set snmpd.public_access.notify='none'
+}
+
+[ -z "$(uci -q get snmpd.private_access)" ] && {
+    uci set snmpd.private_access=access
+    uci set snmpd.private_access.group='private'
+    uci set snmpd.private_access.context='none'
+    uci set snmpd.private_access.version='any'
+    uci set snmpd.private_access.level='noauth'
+    uci set snmpd.private_access.prefix='exact'
+    uci set snmpd.private_access.read='all'
+    uci set snmpd.private_access.write='all'
+    uci set snmpd.private_access.notify='all'
+}
+
+[ -z "$(uci -q get snmpd.@system[0])" ] && {
+    uci add snmpd system
+    uci set snmpd.@system[-1].sysLocation='office'
+    uci set snmpd.@system[-1].sysContact='bofh@example.com'
+    uci set snmpd.@system[-1].sysName='HeartOfGold'
+}
+
+[ -z "$(uci -q get snmpd.@exec[0])" ] && {
+    uci add snmpd exec
+    uci set snmpd.@exec[-1].name='filedescriptors'
+    uci set snmpd.@exec[-1].prog='/bin/cat'
+    uci set snmpd.@exec[-1].args='/proc/sys/fs/file-nr'
+}
+
+[ -z "$(uci -q get snmpd.@user[0])" ] && {
+    uci add snmpd user
+    uci set snmpd.@user[-1].permission='rw'
+    uci set snmpd.@user[-1].name='admin'
+    uci set snmpd.@user[-1].seclevel='priv'
+    uci set snmpd.@user[-1].view='all'
+    uci set snmpd.@user[-1].authen='MD5'
+    uci set snmpd.@user[-1].authenpw='admin123'
+    uci set snmpd.@user[-1].encryp='DES'
+    uci set snmpd.@user[-1].encryppw='admin123'
+}
+
+[ -z "$(uci -q get snmpd.snmp_trap)" ] && {
+    uci set snmpd.snmp_trap=snmp_trap
+    uci set snmpd.snmp_trap.enable='0'
+}
+
+[ -z "$(uci -q get snmpd.@engineid[0])" ] && {
+    uci add snmpd engineid
+    uci set snmpd.@engineid[-1].engineidtype='3'
+    uci set snmpd.@engineid[-1].engineidnic='eth0'
+}
+
+uci commit snmpd
+
+exit 0

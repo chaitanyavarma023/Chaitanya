@@ -1,0 +1,52 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+if [ "$(uci -q show network.guest)" == "" ]; then
+	uci -q batch <<-EOF >/dev/null
+		set network.guest='interface'
+		set network.guest.proto='static'
+		set network.guest.ipaddr='192.168.3.1'
+		set network.guest.netmask='255.255.255.0'
+		set network.guest.smart_isolation='1'
+		set network.guest.mtu='1500'
+		set network.guest.stp='0'
+		commit network.guest
+	EOF
+
+	if [ -z "$(uci -q get network.bridge.type)" ]; then
+		uci -q batch <<-EOF >/dev/null
+			set network.guest.type='bridge'
+			commit network.guest
+		EOF
+	fi
+fi
+
+check_zone() {
+	local name
+
+	config_get name $1 name
+	if [ "$name" == "guest" ]; then
+		has_guest_zone=1
+	fi
+}
+
+has_guest_zone=""
+
+config_load firewall
+config_foreach check_zone zone
+
+if [ -z "$has_guest_zone" ]; then
+	uci -q batch <<-EOF >/dev/null
+		set firewall.guest=zone
+		set firewall.guest.name='guest'
+		add_list firewall.guest.network='guest'
+		set firewall.guest.input='REJECT'
+		set firewall.guest.output='ACCEPT'
+		set firewall.guest.forward='REJECT'
+		commit firewall.guest
+	EOF
+fi
+
+
+exit 0

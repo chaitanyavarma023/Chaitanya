@@ -1,0 +1,14 @@
+Package: libucode20220322
+Version: 2022-04-07-7fa59ce4-1
+Depends: libc, libjson-c5
+Provides: libucode
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ucentral/ucode
+SourceName: libucode
+License: ISC
+Section: utils
+SourceDateEpoch: 1695897051
+ABIVersion: 20220322
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 67017
+Description:  The libucode package provides the shared runtime library for the ucode interpreter.

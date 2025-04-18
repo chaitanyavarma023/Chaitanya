@@ -1,0 +1,10 @@
+Package: client-limit
+Version: 1
+Depends: libc, tc, kmod-ifb, ucode, ucode-mod-uloop, ucode-mod-fs, ucode-mod-ubus
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/tools/client-limit
+SourceName: client-limit
+Section: edgecore
+SourceDateEpoch: 1706693216
+Architecture: arm_cortex-a7
+Installed-Size: 3260
+Description:  Allow Wireless client rate limiting

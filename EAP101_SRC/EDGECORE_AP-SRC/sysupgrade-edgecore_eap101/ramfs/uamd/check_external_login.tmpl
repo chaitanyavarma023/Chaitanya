@@ -1,0 +1,79 @@
+#!/usr/bin/env cgilua.cgi
+<%
+function user_check()
+	local handle = {}
+	local reply_str = ""
+	local auth_cmd = ""
+	local sta_ip = tostring(cgilua.servervariable("REMOTE_ADDR"))
+	local ap_ip = {}
+	local dev_mac = {}
+	local ap_mac = {}
+	local sta_mac = {}
+	local username = {}
+	local code = 0
+
+	-- Get STA MAC address
+	handle = io.popen("/sbin/arp", "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	dev_mac = reply_str:match(string.format("%%(%s%%) at ([%%:%%x]*)", sta_ip))
+	sta_mac = dev_mac and string.upper(dev_mac) or ""
+	username = string.gsub(sta_mac, ":", "-")
+
+	-- Get AP IP/MAC addrss: TODO: Use ubus instead of this
+	handle = io.popen("ifconfig br-wan", "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	if reply_str ~= nil and string.len(reply_str) > 0 then
+		dev_mac = reply_str:match("HWaddr ([%:%x]*)")
+		ap_mac = dev_mac and string.upper(dev_mac) or ""
+		ap_ip = reply_str:match("inet addr:([%.%d]*)")
+	else
+		handle = io.popen("ifconfig eth0", "r")
+		reply_str = handle:read("*a")
+		handle:close()
+		dev_mac = reply_str:match("HWaddr ([%:%x]*)")
+		ap_mac = dev_mac and string.upper(dev_mac) or ""
+		ap_ip = reply_str:match("inet addr:([%.%d]*)")
+	end
+
+	auth_cmd = "echo 'User-Name= \"" .. username ..
+		   "\", CHAP-Password = \"" .. username ..
+		   "\", Framed-IP-Address = \"" .. sta_ip ..
+		   "\", Calling-Station-Id = \"" .. sta_mac ..
+		   "\", NAS-IP-Address = \"" .. ap_ip ..
+		   "\", ZVendor-Auth-Method = \"roam\", " ..
+		   "Called-Station-Id = \"" .. ap_mac ..
+		   "\"' | radclient -x 127.0.0.1:1812 auth 12345678"
+
+	handle = io.popen(auth_cmd, "r")
+	reply_str = handle:read("*a")
+	handle:close()
+	reply_str = string.gsub(reply_str, "-", "_")
+	if (string.find(reply_str, "Received Access_Accept") ~= nil) then
+		code = "2";
+	end
+
+	return code
+
+end
+
+local reply_code = 0
+local returnUrl = {}
+local dec_cmd = {}
+local handle = {}
+local url = "__EXTERNAL_POST_URL"
+
+reply_code = user_check()
+if ( reply_code == "2") then
+	dec_cmd = "/ramfs/bin/dec " .. cgilua.GET.ReturnUrl
+	handle = io.popen(dec_cmd, "r")
+	returnUrl = handle:read("*a")
+	handle:close()
+	if ( returnUrl ~= nil and returnUrl ~= "" ) then
+		cgilua.redirect = returnUrl
+	end
+else
+	cgilua.redirect("__EXTERNAL_LOGIN_URL?loginurl=" .. cgilua.urlcode.escape(url))
+end
+%>

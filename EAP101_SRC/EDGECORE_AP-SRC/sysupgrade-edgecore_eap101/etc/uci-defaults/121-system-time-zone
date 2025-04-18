@@ -1,0 +1,12 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+# zonename 'UTC' should have corresponding timezone 'GMT0'
+if [ "$(uci -q get system.@system[0].timezone)" == "UTC" ]; then
+    uci set system.@system[0].zonename='UTC'
+    uci set system.@system[0].timezone='GMT0'
+    uci commit system
+fi
+
+exit 0

@@ -1,0 +1,40 @@
+
+	<input <%=self.custom_attr%> title="<%=self.description%>" autocomplete="<% if self.password then write('new-password') else write('off') end%>" type="<%=self.password and 'password" class="cbi-input-password ace-tooltip ' or 'text" class="ace-tooltip' %>"
+        <%=self.custom%>   <% if self.datatype then write(' data-rel="tooltip" ') end -%>
+        onchange="cbi_d_update(this.id)"<%=
+		attr("name", cbid) .. attr("id", cbid) .. attr("value", self:cfgvalue(section) or self.default) ..
+		ifattr(self.size, "size") .. ifattr(self.placeholder, "placeholder") %> 
+		<% if self.is_disabled then write('disabled=disabled style="background-color:#eee"') end %> 
+		/>
+        
+	<% if self.password then %><i class='icon-eye-open' style="cursor:pointer" onclick="var e = document.getElementById('<%=cbid%>'); e.type = (e.type=='password') ? 'text' : 'password';"></i><% end %>
+
+	<% if #self.keylist > 0 or self.datatype then -%>
+	<script type="text/javascript">
+		<% if #self.keylist > 0 then -%>
+		cbi_combobox_init('<%=cbid%>', {
+		<%-
+			for i, k in ipairs(self.keylist) do
+		-%>
+			<%-=string.format("%q", k) .. ":" .. string.format("%q", self.vallist[i])-%>
+			<%-if i<#self.keylist then-%>,<%-end-%>
+		<%-
+			end
+		-%>
+		}, '<%- if not self.rmempty and not self.optional then -%>
+			<%-: -- Please choose -- -%>
+		<%- end -%>', '
+		<%- if self.combobox_manual then -%>
+			<%-=self.combobox_manual-%>
+		<%- else -%>
+			<%-: -- custom -- -%>
+		<%- end -%>');
+		<%- end %>
+		<% if self.datatype then -%>
+
+		cbi_validate_field('<%=cbid%>', <%=tostring(((self.optional or self.rmempty) and not self.cond_optional and not self.force_required) == true)%>, '<%=self.datatype%>');
+			
+		<%- end %>
+	</script>
+	<% end -%>
+	<%+cbi/help_tip%>

@@ -1,0 +1,387 @@
+<% if not luci.dispatcher.context.plain_page then %>
+<%#
+ Copyright 2008 Steven Barth <steven@midlink.org>
+ Copyright 2008 Jo-Philipp Wich <jow@openwrt.org>
+ Copyright 2012 David Menting <david@nut-bolt.nl>
+ Licensed to the public under the Apache License 2.0.
+-%>
+<%
+	local sys  = require "luci.sys"
+	local util = require "luci.util"
+	local http = require "luci.http"
+	local disp = require "luci.dispatcher"
+	local acn_status = require "luci.acn.status"
+	local fw_ver = acn_status.version()
+	local acn = require("luci.acn.util")
+	local uci = acn.cursor()
+
+	local boardinfo = util.ubus("system", "board")
+
+	local request  = disp.context.path
+	local request2 = disp.context.request
+
+	local category = request[1]
+	local cattree  = category and disp.node(category)
+
+	local leaf = request2[#request2]
+
+	local tree = disp.node()
+	local node = disp.context.dispatched
+
+  controller_mode = uci:get("acn", "mgmt", "management")
+
+	user_name = luci.http.getcookie("user_name")
+  root_user = util.root_user(user_name)
+	msp_disabled = (uci:get("acn", "settings", "msp_enable") == "0" or uci:get("acn", "settings", "msp_enable") == nil)
+
+	--local categories = disp.node_childs(tree)
+
+	local c = tree
+	local i, r
+
+	-- tag all nodes leading to this page
+	for i, r in ipairs(request) do
+		if c.nodes and c.nodes[r] then
+			c = c.nodes[r]
+			c._menu_selected = true
+		end
+	end
+
+    -- send as HTML5
+	http.prepare_content("text/html")
+
+	local function nodeurl(prefix, name, query)
+		local url = controller .. prefix .. name .. "/"
+		if query then
+			url = url .. http.build_querystring(query)
+		end
+		return pcdata(url)
+	end
+
+	local function subtree(prefix, node, level)
+		if not level then
+			level = 1
+		end
+
+		--local childs = disp.node_childs(node)
+		if #childs > 0 then
+
+            if level > 2 then
+%>
+	<ul class="tabs">
+		<%
+            end
+
+			local selected_node
+			local selected_name
+			local i, v
+
+			for i, v in ipairs(childs) do
+				local nnode = node.nodes[v]
+				if nnode._menu_selected then
+					selected_node = nnode
+					selected_name = v
+				end
+                if level > 2 then
+		%>
+			<li class="tabmenu-item-<%=v%><%- if nnode._menu_selected or (node.leaf and v == leaf) then %> active<% end %>">
+			    <a href="<%=nodeurl(prefix, v, nnode.query)%>"><%=striptags(translate(nnode.title))%></a>
+			</li>
+		<%      end
+			end
+
+            if level > 2 then
+		%>
+	</ul>
+<%          end
+
+			if selected_node then
+				subtree(prefix .. selected_name .. "/", selected_node, level + 1)
+			end
+		end
+	end
+
+    local _page_js = luci.dispatcher.context.page_js
+
+-%>
+<!DOCTYPE html>
+<html lang="<%=luci.i18n.context.lang%>">
+ <head>
+  <meta charset="utf-8">
+  <title>Edgecore | <%=luci.sys.hostname() %> </title>
+  <!--[if lt IE 9]><script src="<%=media%>/js/html5.js?v=git-24.354.35592-f754fbf"></script><![endif]-->
+  <meta name="viewport" content="initial-scale=1.0">
+
+  <link rel="stylesheet" href="<%=resource%>/css/bootstrap.css?ver=<%=fw_ver%>">
+  <link rel="stylesheet" href="<%=resource%>/css/bootstrap-responsive.min.css?ver=<%=fw_ver%>">
+  <link rel="stylesheet" href="<%=resource%>/css/font-awesome.min.css?ver=<%=fw_ver%>">
+  <link rel="shortcut icon" href="<%=media%>/img/favicon.ico?ver=<%=fw_ver%>">
+<% if node and node.css then %>
+  <link rel="stylesheet" href="<%=resource%>/css/<%=node.css%>?ver=<%=fw_ver%>">
+<% end -%>
+  <link rel="stylesheet" href="<%=resource%>/css/ace.min.css?ver=<%=fw_ver%>">
+  <link rel="stylesheet" href="<%=resource%>/css/ace-skins.min.css?ver=<%=fw_ver%>">
+  <link rel="stylesheet" href="<%=resource%>/css/ace-responsive.min.css?ver=<%=fw_ver%>">
+  <link rel="stylesheet" href="<%=resource%>/css/acn-default.css?ver=<%=fw_ver%>">
+  <link rel="stylesheet" href="<%=media%>/css/brand.css?ver=<%=fw_ver%>">
+
+<% if css then %>
+  <style title="text/css">
+<%-= css %>
+  </style>
+<% end -%>
+  <script src="<%=resource%>/jquery-1.9.1.min.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/xhr.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/common.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/bootstrap.min.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/jquery-ui-1.10.2.custom.min.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/jquery.flot.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/jquery.flot.pie.min.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/jquery.flot.resize.min.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=url('admin/translations', luci.i18n.context.lang)%>?v=git-24.354.35592-f754fbf"></script>
+  <script src="<%=resource%>/cbi.js?ver=<%=fw_ver%>"></script> 
+  <script src="<%=resource%>/ace.min.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=resource%>/ace-elements.min.js?ver=<%=fw_ver%>"></script>
+  <script src="<%=media%>/js/actions.js?ver=<%=fw_ver%>"></script>
+  <%=_page_js%>
+<!--  <script src="<%=media%>/jquery-ui-1.10.2.custom.min.js?ver=<%=fw_ver%>"></script>-->
+  <script>
+
+var base_url = "<%=controller%>";
+
+$(function() {
+  // Add tooltips"
+  $('[data-rel=tooltip]').tooltip();
+
+  handleMenu();
+});
+
+function handleMenu() {
+  // Set open menu
+  var path = window.location.pathname;
+  if (path == "/cgi-bin/luci/") {
+    end_node = $('#main_menu').find('a[href*="/cgi-bin/luci/admin/status/overview"]');
+  } else {
+    end_node = $('#main_menu').find('a[href*="' + path.replace(/'/g, "\\'") + '"]');
+  }
+  //path = path.substr(path.indexOf('stok'));
+  //var end_node = $('#main_menu').find('a[href*="' + path.replace(/'/g, "\\'") + '"]');
+
+  end_node
+    .parent().addClass('active')
+    .parents('li').children('ul').css('display', 'block');
+
+  end_node
+    .parent().parent('.submenu').parent().addClass('active');
+}
+
+  </script>
+  <style>
+  #sidebar {
+	float: left;
+	vertical-align: middle;
+	background-color: #dce6eb;
+  }
+  #maincontent:before {
+	width: 170px;
+  }
+
+  #maincontent {
+    margin-top:20px;
+  }
+
+  .nav-list>li>.submenu>li>a>[class*="icon-"]:first-child {
+    height: 14px;
+    line-height: 11px;
+  }
+  </style>
+ </head>
+
+ <body class="lang_<%=luci.i18n.context.lang%> <% if node then %><%=striptags(node.title)%><% end %>">
+<!-- Page specific-modals are below -->
+    <% for i, template in ipairs(luci.dispatcher.context.modal_template or {}) do
+        luci.template.render(template)
+    end%>
+<!--===================================================================================================-->
+  <%+admin_system/wizard%>
+
+  <div class="navbar navbar-inverse">
+  <div class="navbar-inner" id="title_bar">
+    <div class='container-fluid menu-background'>
+
+        <div class="row-fluid">
+            <div class="span1 logo">
+              <% if controller_mode == "3" then %>
+                <a class='brand' href='<%=controller%>/ucentral/status'>
+                  <img src='<%=media%>/img/logo.png?ver=<%=fw_ver%>' alt='logo' />
+                </a>
+              <% else %>
+                <a class='brand' href='<%=controller%>/admin/status/overview'>
+                  <img src='<%=media%>/img/logo.png?ver=<%=fw_ver%>' alt='logo' />
+                </a>
+              <% end %>
+            </div>
+            <div class="span5 product">
+                <span class="product-name"><%=luci.sys.productname()%> </span>
+                <span class="device-name"><%=luci.sys.hostname()%> </span>
+            </div>
+
+            <div id="indicators" class="nav ace-nav pull-right">
+                <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'logout')%>">
+                    <i class="icon-signout" style="color:white"></i>
+                    <span style="color:white"><%:Logout%></span>
+                  </a>
+                </li>
+            </div>
+
+        </div>
+    </div>
+  </div>
+</div>
+
+<%- if luci.sys.process.info("uid") == 0 and luci.sys.user.getuser("admin") and not luci.sys.user.getpasswd("admin") then -%>
+<div class="container">
+	<div class="alert-message warning">
+		<h4><%:No password set!%></h4>
+		<%:There is no password set on this router. Please configure a root password to protect the web interface and enable SSH.%><br>
+        <a href="<%=pcdata(luci.dispatcher.build_url("admin/system/admin"))%>"><%:Go to password configuration...%></a>
+	</div>
+</div>
+<%- end -%>
+
+<div class="container-fluid main-container" id="main-container">
+<a href="#" class="menu-toggler" id="menu-toggler"><span class="menu-text"></span></a>
+<div id="sidebar">
+
+<!-- uCentral UI -->
+<% if controller_mode == "3" then %>
+  <ul  class="nav nav-list" id="main_menu">
+    <li>
+      <a href="<%=luci.dispatcher.build_url('ucentral', 'status')%>">
+        <i class="icon-dashboard"></i><span><%:Status%></span></a>
+    </li>
+
+    <li>
+      <a href="<%=luci.dispatcher.build_url('ucentral', 'uplink')%>">
+        <i class="icon-cloud"></i><span><%:Uplink%></span></a>
+    </li>
+
+    <li>
+      <a href="<%=luci.dispatcher.build_url('ucentral', 'settings')%>">
+        <i class="icon-asterisk"></i><%:Settings%></a>
+    </li>
+
+    <li>
+      <a href="<%=luci.dispatcher.build_url('ucentral', 'system')%>">
+        <i class="icon-cogs"></i><%:System%></a>
+    </li>
+  </ul>
+<% else %>
+<!-- EdgeCore UI -->
+  <ul  class="nav nav-list" id="main_menu">
+      <li>
+        <a href="<%=luci.dispatcher.build_url('admin', 'acn_status', 'overview')%>">
+        <i class="icon-dashboard"></i><span><%:Dashboard%></span></a>
+      </li>
+
+      <li>
+          <a href="#" class="dropdown-toggle"><i class="icon-cloud"></i><span><%:Network%></span></a>
+          <ul class="submenu">
+            <% if root_user or msp_disabled then %>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'internet')%>"><i class="icon-angle-right"></i><%:Internet Settings%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'ethernet')%>"><i class="icon-angle-right"></i><%:Ethernet Settings%></a>
+              </li>
+            <% end %>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'lan')%>"><i class="icon-angle-right"></i><%:LAN Settings%></a>
+              </li>
+            <% if root_user or msp_disabled then %>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'firewall_rule')%>"><i class="icon-angle-right"></i><%:Firewall Rules%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'firewall_portfw')%>"><i class="icon-angle-right"></i> <%:Port Forwarding%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'hotspot')%>"><i class="icon-angle-right"></i><%:Hotspot Settings%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'openroaming')%>"><i class="icon-angle-right"></i><%:OpenRoaming%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'dhcp_snooping')%>"><i class="icon-angle-right"></i><%:DHCP Snooping%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'arp_inspection')%>"><i class="icon-angle-right"></i><%:ARP Inspection%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'dhcp_relay')%>"><i class="icon-angle-right"></i><%:DHCP Relay%></a>
+              </li>
+            <% end %>
+          </ul>
+      </li>
+
+      <li>
+          <a href="#" class="dropdown-toggle"><i class="icon-rss"></i><span><%:Wireless%></span></a>
+          <ul class="submenu">
+          <%
+          product = require "luci.acn.product"
+          for i=0, product.num_wifi_radios - 1 do
+              local radio_info = product.radio(i)
+              local radio_device = radio_info and radio_info.device or ""
+          %>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'wireless', 'wifi', radio_device .. '.network1')%>">
+                    <i class="icon-angle-right"></i> <%:Radio%> <%=radio_info.freq%> GHz
+                  </a>
+              </li>
+
+          <% end %>
+
+            <% if root_user or msp_disabled then %>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'wireless', 'vlans')%>"><i class="icon-angle-right"></i><%:VLAN Settings%></a>
+              </li>
+            <% end %>
+          </ul>
+      </li>
+
+      <li>
+          <a href="#" class="dropdown-toggle"><i class="icon-cogs"></i><span><%:System%></span></a>
+          <ul class="submenu">
+            <% if root_user or msp_disabled then %>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'system', 'system')%>"><i class="icon-angle-right"></i><%:System Settings%></a>
+              </li>
+              <li>
+                <a href="<%=luci.dispatcher.build_url('admin', 'system', 'actions')%>"><i class="icon-angle-right"></i><%:Maintenance%></a>
+              </li>
+              <li>
+                <a href="<%=luci.dispatcher.build_url('admin', 'system', 'certificate')%>"><i class="icon-angle-right"></i><%:Upload Certificate%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'system', 'user')%>"><i class="icon-angle-right"></i><%:User Accounts%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'system', 'services')%>"><i class="icon-angle-right"></i><%:Services%></a>
+              </li>
+            <% end %>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'network', 'diagnostics')%>"><i class="icon-angle-right"></i><%:Diagnostics%></a>
+              </li>
+              <li>
+                  <a href="<%=luci.dispatcher.build_url('admin', 'system', 'discovery')%>"><i class="icon-angle-right"></i><%:Device Discovery%></a>
+              </li>
+          </ul>
+      </li>
+  </ul>
+<% end %>
+</div>
+
+		<div id="main-content" class="main-content">
+            <div class="page-content clearfix">
+<% end %>

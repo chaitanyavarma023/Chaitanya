@@ -1,0 +1,25 @@
+
+
+	<% 
+
+	local switch_type = "ace-switch-3"
+	if self.switch_type  == "yes_no" then 
+		switch_type = "ace-switch-2"
+	end
+
+	%>
+	<input type="hidden" value="1"<%=
+		attr("name", "cbi.cbe." .. self.config .. "." .. section .. "." .. self.option)
+	%> />
+	
+	<input title="<%=self.description%>" class="<% if not self.old_checkbox then write('ace-tooltip ace-switch ' .. switch_type ) end %> "
+                onclick="<% if self.onclick then write(self.onclick) else write('cbi_d_update(this.id)') end %>"
+                onchange="cbi_d_update(this.id)" type="checkbox"<%=
+		attr("id", cbid) .. attr("name", cbid) .. attr("value", self.enabled or 1) ..
+		ifattr((self:cfgvalue(section) or self.default) == self.enabled, "checked", "checked")%> 
+         <% if self.is_disabled then write('disabled=disabled style="background-color:#eee"') end %>
+	 />
+	<span class="lbl">&nbsp;<%=self.label%></span>
+	<%+cbi/help_tip%>
+	
+	

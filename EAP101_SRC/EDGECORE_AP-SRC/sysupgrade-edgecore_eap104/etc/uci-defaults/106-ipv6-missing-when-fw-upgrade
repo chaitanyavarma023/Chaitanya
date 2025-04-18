@@ -1,0 +1,14 @@
+#!/bin/sh
+
+[ -n "$(uci -q get network.wan6.ifname)" ] && {
+    uci del network.wan6.ifname
+    uci set network.wan6.device='@wan'
+}
+
+[ -z "$(uci -q get network.wan6.reqaddress)" ] && uci set network.wan6.reqaddress='try'
+[ -z "$(uci -q get network.wan6.reqprefix)" ] && uci set network.wan6.reqprefix='0'
+[ -z "$(uci -q get network.wan6.soltimeout)" ] && uci set network.wan6.soltimeout='120'
+
+uci commit network
+
+exit 0

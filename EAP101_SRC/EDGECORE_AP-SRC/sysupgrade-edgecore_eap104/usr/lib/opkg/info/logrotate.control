@@ -1,0 +1,17 @@
+Package: logrotate
+Version: 3.17.0-1
+Depends: libc, libpopt0
+Source: feeds/packages/utils/logrotate
+SourceName: logrotate
+License: GPL-2.0-or-later
+LicenseFiles: COPYING
+Section: utils
+SourceDateEpoch: 1734663430
+CPE-ID: cpe:/a:gentoo:logrotate
+Maintainer: Christian Beier <cb@shoutrlabs.com>
+Architecture: arm_cortex-a7
+Installed-Size: 28368
+Description:  logrotate is designed to ease administration of systems that generate large
+ numbers of log files. It allows auto-matic rotation, compression, removal and
+ mailing of log files. Each log file may be handled daily, weekly, monthly or
+ when it grows too large.

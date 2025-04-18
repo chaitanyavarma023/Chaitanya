@@ -1,0 +1,11 @@
+Package: kmod-mac80211
+Version: 4.4.60+20210222_001-4.4.60-b157d2276-1
+Depends: kernel (=4.4.60-1-e512a9aa5c3515cc7f7ed3472864ccbd), kmod-cfg80211, hostapd-common, kmod-qca-nss-drv, kmod-qca-nss-drv-wifi-meshmgr
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/wifi-ax/mac80211
+SourceName: kmod-mac80211
+Section: kernel
+SourceDateEpoch: 1725956280
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7
+Installed-Size: 312670
+Description:  Generic IEEE 802.11 Networking Stack (mac80211)

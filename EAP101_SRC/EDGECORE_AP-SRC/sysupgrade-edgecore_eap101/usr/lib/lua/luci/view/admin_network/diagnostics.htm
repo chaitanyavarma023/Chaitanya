@@ -1,0 +1,227 @@
+<%
+local brand = require("luci.acn.brand")
+local diag_url = brand.diag_url or ""
+local product = require("luci.acn.product")
+local acn_status = require "luci.acn.status"
+local acn = require "luci.acn.util"
+local uci = acn.cursor()
+local num_radios = product.num_wifi_radios
+local support_speedtest_cli = nixio.fs.access("/usr/bin/speedtest-cli")
+local support_speedtest_netperf = nixio.fs.access("/usr/bin/speedtest-netperf.sh")
+local is_support_speedtest = support_speedtest_cli or support_speedtest_netperf
+
+-- JS file for this page
+luci.dispatcher.context.page_js = '<script src="/javascript/jquery.flot.min.js?ver=' .. acn_status.version() .. '"></script>\n'
+.. '<script src="/javascript/jquery.flot.axislabels.js?ver=' .. acn_status.version() .. '"></script>'
+%>
+
+<%+header%>
+
+<script type="text/javascript">//<![CDATA[
+  var stxhr = new XHR();
+
+  function disable_btn(flag) {
+    $("#diag_btn").attr("disabled", flag);
+  }
+
+  function update_status() {
+    var tool = $('#diag_tool_type').val();//field.name;
+    var addr = $('#_dest').val(); //field.value;
+    
+    if (tool == 'speedtest') {
+      var speedtest_type_val = $('#speedtest_type').val();
+      tool = speedtest_type_val;
+      if (speedtest_type_val == 'speedtest_server') {
+        addr = $('#speedtest_server_input').val();
+      } else {
+        addr = $('#netperf_server_input').val();
+      }
+    }
+
+    var legend = document.getElementById('diag-rc-legend');
+    var output = document.getElementById('diag-rc-output');
+
+    $("#reault-div").show();
+    $("#diag-rc-legend").show();
+    if (legend && output) {
+      output.innerHTML =
+        '<img src="<%=resource%>/img/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" /> ' +
+        '<%:Please wait a moment.%>';
+
+      $("#spinner_collect_container").show();
+
+      disable_btn(true);
+      stxhr.get('<%=luci.dispatcher.build_url("admin", "network")%>/diag_' + tool + '/' + addr, null,
+        function(x) {
+          if (x.responseText) {
+            //to avoid login page inside strange window frame, so redirect the login page to top location.
+            if((x.responseText).search('<form method="post" name="login"') != -1) {
+                top.location.href='<%=luci.dispatcher.build_url("admin", "network", "diagnostics")%>';
+                return;
+            }
+            $("#diag-rc-legend").hide();
+            output.innerHTML = String.format('<pre style="text-align:left">%h</pre>', x.responseText);
+            $("#diag-rc-output").show();
+          } else {
+            $("#diag-rc-legend").hide();
+            output.innerHTML = '<span class="error" style="text-align:left"><%:Specified invalid address.%></span>';
+            $("#diag-rc-output").show();
+          }
+          disable_btn(false);
+        }
+      );
+    }
+  }
+
+  function diag_tool_type_change() {
+    var _val = $('#diag_tool_type').val();
+    if (_val == 'speedtest') {
+      $('#diag_normal').hide();
+      $('#diag_speedtest').show();
+    } else {
+      $('#diag_speedtest').hide();
+      $('#diag_normal').show();
+    }
+    speedtest_type_change();
+  }
+
+  function speedtest_type_change() {
+    var _val = $('#speedtest_type').val()
+    if (_val == 'speedtest_server') {
+      $('#netperf_server_div').hide();
+      $('#speedtest_server_div').show();
+    } else {
+      $('#speedtest_server_div').hide();
+      $('#netperf_server_div').show();
+    }
+  }
+
+//]]></script>
+
+<style type="text/css">
+  .results-box {
+    padding: 5px;
+    background-color: #E0DFDE;
+    border: solid 6px #C1C1C1;
+    margin: 15px;
+  }
+
+  .status-text {
+    color: #808080;
+    padding-top: 10px;
+    letter-spacing: .5px;
+  }
+
+  .results-text {
+    text-transform: uppercase;
+    vertical-align: middle;
+    line-height: 50px;
+    font-weight: 600;
+    text-shadow: 1px 1px #EFEFEF;
+    font-size: 28px;
+    color:#808080;
+  }
+
+  .init-results-text{
+    color: #BFBFBF;
+    font-size: 16px;
+  }
+
+  @media screen and (max-width: 480px){
+    .results-box {margin:10px;}
+  }
+
+  .dia_section {
+    width:25%;
+    float:left;
+    text-align:center
+  }
+
+  .dia_input {
+    width:50%;
+  }
+
+  div.fancy-shmancy {
+    position: absolute;
+    padding-left: 70px;
+    padding-top: 20px;
+    font-size: 25px;
+    font-weight: lighter;
+    color: #CCCCCC;
+  }
+  tbody {
+      background-color: transparent!important;
+  }
+</style>
+
+<form class="form-horizontal" method="post" action="<%=pcdata(luci.http.getenv("REQUEST_URI"))%>">
+    <div class="cbi-map">
+        <h2><%:Diagnostics%></h2>
+        <fieldset class="cbi-section">
+          <div class="widget-header widget-header-flat widget-header-small acn-subtitle ">
+            <h5><%:Network Utilities%></h5>
+          </div>
+          <div class="cbi-section-node">
+            <div class="cbi-value"">
+              <label class="cbi-value-title text-info control-label"><%:Tools%>&nbsp; 	&nbsp;</label>
+              <select class="cbi-input-select" id="diag_tool_type" name="diag_tool_type" onchange="diag_tool_type_change()">
+                <option id="ping_id" value="ping" selected="selected"><%:Ping%></option>
+                <option id="traceroute_id" value="traceroute"><%:Traceroute%></option>
+                <option id="nslookup_id" value="nslookup"><%:Nslookup%></option>
+<% if is_support_speedtest then %>
+                <option id="speedtest_id" value="speedtest"><%:Speed Test%></option>
+<% end %>
+              </select>
+            </div>
+
+            <div class="cbi-value" id="diag_normal">
+              <label class="cbi-value-title text-info control-label"><%:Server IP Address or Hostname%>&nbsp; 	&nbsp;</label>
+              <input autocomplete="off" type="text" class="ace-tooltip" name="_dest" id="_dest" value="">
+            </div>
+<% if is_support_speedtest then%>
+            <div class="cbi-value" id="diag_speedtest" style="display:none">
+              <div class="cbi-value">
+                <label class="cbi-value-title text-info control-label"><%:Server%>&nbsp; 	&nbsp;</label>
+                <select class="cbi-input-select" id="speedtest_type" name="speedtest_type" onchange="speedtest_type_change()">
+<% if support_speedtest_cli then %>
+                  <option value="speedtest_server" selected="selected"><%:Speedtest Server%></option>
+<% end %>
+<% if support_speedtest_netperf then %>
+                  <option value="netperf_server"><%:Netperf Server%></option>
+<% end %>
+                </select>
+              </div>
+              <div class="cbi-value" id="speedtest_server_div" style="display:none">
+                <label class="cbi-value-title text-info control-label"><%:Server ID%>&nbsp; 	&nbsp;</label>
+                <input autocomplete="off" type="text" class="ace-tooltip" name="speedtest_server_input" id="speedtest_server_input" value="">
+                (<%:Optional%>)
+              </div>
+              <div class="cbi-value" id="netperf_server_div" style="display:none">
+                <label class="cbi-value-title text-info control-label"><%:Server IP Address or Hostname%>&nbsp; 	&nbsp;</label>
+                <input autocomplete="off" type="text" class="ace-tooltip" name="netperf_server_input" id="netperf_server_input" value="">
+              </div>
+            </div>
+<% end %>
+            <div class="cbi-value">
+              <label class="cbi-value-title text-info control-label"></label>
+              <input type="button" id="diag_btn" class="btn btn-small" value="<%:Start%>" onclick="update_status()">
+            </div>
+          </div>
+        </fieldset>
+
+        <div id="reault-div" class="results-box hide">
+            <div style="min-height:50px;width:100%;text-align:center">
+                <div id="spinner_collect_container hide">
+                    <div class="results-text" id="diag-rc-legend">
+                        <i class="icon-spinner icon-spin" id="spinner_diag"></i>
+                        <%:Collecting data...%>
+                   </div>
+                    <div class="status-text" id="diag-rc-output">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<%+footer%>

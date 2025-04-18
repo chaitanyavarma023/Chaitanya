@@ -1,0 +1,41 @@
+ <%
+
+acn             = require "luci.acn.util"
+local uci       = acn.cursor()
+
+if #radio.networks ~= 0 then
+    local mode  = radio.networks[radio.up_idx].mode
+    local channel = radio.networks[radio.up_idx].channel
+    %>
+
+    <script type="text/javascript">//<![CDATA[
+    <%
+        if freq == "5" then
+            local radioCfgEnabled = (uci:get("wireless", "wifi" ..i, "disabled") == "0")
+            local radioRuntimeEnabled = (radio.status == "is_up")
+            local radioCfgChannel = tonumber(uci:get("wireless", "wifi" ..i, "channel"))
+            local radioRuntimeChannel = tonumber(channel)
+
+            if radioCfgEnabled ~= radioRuntimeEnabled then %>
+                radioEnableChanged = true;
+            <% end %>
+
+            <% if radioCfgChannel ~= radioRuntimeChannel then %>
+                    radioChannelChanged = true;
+            <% end %>
+
+            <% if next(uci:changes()) ~= nil then %>
+                    applyClicked = false;
+            <% end %>
+
+    <% end %>
+    //]]>
+    </script>
+<% end %>
+
+<a href="<%=luci.dispatcher.build_url('admin/wireless/wifi/')%>radio<%=i%>.network1">
+    <h3 class="main-header"> 
+        <%:Wireless Radio%> #<%=i%> (<%=freq%> GHz)
+    </h3>
+</a>
+

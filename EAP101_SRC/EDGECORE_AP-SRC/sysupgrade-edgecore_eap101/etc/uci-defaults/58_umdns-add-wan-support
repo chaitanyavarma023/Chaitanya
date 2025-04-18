@@ -1,0 +1,13 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+
+if [ "$(uci -q get umdns.@umdns[-1].network | grep wan)" == "" ]; then
+	uci -q batch <<-EOF >/dev/null
+	add_list umdns.@umdns[-1].network=wan
+	EOF
+	uci_commit umdns
+fi
+
+exit 0

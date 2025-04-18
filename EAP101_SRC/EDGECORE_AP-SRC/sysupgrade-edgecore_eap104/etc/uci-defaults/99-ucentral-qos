@@ -1,0 +1,10 @@
+#!/bin/sh
+
+tip_mode=$(uci -q get acn.mgmt.management)
+[ ! -z $tip_mode ] && [ "$tip_mode" -eq 3 ] || {
+	exit 0
+}
+
+uci delete qosify.wan
+uci delete qosify.wandev
+uci set qosify.@defaults[-1].defaults=/tmp/qosify.conf

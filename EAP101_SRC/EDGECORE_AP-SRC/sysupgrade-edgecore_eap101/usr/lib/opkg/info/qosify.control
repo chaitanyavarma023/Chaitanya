@@ -1,0 +1,11 @@
+Package: qosify
+Version: 1
+Depends: libc, libbpf0, libubox20210819, libubus20210809, kmod-sched-cake, tc-full
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ucentral/qosify
+SourceName: qosify
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1638434411
+Architecture: arm_cortex-a7
+Installed-Size: 19147
+Description:  QoS classifier eBPF module

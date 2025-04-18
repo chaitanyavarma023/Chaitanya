@@ -1,0 +1,19 @@
+Package: dhcp-helper
+Version: 2.1-1
+Depends: libc, libnl200, libev, jansson4
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/tools/dhcp-helper
+SourceName: dhcp-helper
+Section: IgniteNet
+SourceDateEpoch: 1657194058
+Architecture: arm_cortex-a7
+Installed-Size: 12232
+Description:  DHCP Relay Agents are commonly used on routed networks with
+ centralized DHCP services. The relay agent is a service that is
+ typically configured on a router and converts DHCP broadcasts into
+ unicast messages directed at the DHCP servers IP address.
+ 
+ dhcp-helper listens for DHCP and BOOTP broadcasts on configured
+ interfaces and relays them to DHCP or BOOTP servers elsewhere. It also
+ relays replies from the remote servers back to the configured
+ hosts. Once hosts are fully configured they can communicate directly
+ with their servers and no longer need the services of a relay.

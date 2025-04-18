@@ -1,0 +1,25 @@
+#!/bin/sh
+. /lib/functions.sh
+
+check_STAmode() {
+	local hs20=0
+    local vap_device
+
+    config_get vap_device $1 device
+	config_get hs20 $1 hs20
+
+	[ "$1" != "wmesh" ] && [ "$hs20" == "1" ] && {
+		if [ "$(uci -q get wireless.$vap_device.mode)" == "sta" ]; then
+			uci set wireless.$1.hs20="0"
+			changed=1
+		fi
+	}
+}
+
+changed=0
+
+config_load wireless
+config_foreach check_STAmode wifi-iface
+[ $changed -eq 1 ] && uci commit wireless
+
+exit 0

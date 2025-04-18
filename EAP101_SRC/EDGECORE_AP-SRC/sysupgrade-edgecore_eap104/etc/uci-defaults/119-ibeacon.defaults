@@ -1,0 +1,25 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+board=$(board_name)
+echo $board
+case $board in
+'edgecore,eap101' | 'edgecore,eap104')
+
+if [ "$(uci -q get ibeacon.ibeacon.txpower)" == "" ]; then
+        uci set ibeacon.ibeacon.txpower='14'
+        uci set ibeacon.ibeacon.power=''
+        uci commit ibeacon
+fi
+
+if [ "$(uci -q get ibeacon.ibeacon.zigbee_enabled)" == "" ]; then
+        uci set ibeacon.ibeacon.zigbee_enabled='0'
+        uci set ibeacon.ibeacon.mqtt_port='1883'
+        uci set ibeacon.ibeacon.mqtt_topic='accton_sensor'
+        uci set ibeacon.ibeacon.mqtt_host='test.mosquitto.org'
+        uci commit ibeacon
+fi
+
+esac

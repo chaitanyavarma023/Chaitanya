@@ -1,0 +1,24 @@
+#!/bin/sh /etc/rc.common
+
+START=98
+USE_PROCD=1
+DEFAULT_PATH=/etc/capwap
+CHECK_DATA_CH_FILE="${DEFAULT_PATH}/check_data_channel.script"
+
+start_service() {
+	procd_open_instance
+	capwap=$(uci get acn.capwap.state)
+	if [ -f ${CHECK_DATA_CH_FILE} ] && [ "${capwap}" = "1" ]; then
+		procd_set_param command /bin/sh "${CHECK_DATA_CH_FILE}"
+	fi
+	procd_close_instance
+}
+
+stop_service() {
+	pid=$(ps |grep $CHECK_DATA_CH_FILE | grep -v grep | awk '{print $1}')
+	[ -n "${pid}" ] && kill $pid
+}
+
+service_triggers() {
+    procd_add_reload_trigger acn
+}

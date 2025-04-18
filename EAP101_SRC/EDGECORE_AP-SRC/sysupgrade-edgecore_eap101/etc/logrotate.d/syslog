@@ -1,0 +1,11 @@
+/var/log/messages {
+    copytruncate #copy original file and flush original file
+    size=1M
+    rotate 3
+    #dateext
+    missingok
+    compress
+    #delaycompress
+    postrotate
+    endscript
+}

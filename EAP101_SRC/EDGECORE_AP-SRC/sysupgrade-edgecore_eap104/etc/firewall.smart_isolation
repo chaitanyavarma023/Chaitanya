@@ -1,0 +1,313 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/functions/network.sh
+
+wif_to_ifname() {
+	local ifname radid vapid
+
+	vapid=$(echo $1 | cut -d "_" -f2)
+	radid=$(echo $1 | cut -d "_" -f1 | grep -o '[0-9]*')
+
+	ifname="wlan$radid"
+
+	if [ "$vapid" -gt 1 ]; then
+		vapid=$((vapid-1))
+		ifname="$ifname-$vapid"
+	fi
+
+	echo $ifname
+}
+
+parse_zone() {
+	local zname znet
+
+	config_get zname $1 name
+	if [ -z "$zname" ]; then
+		return
+	fi
+
+	config_get znet $1 network
+	if [ -z "$znet" ]; then
+		return
+	fi
+
+	fw_zones="$fw_zones$zname "
+	eval ${zname}_zone_nets=\"$znet\"
+}
+
+parse_net() {
+	local smi ntype dev added proto net_name
+
+	for zone in $fw_zones; do
+		for net in $(get_zone_nets $zone); do
+			config_get smi $net smart_isolation
+			if [ -n "$smi" ]; then
+				if [ "$added" != "$zone" ]; then
+					fw_zones_smi="$fw_zones_smi$zone "
+					added=$zone
+				fi
+				eval ${zone}_zone_policy=\"$smi\"
+			fi
+
+			if [ -n "$(uci -q get network.bridge.type)" -a -n "$(uci show network.${net}_vlan)" ]; then
+				dev=$(uci get network.${net}_vlan.ports)
+				ntype=$(uci -q get network.bridge.type)
+				net_name=$(uci -q get network.${net}.device)
+			else
+				dev=$(uci get network.$net.ifname 2>/dev/null)
+
+				config_get ntype $net type
+				if [ "$ntype" == "bridge" ]; then
+					net_name="br-${net}"
+				else
+					net_name=$dev
+				fi
+			fi
+
+			eval ${zone}_raw_devs=\"\$${zone}_raw_devs $dev\"
+			if [ "$ntype" == "bridge" ]; then
+				eval ${net}_net_type=\"bridge\"
+			fi
+			eval ${zone}_zone_devs=\"\$${zone}_zone_devs ${net_name}\"
+
+			config_get proto $net proto
+			if [ "$proto" == "pppoe" -o "$proto" == "3g" ]; then
+				eval ${zone}_zone_devs=\"\$${zone}_zone_devs ${proto}-${net}\"
+			fi
+		done
+	done
+}
+
+parse_wif() {
+	local wnet dis dev ntype
+
+	config_get dis $1 disabled
+	if [ "$dis" == "1" ]; then
+		return
+	fi
+
+	config_get wnet $1 network
+	if [ -z "$wnet" ]; then
+		return
+	fi
+
+	config_get split_tun $1 split_tun
+	config_get tun $1 tun
+	if [ "$split_tun" == "1" -a "$tun" == "1" ]; then
+		return
+	fi
+
+	for zone in $fw_zones; do
+		for net in $(get_zone_nets $zone); do
+			if [ "$net" == "$wnet" ]; then
+				dev=$(wif_to_ifname $1)
+				eval ${zone}_raw_devs=\"\$${zone}_raw_devs $dev\"
+
+				ntype=$(eval echo \"\$${net}_net_type\")
+				if [ "$ntype" != "bridge" ]; then
+					eval ${zone}_zone_devs=\"\$${zone}_zone_devs $dev\"
+				fi
+			fi
+		done
+	done
+}
+
+private_ipv4_list() {
+	#  IPv4 address ranges reserved for private internets
+	private_ip_list="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+}
+
+parse_iso() {
+	config_load firewall
+	config_foreach parse_zone zone
+
+	config_load network
+	parse_net
+
+	config_load wireless
+	config_foreach parse_wif wifi-iface
+}
+
+get_zone_nets() {
+	eval echo \"\$${1}_zone_nets\"
+}
+
+get_zone_policy() {
+	eval echo \"\$${1}_zone_policy\"
+}
+
+get_zone_devs() {
+	eval echo \"\$${1}_zone_devs\"
+}
+
+get_raw_devs() {
+	eval echo \"\$${1}_raw_devs\"
+}
+
+num_last_rule() {
+	echo $(iptables -w -L $1 -n --line-numbers | tail -n -1 | cut -d' ' -f1)
+}
+
+num6_last_rule() {
+	echo $(ip6tables -w -L $1 -n --line-numbers | tail -n -1 | cut -d' ' -f1)
+}
+
+ipt6() {
+	ip6tables -w $* >/dev/null 2>&1
+}
+
+ipt() {
+	iptables -w $* >/dev/null 2>&1
+	ipt6 $*
+}
+
+ebt() {
+	ebtables $* >/dev/null 2>&1
+}
+
+ipt_clear() {
+	for zone in $fw_zones_smi; do
+		ipt -D zone_${zone}_input -j smartiso_${zone}_input
+		ipt -F smartiso_${zone}_input
+		ipt -X smartiso_${zone}_input
+
+		ipt -D zone_${zone}_forward -j smartiso_${zone}_forward
+		ipt -F smartiso_${zone}_forward
+		ipt -X smartiso_${zone}_forward
+	done
+
+	ebt -D FORWARD -j smartiso_forward
+	ebt -F smartiso_forward
+	ebt -X smartiso_forward
+}
+
+ipt_init() {
+	local num
+
+	for zone in $fw_zones_smi; do
+		ipt -N smartiso_${zone}_input
+		ipt -N smartiso_${zone}_forward
+
+		num=$(num_last_rule zone_${zone}_input)
+		num6=$(num6_last_rule zone_${zone}_input)
+
+		iptables -w -I zone_${zone}_input $num -j smartiso_${zone}_input >/dev/null 2>&1
+		ip6tables -w -I zone_${zone}_input $num6 -j smartiso_${zone}_input >/dev/null 2>&1
+
+		num=$(num_last_rule zone_${zone}_forward)
+		num6=$(num6_last_rule zone_${zone}_forward)
+
+		iptables -w -I zone_${zone}_forward $num -j smartiso_${zone}_forward >/dev/null 2>&1
+		ip6tables -w -I zone_${zone}_forward $num6 -j smartiso_${zone}_forward >/dev/null 2>&1
+
+#		num=$(num_last_rule zone_${zone}_input)
+#		ipt -N smartiso_${zone}_input
+#		ipt -I zone_${zone}_input $num -j smartiso_${zone}_input
+
+#		num=$(num_last_rule zone_${zone}_forward)
+#		ipt -N smartiso_${zone}_forward
+#		ipt -I zone_${zone}_forward $num -j smartiso_${zone}_forward
+	done
+
+	ebt -N smartiso_forward
+	ebt -A FORWARD -j smartiso_forward
+}
+
+ipt_setup() {
+	for zone in $fw_zones_smi; do
+		local pol=$(get_zone_policy $zone)
+		case "$pol" in
+			0) #full access
+				for dev in $(get_zone_devs $zone); do
+					ipt -t raw -D delegate_notrack -i $dev -j zone_${zone}_notrack
+					ipt -A smartiso_${zone}_input -i $dev -j ACCEPT
+				done
+				for dev in $(get_zone_devs wan); do
+					ipt -A smartiso_${zone}_forward -o $dev -j ACCEPT
+				done
+				for z in $fw_zones_smi; do
+					if [ "$z" != "$zone" ]; then
+						for dev in $(get_zone_devs $z); do
+							ipt -A smartiso_${zone}_forward -o $dev -j ACCEPT
+						done
+					fi
+				done
+				for dev in $(get_zone_devs $zone); do
+					ipt -A smartiso_${zone}_forward -o $dev -j ACCEPT
+				done
+				;;
+			1|3) #internet only
+				for dev in $(get_raw_devs $zone); do
+					ebt -I smartiso_forward -i $dev -j DROP
+				done
+				for dev in $(get_zone_devs $zone); do
+					ipt -t raw -D delegate_notrack -i $dev -j zone_${zone}_notrack
+					ipt -A smartiso_${zone}_input -i $dev -p udp --dport 67:68 -j ACCEPT
+					ipt -A smartiso_${zone}_input -i $dev -p udp --dport 53 -j ACCEPT
+					ipt -A smartiso_${zone}_input -i $dev -j DROP
+				done
+				if [ "$(echo ${zone} | sed s/vlan/vlan\ / | awk '{print $1}')" != "vlan" ]; then
+					for dev in $(get_zone_devs wan); do
+						if [ "$pol" == "3" ]; then # strict mode
+							local wansubs
+							network_get_subnets wansubs wan
+
+							for ws in $wansubs; do
+								ipt -A smartiso_${zone}_forward -o $dev --dst $ws -j DROP
+							done
+
+							for private_ip in $private_ip_list; do
+								ipt -A smartiso_${zone}_forward -o $dev --dst $private_ip -j DROP
+							done
+						fi
+						ipt -A smartiso_${zone}_forward -o $dev -j ACCEPT
+					done
+				else
+					local dev="pppoe-$(echo ${zone} | awk -F_ '{print $1}')"
+
+					ipt -A smartiso_${zone}_forward -o $dev -j ACCEPT
+				fi
+				for z in $fw_zones_smi; do
+					if [ "$z" != "$zone" ]; then
+						for dev in $(get_zone_devs $z); do
+							ipt -A smartiso_${zone}_forward -o $dev -j DROP
+						done
+					fi
+				done
+				for dev in $(get_zone_devs $zone); do
+					ipt -A smartiso_${zone}_forward -o $dev -j DROP
+				done
+				;;
+			2) #lan (zone) only
+				for dev in $(get_zone_devs $zone); do
+					ipt -A smartiso_${zone}_input -i $dev -j ACCEPT
+				done
+				for dev in $(get_zone_devs wan); do
+					ipt -A smartiso_${zone}_forward -o $dev -j DROP
+				done
+				for z in $fw_zones_smi; do
+					if [ "$z" != "$zone" ]; then
+						for dev in $(get_zone_devs $z); do
+							ipt -A smartiso_${zone}_forward -o $dev -j DROP
+						done
+					fi
+				done
+				for dev in $(get_zone_devs $zone); do
+					ipt -A smartiso_${zone}_forward -o $dev -j ACCEPT
+				done
+				;;
+		esac
+	done
+}
+
+(
+	flock -x 200
+
+	parse_iso
+	ipt_clear
+	ipt_init
+	private_ipv4_list
+	ipt_setup
+
+) 200>/var/lock/firewall.smart_isolation.flock

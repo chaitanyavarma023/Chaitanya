@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ "$(uci -q get network.wan.hostname)" == "" ]; then
+	uci set network.wan.manual_hostname='1'
+	uci set network.wan.hostname='Edge-core'
+        uci commit network.wan
+fi
+
+exit 0

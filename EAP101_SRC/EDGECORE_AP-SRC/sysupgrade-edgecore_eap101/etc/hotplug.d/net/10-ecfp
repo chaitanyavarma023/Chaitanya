@@ -1,0 +1,35 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+check_deny_os() {
+	local ifname
+	local deny_os
+
+
+	config_get ifname $1 ifname
+	config_get deny_os $1 deny_os
+
+	if [ "$ifname" = "$2" ] && [ -n "$deny_os" ]; then
+		ubus call ecfp add_iface "{\"device\": \"$ifname\", \"deny\": \"${deny_os}\"}"
+		exit 0
+	fi
+}
+
+
+[ "${INTERFACE:0:4}" == "wlan" ] || exit 0
+
+[[ "$INTERFACE" == *"\."* ]] && exit 0
+
+[ "$ACTION" == remove ] && {
+	ubus call ecfp del_iface "{\"device\": \"$INTERFACE\"}"
+	exit 0
+}
+
+[ "$ACTION" == add ] && {
+	config_load wireless
+	config_foreach check_deny_os wifi-iface $INTERFACE
+
+	exit 0
+}
+

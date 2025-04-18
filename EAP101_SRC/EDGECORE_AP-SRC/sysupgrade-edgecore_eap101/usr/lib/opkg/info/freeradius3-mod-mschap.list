@@ -1,0 +1,3 @@
+/usr/lib/freeradius3/rlm_mschap.so
+/etc/freeradius3/mods-enabled/mschap
+/etc/freeradius3/mods-available/mschap

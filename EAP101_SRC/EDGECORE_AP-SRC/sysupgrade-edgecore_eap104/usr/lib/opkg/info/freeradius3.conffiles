@@ -1,0 +1,6 @@
+/etc/freeradius3/clients.conf
+/etc/freeradius3/policy.d/accounting
+/etc/freeradius3/policy.d/filter
+/etc/freeradius3/proxy.conf
+/etc/freeradius3/radiusd.conf
+/etc/freeradius3/sites-available/default

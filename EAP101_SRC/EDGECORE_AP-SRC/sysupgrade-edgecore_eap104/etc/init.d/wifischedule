@@ -1,0 +1,23 @@
+#!/bin/sh /etc/rc.common
+
+START=43
+
+USE_PROCD=1
+PROG=/usr/bin/wifi_schedule.sh
+
+start_service () {
+
+        mkdir -p "/etc/crontabs"
+        procd_open_instance
+        procd_set_param command "$PROG" cron
+        procd_close_instance
+}
+
+stop_service () {
+        $PROG clean
+}
+
+service_triggers()
+{
+        procd_add_reload_trigger "wifi_schedule" "wireless"
+}

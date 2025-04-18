@@ -1,0 +1,12 @@
+Package: dynamic-vlan
+Version: 2021-06-04-55d78d3e-1
+Depends: libc, libubox20210819, libubus20210809
+Source: /home/build9/20241220-105032_EAP104/eap101-tip-tmp/feeds/ucentral/dynamic-vlan
+SourceName: dynamic-vlan
+License: BSD-3-Clause
+Section: ucentral
+SourceDateEpoch: 1639634923
+Maintainer: John Crispin <john@phrozen.org>
+Architecture: arm_cortex-a7
+Installed-Size: 3303
+Description:  dynamic VLAN netifd helper

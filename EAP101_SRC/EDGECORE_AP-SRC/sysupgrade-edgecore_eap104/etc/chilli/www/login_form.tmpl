@@ -1,0 +1,56 @@
+<!--
+  --  The login form
+  -->
+
+<div id="login-form" style="display:none">
+<table>
+<tr id="row_username">
+  <td>Username</td>
+  <td><INPUT NAME="username" ID="username" VALUE="$FORM_username"></td>
+</tr>
+<tr id="row_pass">
+  <td>Password</td>
+  <td><INPUT NAME="password" ID="password" VALUE="$FORM_password" TYPE="password"></td>
+</tr>
+<tr>
+  <td colspan="2" nowrap align="center">
+    <input type="submit" style="border:0px" id="login_btn" class="btn-primary" name="button" value="Login">
+  </td>
+</tr>
+</table>
+
+</div>
+<script type="text/javascript">
+   var show_username = "$SHOW_USERNAME";
+   var show_password = "$SHOW_PASSWORD";
+   var show_terms = "$SHOW_TERMS";
+   var show_login_form = "$SHOW_LOGIN_FORM"
+
+   if (show_login_form == "0") {
+      document.getElementById('login-form').style.display = "block";
+   }
+
+   if(show_password != "1"){
+      document.getElementById('row_pass').style.display = "none";
+      document.getElementById('password').value = "default";
+   }
+   if(show_username != "1"){
+      document.getElementById('row_username').style.display = "none";
+      document.getElementById('username').value = "default";
+   }
+
+   if(show_terms == "1") {
+      document.getElementById('login_btn').onclick = function(e) {
+
+        if(document.getElementById('terms_checkbox').checked) {
+          return true;
+        } else {
+          document.getElementById('terms_error').style.display = "inline-block";
+          return false;
+        }
+      };
+
+   } else {
+      document.getElementById('terms_div').style.display = "none";
+   }
+</script>

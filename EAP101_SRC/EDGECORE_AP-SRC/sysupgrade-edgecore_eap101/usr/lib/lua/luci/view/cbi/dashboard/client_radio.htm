@@ -1,0 +1,207 @@
+<%
+
+acn         = require "luci.acn.util"
+local uci     = acn.cursor()
+
+local sta, ifname, wifi_status, connected, mode, ieee_mode
+
+sta         = radio.networks[1] or {}
+ifname      = sta.ifname
+wifi_status = acn_status.wifi_status(ifname) or '-'
+connected   = (radio.status == "is_up") and "up" or "down"
+mode        = sta.mode
+ieee_mode  = radio.networks[radio.up_idx].ieee_mode
+
+if wds == "1" then
+    mode = mode .. "-wds"
+end
+
+%>
+
+<script type="text/javascript">//<![CDATA[
+$(function(){
+    $("#ieee_<%=i%>").show();
+})
+//]]></script>
+
+<% if connected ~= "up" then
+
+    -- Only show error message if device is enabled
+
+    if radio.networks[1].up ~= nil then %>
+        <div class="alert alert-error" style="margin-bottom:5px"><i class="icon-thumbs-down"></i>&nbsp;<%:Client is not connected to SSID%>&nbsp;<%=sta.ssid_cfg  %>
+        </div>
+    <% end %>
+
+<% else %>
+
+    <div id="connected<%=ifname%>" class="row-fluid sta-connect-msg">
+        <a href="#" class="refresh-client-status-btn" data-ifname="<%=ifname%>">
+            <i class="icon-refresh green"></i>
+        </a> CONNECTED TO <%= sta.ssid or '-'  %>
+    </div>
+
+    <div id="connected_detail<%=ifname%>" class="row-fluid" style="padding-bottom: 20px;">
+        <div class="span12" style="margin-bottom:5px;margin-top:5px">
+            <div>
+                <div class="progress" id="signal_bar<%=ifname%>" data-percent="N/A" style="margin-bottom:10px">
+                    <div id="bar_color<%=ifname%>" class="bar " style="width:0%;"></div>
+                </div>
+                <div>
+                    <span class="client_rssi_msg" id="rssi_str<%=ifname%>">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<% end %>
+
+<div class="row-fluid">
+    <div class="span6 info-labels wifi_info">
+        <div class="row-fluid">
+            <div class="info-label">
+                <%:Radio status%>
+            </div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <span style="color:<% if radio.radio_enabled then print('#69aa46') else print('gray') end %>;vertical-align:top;padding-right:5px">
+                    <i class="<% if radio.radio_enabled then print('icon-ok-circle') else print('icon-ban-circle') end %>"></i>
+                </span>
+                <% if radio.radio_enabled then print(translate('Enabled')) else print(translate('Disabled')) end %>
+            </div>
+        </div>
+
+        <div class="row-fluid">
+            <div class="info-label">
+                <%:Op Mode%>
+            </div>
+             <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <%
+                if radio.radio_enabled then
+                    print(acn.mode_to_friendly(mode))
+                else
+                    print ('-')
+                end
+                %>
+            </div>
+        </div>
+
+        <div class="row-fluid">
+            <div class="info-label">
+                <%:Remote MAC%>
+            </div>
+             <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <%
+                local remote_mac = sta.remote_mac
+                if remote_mac and remote_mac ~= "00:00:00:00:00:00" then
+                    print(string.upper(remote_mac))
+                else
+                    print('-')
+                end
+                %>
+            </div>
+        </div>
+
+         <div class="row-fluid">
+            <div class="info-label">
+                 <%:Security%>
+            </div>
+             <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <%
+                if radio.radio_enabled then
+                    if sta.encryption == 'None' then
+                        print('No Security')
+                    else
+                        print(sta.encryption)
+                    end
+                else
+                    print('-')
+                end
+                %>
+            </div>
+        </div>
+
+        <div class="row-fluid">
+            <div class="info-label">
+               <%:Local MAC%>
+            </div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+               <%
+                    local mac_tmp = string.upper(sta.local_mac or '-')
+                    print(mac_tmp)
+                %>
+            </div>
+        </div>
+    </div>
+
+    <div class="span6 info-labels wifi_info">
+        <div class="row-fluid">
+            <div class="info-label">
+                <%:Data rate%>
+            </div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <%
+                    local data_rate = sta.bitrate
+                    if data_rate then
+                        print(string.upper(data_rate), 'Mbps')
+                    else
+                        print("-")
+                    end
+                %>
+            </div>
+        </div>
+
+         <div class="row-fluid">
+            <div class="info-label">
+                <%:Tx Power%>
+            </div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <% if radio.status then
+                    if sta.txpower then
+                        print(sta.txpower .. ' dBm')
+                    else
+                        print('- dBm')
+                    end
+                %>
+               (<%=sta.country or '-'%>)
+               <% else print('-') end %>
+            </div>
+        </div>
+
+        <div class="row-fluid">
+            <div class="info-label">
+                <%:Channel%>
+            </div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <%
+                    if not sta.channel or not radio.status then
+                        print ('-')
+                    else
+                %>
+                    <%= sta.channel .. '&nbsp;('
+                        .. ((sta.frequency and sta.frequency  .. ' GHz') or '-')
+                        .. ') '
+                    %>
+                    <% if sta.chan_bw then print(' @ ' .. tostring(sta.chan_bw ).. ' MHz') end%>
+                <%end%>
+            </div>
+        </div>
+
+        <div class="row-fluid" id="ieee_<%=i%>" style="display:none">
+            <div class="info-label">
+                <%:IEEE Mode%>
+            </div>
+            <i class="separator icon-caret-right"></i>
+            <div class="info-value">
+                <%=acn_status.clean_ieee_mode(ieee_mode) or '-'%>
+            </div>
+        </div>
+    </div>
+</div>

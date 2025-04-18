@@ -1,0 +1,10 @@
+<%+cbi/valueheader%>
+<div>
+<a id="hotspot_configure_btn_<%=self.radio_id%>" class="btn btn-small" href="<%=controller%>admin/network/hotspot" <% if self.is_controlled_by_cloud then write('disabled=disabled') end %>><%:Configure hotspot%></a>
+
+<% local hs_status =  self.map.uci:get("hotspot", "hotspot", "hs_status")
+if hs_status ~= '1' then %>
+    <i class="icon-warning-sign red"></i>&nbsp;<%:Hotspot is not enabled!%>&nbsp;
+<% end %>
+</div>
+<%+cbi/valuefooter%>

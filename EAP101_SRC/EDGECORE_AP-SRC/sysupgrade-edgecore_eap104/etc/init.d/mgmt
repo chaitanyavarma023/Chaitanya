@@ -1,0 +1,64 @@
+#!/bin/sh /etc/rc.common
+
+START=98
+STOP=40
+
+USE_PROCD=1
+
+PROG=/usr/sbin/mgmtd
+
+is_mgmtd_running()
+{
+	ubus call service list '{ "name": "mgmt" }' | grep running | grep true >/dev/null
+	return $?
+}
+
+start_service()
+{
+	local MGMTD_EN
+	config_load acn
+	config_get MGMTD_EN mgmt enabled
+
+	if [ "$MGMTD_EN" == "1" ]; then
+		procd_open_instance
+		procd_set_param command $PROG
+		procd_append_param command -s
+		procd_set_param respawn ${respawn_threshold:-0} ${respawn_timeout:-10} ${respawn_retry:-0}
+		procd_close_instance
+	fi
+
+	if [ -f "/usr/sbin/backup_cfg_update.sh" ]; then
+		/usr/sbin/backup_cfg_update.sh acn
+	fi
+}
+
+service_reload()
+{
+	local MGMTD_EN
+	config_load acn
+	config_get MGMTD_EN mgmt enabled
+
+	if [ "$MGMTD_EN" == "1" ] && ! is_mgmtd_running; then
+		start
+	elif [ "$MGMTD_EN" == "0" ]; then
+		stop
+	fi
+
+	if [ -f "/usr/sbin/backup_cfg_update.sh" ]; then
+		/usr/sbin/backup_cfg_update.sh acn
+	fi
+}
+
+service_triggers()
+{
+	if [ -f "/usr/sbin/wifi_auto_disable_broadcast.sh" ]; then
+		global_auto_disable_broadcast="`uci -q get acn.settings.auto_disable_broadcast`"
+		[ "$global_auto_disable_broadcast" == "1" ] && {
+			/usr/sbin/wifi_auto_disable_broadcast.sh start& >/dev/null
+		} || {
+			/usr/sbin/wifi_auto_disable_broadcast.sh stop& >/dev/null
+		}
+	fi
+
+	procd_add_reload_trigger "acn"
+}

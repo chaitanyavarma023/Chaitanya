@@ -1,0 +1,13 @@
+#!/bin/sh
+
+[ "$(uci -q get system.led_power)" == "" ] && {
+        uci set system.led_power='led'
+        uci set system.led_power.default='1'
+        uci set system.led_power.name='POWER'
+        uci set system.led_power.sysfs='green:power'
+        uci set system.led_power.trigger='none'
+}
+
+uci commit system.led_power
+
+exit 0

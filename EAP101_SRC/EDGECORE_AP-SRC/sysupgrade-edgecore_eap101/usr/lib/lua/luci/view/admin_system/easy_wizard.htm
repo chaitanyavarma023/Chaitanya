@@ -1,0 +1,1215 @@
+<%
+    local acn = require ("luci.acn.util")
+    local uci = require "luci.model.uci".cursor()
+    local product = require("luci.acn.product")
+    local brand = require("luci.acn.brand")
+    local acn_status = require("luci.acn.status")
+    local reg = require ("luci.acn.reg")
+    local fs = require "nixio.fs"
+
+    local eth = product.eth(0)
+    local radio_info = product.radio(0)
+
+    -- uci get
+    local device_name = uci:get("acn", "settings", "name") or luci.sys.hostname() or ""
+    local ez_setup = uci:get("acn", "wizard", "ez_setup")
+    local default_country = uci:get("wireless", radio_info.device, "country") or "US"
+
+    -- product.lua
+    local page_title = product.company_name() .. " Web Config: " .. device_name
+    local sn = product.system_info("SN") and product.system_info("SN"):gsub("\r", ""):gsub("\n", "") or ""
+    local is_OAP103 = product.is_OAP103()
+    local fcc_locked = product.fcc_locked()
+    local thai_locked = product.thai_locked()
+    local jp_locked = product.jp_locked()
+    local in_locked = product.in_locked()
+    local br_locked = product.br_locked()
+
+    -- others
+    local cloud_controller_url = uci:get("acn", "mgmt", "controller_url") or brand.controller_url
+    local main_mac_addr = fs.readfile('/sys/class/net/' .. eth.logical_name .. '/address'):gsub("\r", ""):gsub("\n", "")
+    local max_count = 5
+
+    -- qr code
+    local has_ez_setup_alone =  fs.access("/tmp/.ez_setup_alone")
+
+    function detect_wan_link_status()
+        local util = require("luci.util")
+        local wan_dev = acn_status.get_wan_device()
+        if wan_dev == nil then
+            return false
+        end
+        local network_status = util.ubus("network.device", "status", { name =  wan_dev })
+        local link_status = (network_status and network_status.carrier)
+        return link_status
+    end
+
+    -- check mgmtd status
+    local is_mgmt_running = luci.util.exec("ps | grep mgmt | grep -v grep")
+    local mgmtd_status, mgmtd_detail  = fs.readfile("/tmp/mgmtd_status") or ""
+    is_mgmt_running = is_mgmt_running and #is_mgmt_running > 1
+    local mgmt_is_sync = false
+
+    if is_mgmt_running and mgmtd_status ~= "" then
+        if mgmtd_status:find(" ") then
+            mgmtd_status, mgmtd_detail = mgmtd_status:match("([%w,_%a]+) (.+)")
+        end
+        mgmtd_status = mgmtd_status:gsub("\n", "")
+        if mgmtd_status == "CONNECTED" then
+          if not status_detail or #status_detail <= 0 then
+            mgmt_is_sync = true
+          end
+        end
+    end
+
+%>
+
+<%+header%>
+
+<style>
+  #wizard_dialog .cbi-value,
+  #wizard_dialog_finished .cbi-value,
+  #wizard_cloud_registered .cbi-value {
+    padding-top: 10px;
+  }
+
+  #wizard_dialog .modal-body,
+  #wizard_dialog_finished .modal-body,
+  #wizard_cloud_registered .modal-body {
+    padding-top: 0px;
+    margin: 10px;
+    margin-bottom: 0px;
+  }
+
+  #wizard_dialog select,
+  #wizard_dialog_finished select {
+    margin: 0px;
+  }
+
+  #wizard_dialog .help-text,
+  #wizard_dialog_finished .help-text {
+    margin-left: 0px;
+  }
+
+  #wizard_data {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+
+  @media (min-width: 614px) {
+    #wizard_dialog .controls,
+    #wizard_dialog_finished .controls,
+    #wizard_cloud_registered .controls {
+      margin-left: 200px;
+    }
+    #wizard_dialog .control-label,
+    #wizard_dialog_finished .control-label,
+    #wizard_cloud_registered .control-label {
+      width: 180px;
+    }
+  }
+
+  @media (max-width: 614px) {
+    #wizard_dialog .control-label,
+    #wizard_dialog_finished .control-label,
+    #wizard_cloud_registered .control-label {
+      width: auto;
+    }
+    #wizard_dialog .controls,
+    #wizard_dialog_finished .controls,
+    #wizard_cloud_registered .controls {
+      margin-left: 0px;
+    }
+  }
+
+  #wizard_dialog hr,
+  #wizard_dialog_finished hr {
+    margin-bottom: 5px;
+  }
+
+  #wizard_data {
+    margin-bottom: 0px;
+  }
+
+  .lbl-mode {
+    font-size: 13px;
+  }
+
+  .panel-heading .accordion-toggle:before {
+      content: "－";
+  }
+  .panel-heading .accordion-toggle.collapsed:before {
+      content: "＋";
+  }
+</style>
+
+<script type="text/javascript">
+var is_wan_up = <%=tostring(detect_wan_link_status())%>;
+
+var wan_ip_id = '#cbid\\.network\\.wan\\.ipaddr';
+var wan_netmask_id = '#cbi\\.combobox\\.cbid\\.network\\.wan\\.netmask';
+var wan_gateway_id = '#cbid\\.network\\.wan\\.gateway';
+var wan_dns_id = '#cbid\\.network\\.wan\\.dns';
+var wan_username_id = '#cbid\\.network\\.wan\\.username';
+var wan_password_id = '#cbid\\.network\\.wan\\.password';
+var wan_proto_id = '#cbid\\.network\\.wan\\.proto';
+
+function sort_country_list() {
+  var my_options = $('#country_list option');
+
+  my_options.sort(function (a, b) {
+    if (a.text > b.text) {
+      return 1;
+    } else if (a.text < b.text) {
+      return -1;
+    } else {
+      return 0;
+    }
+  });
+
+  $('#country_list').empty().append( my_options );
+}
+
+/*
+* CAPWAP management
+*/
+// <![CDATA[
+var capwap_row = '<tr class="cbi-section-table-row" id="cbi-acn-cfgCFG_ID">'
++ ' '
++ '    <td class="cbi-value-field">'
++ '        <div id="cbi-acn-cfgCFG_ID-ip">'
++ '            <input type="hidden" id="acn.new.cfgCFG_ID" name="acn.new.cfgCFG_ID" value="CFG_ID" />'
++ '                <input  title="" autocomplete="off" type="text" class="ace-tooltip" style="width:100px"'
++ '                onchange="cbi_d_update(this.id)" name="cbid.acn.cfgCFG_ID.ip" id="cbid.acn.cfgCFG_ID.ip" value="" />'
++ '        </div>'
++ '        <div id="cbip-acn-cfgCFG_ID-ip"></div>'
++ '    </td>'
++ ''
++ '    <td class="cbi-value-field">'
++ '        <div id="cbi-acn-cfgCFG_ID-remark">'
++ '            <input  title="" autocomplete="off" type="text" class="ace-tooltip" style="width:100px"'
++ '            onchange="cbi_d_update(this.id)" name="cbid.acn.cfgCFG_ID.remark" id="cbid.acn.cfgCFG_ID.remark" value="" />'
++ '        </div>'
++ '        <div id="cbip-acn-cfgCFG_ID-remark"></div>'
++ '    </td>'
++ ''
++ '<td class="cbi-section-table-cell" style="width:50px">'
++ ''
++ '<input type="hidden" name="acn.del.acn.cfgCFG_ID" id="acn.del.acn.cfgCFG_ID" value="0">'
++ '<button class="btn btn-info btn-mini btn-danger" data-new="1"  value="cfgCFG_ID" '
++ 'onclick="removeCAPWAPRow(this.id); return false;" '
++ 'name="cbi.rts.acn.cfgCFG_ID" id="cbi.rts.acn.cfgCFG_ID" alt="Delete"'
++ ' title="Delete"><i class="icon-trash"></i></button> '
++ '';
+// ]]>
+
+var add_user_counter = 0;
+var dns_srv_id = '#dns_srv';
+var srv_suffix_id = '#srv_suffix';
+var unicast_id = '#unicast';
+var tbl_sel = "select[id*='management']";
+var max_count = <%=max_count%>;
+
+function getVisibleRowCount(row_offset) {
+  var offset = row_offset;
+
+  if (offset === undefined) {
+    offset = -2;
+  }
+
+  var len = $('#table_capwap_ac tr:visible').length + offset ;
+
+  return len;
+}
+
+function removeCAPWAPRow(btn) {
+  btn = btn.replace(/\./g, '\\.');
+
+  var $btn = $('#' + btn);
+  var value = $btn.attr('value');
+
+  if ($btn.hasClass('disabled')) {
+    return;
+  }
+
+  var id = 'acn\\.del\\.acn\\.' + value;
+
+  $('#' + id).attr('value', 1);
+
+  $('#cbi-acn-' + value).fadeOut();
+
+    // If this is a newly added row, just go ahead and delete it permanently
+    // What a mess...
+  if ($btn.data('new') == '1') {
+    $('#cbi-acn-' + value).remove();
+  }
+
+    // Remove validation by hiding inputs
+  $('#cbi-acn-' + value + ' input').attr('deleted', 'deleted');
+
+  if (getVisibleRowCount(-1) <= max_count ) {
+    $('#alert_up_max').hide();
+    $('#btn_add').attr('disabled', false);
+  }
+
+}
+
+function addCAPWAPRow() {
+  var name = '#table_capwap_ac';
+  $('#row_empty').hide();
+
+  var cfg_id = add_user_counter;
+  add_user_counter++;
+
+  var row = capwap_row.replace(/CFG_ID/g, cfg_id);
+  row = $.parseHTML(row);
+
+  if ( $(name + ' tr').length > 0) {
+    var selector = name + ' tr:last';
+    $(selector).after(row);
+  } else {
+    $(name + ' tbody').append(row);
+  }
+
+    // Add functions to update data model
+  var row_id = 'cbi-acn-cfg' + cfg_id;
+
+  $('#' + row_id + ' input').change( function (e, data) {
+    cbi_d_update(this.id);
+  });
+
+  $('#' + row_id + ' input').each(function () {
+    if (this.id.indexOf('ip') >= 0) {
+      cbi_validate_field(this.id, false, 'ipaddr');
+    }
+  });
+
+  // Don't allow more than X
+  if (getVisibleRowCount(-1) >= max_count ) {
+    $('#alert_up_max').show();
+    $('#btn_add').attr('disabled', true);
+    return;
+  }
+
+  return false;
+}
+
+/* EOF CAPWAP management */
+
+function set_err_msg_wizard(error_msg) {
+  $('#div_error').show();
+  $('#error_txt').text(error_msg);
+  //jump to the error_txt field
+  $('#error_txt')[0].scrollIntoView({behavior: 'smooth',block: 'start'});
+}
+
+function set_network_err_msg_wizard(error_msg) {
+  $('#network_div_error').show();
+  $('#network_error_txt').text(error_msg);
+  //jump to the error_txt field
+  $('#network_error_txt')[0].scrollIntoView({behavior: 'smooth',block: 'start'});
+}
+
+$(function () {
+  var country_list_res = <%= reg.country_list(radio_info.wifi_iface) %>;
+  for (var i = 0; i < country_list_res.length; i++) {
+    var _val = country_list_res[i].ccode;
+    if (_val && _val != '') {
+        var _text = (country_list_res[i].name != ''? country_list_res[i].name : 'unknown');
+        $('#country_list').append($('<option></option>').attr('value', _val).text(_text));
+    }
+  }
+
+  // Sort after add additional options
+  sort_country_list();
+
+  $('#country_list').val('<%=default_country%>');
+
+<% if ez_setup == "1" then  %>
+  <% if detect_wan_link_status() and mgmt_is_sync then %>
+  $('#wizard_dialog').modal('hide');
+  $('#wizard_dialog_finished').modal('hide');
+  $('#wizard_cloud_registered').modal();
+  $('#redirect_btn_regis').hide();
+  $('#redirect_btn_dash').hide();
+  $('#redirect_btn_cloud').hide();
+
+  $('#regitered_msg').html('<%:This device is managed by ecCloud.%>');
+  $('#redirect_btn_dash').show();
+  $('#redirect_btn_cloud').show();
+<%
+    uci:set("acn", "wizard", "ez_setup", "0")
+    uci:set("acn", "capwap", "state", "0")
+    uci:set("acn", "capwap", "dhcp_opt", "0")
+    uci:save("acn")
+    uci:commit("acn")
+%>
+  <% else %>
+
+  $('#wizard_dialog').modal();
+
+  <% end %>
+
+<% elseif ez_setup == "2" then %>
+  <% if has_ez_setup_alone then
+        uci:set("acn", "wizard", "ez_setup", "0")
+        uci:save("acn")
+        uci:commit("acn")
+  %>
+    // check if ucentral is selected; show correct page after clicking Done on the wizard
+    <% controller_mode = uci:get("acn", "mgmt", "management")
+    if controller_mode == "3" then
+        os.execute(". /lib/acn/acn_functions.sh; copy_tip_uci_files; switch_services;")
+    %>
+      window.location.href = '<%=controller%>ucentral/status';
+    <% else %>
+      $('#start_dialog').modal();
+      window.location.href = '<%=controller%>admin/acn_status/overview#grneral_tab_btn';
+    <% end %>
+
+  <% else
+        uci:set("acn", "wizard", "ez_setup", "3")
+        uci:save("acn")
+        uci:commit("acn")
+  %>
+  $('#restart_msg').modal();
+
+  var url = '<%=controller%>admin/system/ezwizard_mgmt';
+  //Actually apply the changes now
+  $.post(url, null);
+  var device_url= location.protocol + '//' + location.host + '/cgi-bin/luci';
+  var cloud_server = '<%=cloud_controller_url%>';
+  device_url = encodeURIComponent(device_url);
+  window.location.href = cloud_server + 'auth?sn=<%=sn%>&mac=<%=main_mac_addr%>&redirect_url=' + device_url + '&country_code=<%=default_country%>';
+
+  <% end %>
+<% elseif ez_setup == "3" then %>
+  $('#wizard_dialog').modal('hide');
+  $('#wizard_dialog_finished').modal('hide');
+  $('#wizard_cloud_registered').modal();
+  $('#redirect_btn_regis').hide();
+  $('#redirect_btn_dash').hide();
+  $('#redirect_btn_cloud').hide();
+
+  var searchURL = window.location.search;
+  searchURL = searchURL.substring(1, searchURL.length);
+
+  var _item = searchURL.split('&')[0].split('=')[0];
+  var success_val = '';
+  if (_item == 'success') {
+    var error_code = searchURL.split('&')[1] ? searchURL.split('&')[1].split('=')[1] : '';
+    success_val = searchURL.split('&')[0].split('=')[1];
+
+    if (success_val == '1') {
+      if (error_code == 'add_error_duplicate') {
+        var url = '<%=controller%>admin/system/ezwizard_fail';
+        $('#regitered_msg').html('<%:This device has been registered on ecCLOUD. Configuring the device, this may take a few minutes...%>');
+        $('#redirect_btn_dash').show();
+        $('#redirect_btn_cloud').show();
+      } else {
+        var url = '<%=controller%>admin/system/ezwizard_success';
+        $.post(url, null);
+        $('#regitered_msg').html('<%:You have just registered a new device on CLOUD. Configuring the device, this may take a few minutes...%>');
+        $('#redirect_btn_dash').show();
+        $('#redirect_btn_cloud').show();
+      }
+<%
+    uci:set("acn", "wizard", "ez_setup", "0")
+    uci:set("acn", "capwap", "state", "0")
+    uci:set("acn", "capwap", "dhcp_opt", "0")
+    uci:save("acn")
+    uci:commit("acn")
+%>
+    } else {
+      if (error_code == 'add_error_claimed') {
+        $('#regitered_msg').html('<%:This device has been registered by the different account on ecCLOUD.%>');
+      } else if (error_code == 'add_error_not_found') {
+        $('#regitered_msg').html('<%:The serial number and MAC of this device do not exist on ecCLOUD.%>');
+      } else {
+        $('#regitered_msg').html('<%:Please try again.%>');
+      }
+      var url = '<%=controller%>admin/system/ezwizard_fail';
+      $.post(url, null);
+      $('#redirect_btn_regis').show();
+    }
+  } else {
+    var url = '<%=controller%>admin/system/ezwizard_fail';
+    $.post(url, null);
+    $('#regitered_msg').html('<%:Please try again.%>');
+    $('#redirect_btn_regis').show();
+  }
+
+<% end %>
+
+  var $radios = $('input:radio[name=radio_controller]');
+  $radios.filter('[value=controlled]').prop('checked', true);
+  $radios.filter('[value=ucentral]').prop('checked', true);
+
+  function mgmt_mode_change() {
+    $('#wiz_easy_options').fadeOut(200);
+    $('#wiz_adv_enable').fadeOut(200);
+    $('#wiz_adv_options').fadeOut(200);
+    $('#wiz_section_capwap').fadeOut(200);
+    $('#wiz_section_pwd').fadeOut(200);
+    if ( $('input[name=radio_controller]:checked').val() == 'controlled') {
+      $('#div_error').hide();
+      $('#wiz_btn_bar').show();
+      $('#wiz_section_mode').fadeOut(200);
+      $('#wiz_easy_options').fadeOut(200);
+      $('#wiz_section_country').fadeIn(200);
+    } else if ( $('input[name=radio_controller]:checked').val() == 'capwap') {
+      $('#wiz_btn_bar').show();
+      $('#wiz_section_capwap').fadeIn(200);
+      $('#wiz_section_pwd').fadeIn(200);
+      $('#wiz_section_country').fadeIn(200);
+    } else if ( $('input[name=radio_controller]:checked').val() == 'ucentral' ) {
+      $('#div_error').hide();
+      $('#wiz_btn_bar').show();
+      $('#wiz_section_mode').fadeOut(200);
+      $('#wiz_easy_options').fadeOut(200);;
+      $('#wiz_section_pwd').fadeIn(200);      // only show Change password option
+      $('#wiz_section_country').fadeOut(200);
+    } else {
+      /* hide Setup mode section */
+      $('#wiz_easy_options').fadeIn(200);
+      $('#wiz_adv_enable').fadeIn(200);
+      $('#wiz_section_pwd').fadeIn(200);
+      $('#wiz_adv_options').fadeOut(200);
+      $('#wiz_section_country').fadeIn(200);
+    }
+  }
+
+  // Handle controlled vs stand alone mode
+  $('.controller-btn').click(function () {
+    mgmt_mode_change();
+  });
+
+  $('#mode_capwap').on('change', function(e){
+    if (this.value === '0') {       // none
+      $('#mode_capwap_auto').hide();
+      $('#mode_capwap_manual').hide();
+    }
+    else if (this.value === '1') {  // auto
+      $('#mode_capwap_auto').show();
+      $('#mode_capwap_manual').hide();
+    }
+    else if (this.value === '2') {  // manual
+      $('#mode_capwap_auto').hide();
+      $('#mode_capwap_manual').show();
+    }
+  });
+
+  function validateIpAndNetmask(ip_id, netmask_id) {
+    var ip_value = $(ip_id).val();
+    var netmask_value = $(netmask_id).val();
+    var error = '';
+
+    if (!is_ip(ip_value)) {
+      set_err_msg(ip_id, true, _('Not a valid IPv4 address!'));
+      return false;
+    }
+
+    if (!cbi_validators.netmask(netmask_value)) {
+      set_err_msg(netmask_id, true, _('Not a valid netmask!'));
+      return false;
+    }
+
+    if (is_broadcast(ip_value, netmask_value)) {
+      set_err_msg(ip_id, true, _('IP address is a broadcast IP.'));
+      return false;
+    }
+
+    if (is_net(ip_value, netmask_value)) {
+      set_err_msg(ip_id, true, _('Not a valid network.'));
+      return false;
+    }
+
+    return true;
+  }
+
+  $('#wiz_done_btn').click(function () {
+    var user_pwd_id = $('#user_pwd');
+    var user_pwd_val = user_pwd_id.val();
+
+    var user_pwd_comfirm_id = $('#user_pwd_comfirm');
+    var user_pwd_comfirm_val = user_pwd_comfirm_id.val();
+    var error = '';
+    $('#div_error').hide();
+
+    clear_validate_error(wan_ip_id);
+    clear_validate_error(wan_netmask_id);
+    clear_validate_error(wan_gateway_id);
+    clear_validate_error(wan_dns_id);
+    clear_validate_error(wan_username_id);
+    clear_validate_error(wan_password_id);
+    clear_validate_error('#user_pwd');
+    clear_validate_error('#user_pwd_comfirm');
+    clear_validate_error('#psk_key');
+    clear_validate_error('#ssid');
+    clear_validate_error(dns_srv_id);
+    clear_validate_error(srv_suffix_id);
+    clear_validate_error(unicast_id);
+
+    if ($('#wiz_section_pwd:visible').length != 0){
+      if (user_pwd_val == '') {
+        error = '<%:Please enter new login password.%>';
+      } else if (user_pwd_val != user_pwd_comfirm_val) {
+        error = '<%:New password and Confirm password does not match.%>';
+      } else {
+        if (user_pwd_val.length < 6 || user_pwd_val.length > 20 || (!(user_pwd_val.match(/^[a-zA-Z0-9\-_.]+$/) && !user_pwd_val.match(/^\-/)))) {
+          error = '<%:New login password shall be between 6 and 20 ASCII characters. Only accept A-Z, a-z, 0-9, Period (.), Underscore (_) and Hyphen (-), but NOT allow username that begin with Hyphen (-).%>';
+        }
+      }
+
+      if (error != '') {
+        set_err_msg_wizard(error);
+        return;
+      }
+    }
+
+    if ( $('input[name=radio_controller]:checked').val() == 'standalone') {
+      // Save SSID info here
+      var psk_key = $( '#psk_key' ).val();
+      var ssid_val = $( '#ssid' ).val();
+
+      if ( ssid_val.length == 0 ) {
+        error = '<%:Please enter a wireless network name!%>';
+        set_err_msg('#ssid', true, error);
+      } else if ( !psk_check(psk_key) ) {
+        error = '<%:Invalid wifi network key!  It must be a value between 8 and 63 ASCII characters long, OR must be a string of 64 hex characters.%>';
+        set_err_msg('#psk_key', true, error);
+      }
+
+      if (error != '') {
+        set_err_msg_wizard(error);
+        return;
+      }
+
+      //advance setup enable
+      var wan_proto = $(wan_proto_id).val();
+      if(wan_proto == 'static') {
+        //static
+
+        if (!validateIpAndNetmask(wan_ip_id, wan_netmask_id)) {
+          error = '<%:IP address is not a valid IPv4 address!%>';
+          set_network_err_msg_wizard(error);
+          return;
+        }
+
+        if (!validateIpAndNetmask(wan_gateway_id, wan_netmask_id)) {
+          error = '<%:Gateway is not a valid IPv4 address!%>';
+          set_network_err_msg_wizard(error);
+          return;
+        }
+
+        if (!is_in_netmask($(wan_ip_id).val(), $(wan_netmask_id).val(), $(wan_gateway_id).val())) {
+          error = '<%:IP address is not in the WAN subnet.%>';
+          set_network_err_msg_wizard(error);
+          set_err_msg(wan_ip_id, true, error);
+          return;
+        }
+
+          if (!is_ip($(wan_dns_id).val(), ZERO_NO)) {
+            error = '<%:DNS Server is not a valid IPv4 address!%>';
+            set_network_err_msg_wizard(error);
+            set_err_msg(wan_dns_id, true, error);
+            return;
+          }
+      }
+      else if (wan_proto == 'pppoe') {
+        //pppoe
+        var wan_username = $(wan_username_id).val();
+        var wan_password = $(wan_password_id).val();
+
+        if (wan_username.length == 0) {
+          error = '<%:Should not be empty.%>';
+          set_network_err_msg_wizard(error);
+          set_err_msg(wan_username_id, true, error);
+          return;
+        }
+
+        if (wan_password.length == 0) {
+          error = '<%:Should not be empty.%>';
+          set_network_err_msg_wizard(error);
+          set_err_msg(wan_password_id, true, error);
+          return;
+        }
+      }
+    }
+    else if ( $('input[name=radio_controller]:checked').val() == 'capwap') {
+      if ( $('#mode_capwap').val()== '2') {
+        var dns_srv_enable = $(dns_srv_id).is(':checked');
+        var srv_suffix = $(srv_suffix_id).val();
+        var unicast_enable = $(unicast_id).is(':checked');
+
+        if (dns_srv_enable) {
+          if (typeof srv_suffix !== 'undefined' && srv_suffix !== '' && !isValidDomain(srv_suffix)) {
+            error = '<%:Domain name suffix is invalid.%>';
+            set_err_msg_wizard(error);
+            set_err_msg(srv_suffix_id, true, error);
+            return;
+          }
+        }
+
+        //check static ip is valid
+        var error=0;
+        var is_v4=false;
+        var is_v6=false;
+        var has_v4=0;
+        var has_v6=0;
+        $('#table_capwap_ac').find("input[id*='ip'][deleted!=deleted]").each(function() {
+          is_v4 = is_ip(this.value, ZERO_NO);
+          is_v6 = is_ipv6(this.value);
+          if (!is_v4 && !is_v6) {
+            error = '<%:AC Address is not a valid IP address!%>';
+            set_err_msg_wizard(error);
+            set_err_msg(this.id, true, error);
+            error=1;
+          }
+          if (is_v4) {
+            has_v4 = 1;
+          }
+          if (is_v6) {
+            has_v6 = 1;
+          }
+        });
+
+        // at least one discovery mode should be enabled when Manual mode is selected
+        if ((dns_srv_enable || unicast_enable ) == 0 ) {
+          error = '<%:At least one of the Discovery should be enabled when CAPWAP mode is Manual!%>';
+          set_err_msg_wizard(error);
+          error=1;
+        }
+        if (error == 1) {
+          return;
+        }
+        if (has_v4 && has_v6) {
+            error = '<%:AC Address should be all IPv4 address or IPv6 address!%>';
+            set_err_msg_wizard(error);
+            return;
+        }
+      }
+    }
+
+    // Nothing to validate for advanced
+    $('#div_error').hide();
+    submit_form();
+  });
+
+  $('#show_key').change(function () {
+    if ($('#show_key').prop('checked')) {
+      $('#psk_key').prop('type', 'text');
+    } else {
+      $('#psk_key').prop('type', 'password');
+    }
+  });
+
+  $('#show_user_pwd').change(function () {
+    if ($('#show_user_pwd').prop('checked')) {
+      $('#user_pwd').prop('type', 'text');
+      $('#user_pwd_comfirm').prop('type', 'text');
+    } else {
+      $('#user_pwd').prop('type', 'password');
+      $('#user_pwd_comfirm').prop('type', 'password');
+    }
+  });
+
+  $('#show_key').change();
+
+  //#7425: force to select country/cloud-control before entering advanced setting GUI.
+  $('#country_list,#radio_mode_controller,#radio_mode_standalone,#radio_mode_capwap,#radio_mode_ucentral').keyup(function (e) {
+    if (e.keyCode == 27) { // escape key maps to keycode `27`
+      return false;
+    }
+  });
+
+  <% if not is_OAP103 then %>
+    if (!is_wan_up) {
+      $('#no_wan_msg').show();
+      $('#radio_mode_standalone').prop('checked', true);
+      $('#radio_mode_controller').prop('checked', false);
+      $('#radio_mode_capwap').prop('checked', false);
+      // $('#radio_mode_ucentral').prop('checked', false);
+      $('#radio_mode_controller').attr('disabled', true);
+      mgmt_mode_change();
+
+      $('#radio_mode_adv').prop('checked', true);
+      $('#radio_mode_easy').prop('checked', false);
+      $('#radio_mode_easy').attr('disabled', true);
+    } else {
+      $('#radio_mode_controller').prop('checked', true);
+    }
+  <% else %>
+    if (!is_wan_up) {
+      $('#no_wan_msg').show();
+      $('#radio_mode_standalone').prop('checked', true);
+      // show standalone options
+      $('#wiz_easy_options').fadeIn(200);
+      $('#wiz_adv_enable').fadeIn(200);
+      $('#wiz_section_pwd').fadeIn(200);
+
+      $('#radio_mode_capwap').prop('checked', false);
+      // $('#radio_mode_ucentral').prop('checked', false);
+
+      $('#radio_mode_adv').prop('checked', true);
+      $('#radio_mode_easy').prop('checked', false);
+      $('#radio_mode_easy').attr('disabled', true);
+    } else {
+      $('#radio_mode_capwap').prop('checked', true);
+      // show capwap options
+      $('#wiz_btn_bar').show();
+      $('#wiz_section_capwap').fadeIn(200);
+      $('#wiz_section_pwd').fadeIn(200);
+    }
+  <% end %>
+
+  var proto_obj = $(wan_proto_id);
+  proto_obj.change(function() {
+    $('#network_div_error').hide();
+    var proto_val = proto_obj.val();
+    if (proto_val == 'dhcp') {
+        $('#cbi-network-wan-ipaddr').hide();
+        $('#cbi-network-wan-netmask').hide();
+        $('#cbi-network-wan-gateway').hide();
+        $('#cbi-network-wan-dns').hide();
+        $('#cbi-network-wan-username').hide();
+        $('#cbi-network-wan-password').hide();
+    } else if (proto_val == 'static') {
+        $('#cbi-network-wan-username').hide();
+        $('#cbi-network-wan-password').hide();
+        $('#cbi-network-wan-ipaddr').show();
+        $('#cbi-network-wan-netmask').show();
+        $('#cbi-network-wan-gateway').show();
+        $('#cbi-network-wan-dns').show();
+    } else {
+        $('#cbi-network-wan-ipaddr').hide();
+        $('#cbi-network-wan-netmask').hide();
+        $('#cbi-network-wan-gateway').hide();
+        $('#cbi-network-wan-dns').hide();
+        $('#cbi-network-wan-username').show();
+        $('#cbi-network-wan-password').show();
+    }
+
+  });
+
+  if (getVisibleRowCount(-1) >= max_count) {
+    $('#alert_up_max').show();
+    $('#btn_add').attr('disabled', true);
+  }
+
+  $('button.ace-tooltip').tooltip();
+
+  $('button.disabled').click(function () {
+    if (!$(this).hasClass('disabled')) {
+      $('.disabled').removeClass('disabled').attr('rel', null);
+
+      $(this).addClass('disabled').attr('rel', 'tooltip');
+    }
+  });
+
+  $(dns_srv_id).change(function(){
+    if($(this).is(':checked')) {
+      $(srv_suffix_id).closest('.cbi-value').show()
+    }
+    else {
+     $(srv_suffix_id).closest('.cbi-value').hide()
+    }
+  });
+
+});
+
+function submit_form() {
+  $('#wizard_data').submit();
+  $('#wizard_dialog').modal('hide');
+  $('#wizard_dialog_finished').modal();
+  $('#wizard_cloud_registered').modal('hide');
+}
+
+function psk_check(psk_key) {
+  if ( psk_key.length == 64 ) {
+    return (psk_key.match(/^[a-fA-F0-9]{64}$/) != null);
+  } else if ( psk_key.length == 0 ) {
+    return false;
+  } else {
+    return (psk_key.length >= 8) && (psk_key.length <= 63);
+  }
+}
+
+function on_click_redirct(_destination) {
+  if (_destination == 'register_again') {
+    var url = '<%=controller%>admin/system/ezwizard_register';
+    $.post(url, null);
+    setTimeout(window.location.href = '<%=controller%>admin/system/wizard', 8000);
+  } else if (_destination == 'cloud') {
+    window.location.href = '<%=cloud_controller_url%>';
+  } else {
+    window.location.href = '<%=controller%>admin/acn_status/overview';
+  }
+}
+</script>
+
+<div class="modal hide" role="dialog" aria-modal="true" id="start_dialog" style="display: none">
+  <%:Starting configuration apply%>…
+</div>
+
+<div id="wizard_dialog" class="modal hide fade in" style="display: none; height:auto;" data-backdrop="static" data-keyboard="true" >
+
+    <form action="<%=controller%>admin/system/ezwizard" class="form-horizontal" method="post" name="wizard_data"  id="wizard_data">
+        <div id="page_wizard">
+             <div class="modal-header">
+                <h3 class="green"><%:Setup Wizard%></h3>
+            </div>
+
+            <div class="modal-body">
+
+<!-- Controller section -->
+                <div id="wiz_section_controller">
+                    <h4><%:Will this device be managed? %></h4>
+                    <h7 id="no_wan_msg" class="hide" style="color:red">No internet connection detected! So please setup network first.</h7>
+                    <div class="cbi-value">
+                      <% if not is_OAP103 then %>
+                        <label>
+                            <input name="radio_controller" id="radio_mode_controller"  class="controller-btn"
+                                type="radio" value="controlled">
+                            <span class="lbl lbl-mode"> <%:Yes, I will manage this device by ecCloud controller. %></span>
+                        </label>
+                      <% end %>
+
+                        <label>
+                          <input name="radio_controller" id="radio_mode_capwap"  class="controller-btn"
+                              type="radio" value="capwap">
+                          <span class="lbl lbl-mode"> <%:Yes, I will manage this device by EWS-Series controller.%></span>
+                        </label>
+
+                        <!-- <label>
+                          <input name="radio_controller" id="radio_mode_ucentral"  class="controller-btn"
+                            type="radio" value="ucentral">
+                          <span class="lbl lbl-mode"> <%:Yes, I will manage this device by uCentral cloud.%></span>
+                        </label> -->
+
+                         <label>
+                             <input name="radio_controller" id="radio_mode_standalone" class="controller-btn"
+                                type="radio" value="standalone">
+                             <span class="lbl lbl-mode"> <%:No, I will be operating this device in stand-alone mode.%></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="panel-group" id="accordion">
+
+                    <!-- Easy mode options -->
+                    <div class="panel panel-default" id="wiz_easy_options" style="display:none">
+                      <hr>
+                      <header class="panel-heading">
+                        <h4 class="panel-title">
+                          <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#post1">
+                             <%:Wireless Setup%>
+                          </a>
+                        </h4>
+                      </header>
+                      <footer id="post1" class="panel-collapse collapse">
+                        <div class="cbi-value">
+                            <label class="control-label" for="ssid"><%:SSID%></label>
+                            <div class="controls">
+                                <input name="ssid" id="ssid" type="text" value="<%=device_name%>-<%=sn%>">
+                            </div>
+                        </div>
+                        <div class="cbi-value">
+                            <label class="control-label" for="psk_key"><%:Wireless password%></label>
+                            <div class="controls">
+                                <input name="psk_key" id="psk_key" type="password" value="12345678">&nbsp;&nbsp;
+                                <input name="show_key" id="show_key" type="checkbox" checked=true>
+                                <label class="lbl" for="show_key"> <%:Show Key%></label>
+                            </div>
+                        </div>
+                      </footer>
+                    </div>
+
+                    <!-- Advanced options -->
+                    <div class="panel panel-default" id="wiz_adv_enable" style="display:none">
+                      <hr>
+                      <header class="panel-heading">
+                        <h4 class="panel-title">
+                          <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#post2">
+                             <%:Network Setup%>
+                          </a>
+                        </h4>
+                      </header>
+                      <footer id="post2" class="panel-collapse collapse">
+                        <div class="cbi-value " style="" id="cbi-network-wan-proto">
+                            <label id="cbi-network-wan-proto-tel" class="text-info control-label" for="cbid.network.wan.proto"><%:IP Address Mode%>&nbsp; 	&nbsp;</label>
+                            <div class="controls">
+                                <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.network.wan.proto" name="cbid.network.wan.proto" size="1">
+    		                      <option id="cbi-network-wan-proto-dhcp" value="dhcp" selected="selected">DHCP</option>
+    		                      <option id="cbi-network-wan-proto-static" value="static"><%:Static IP%></option>
+    		                      <option id="cbi-network-wan-proto-pppoe" value="pppoe">PPPoE</option>
+    		                    </select>
+                            </div>
+                        </div>
+                        <!-- Network: Static -->
+                        <div class="cbi-value hide " style="" id="cbi-network-wan-ipaddr">
+                            <label id="cbi-network-wan-ipaddr-tel" class="text-info control-label" for="cbid.network.wan.ipaddr"><%:IP Address%>&nbsp; 	&nbsp;</label>
+                            <div class="controls">
+                                <input autocomplete="off" type="text" class="ace-tooltip" name="cbid.network.wan.ipaddr" id="cbid.network.wan.ipaddr" value="">
+                            </div>
+                        </div>
+
+                        <div class="cbi-value hide" style="" id="cbi-network-wan-netmask">
+                            <label id="cbi-network-wan-netmask-tel" class="text-info control-label" for="cbid.network.wan.netmask"><%:Subnet Mask%>&nbsp; 	&nbsp;</label>
+                            <div class="controls">
+    	                        <input autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.wan.netmask" id="cbid.network.wan.netmask" value="255.255.255.0"/>
+                                <script type="text/javascript">
+    		                          cbi_combobox_init('cbid.network.wan.netmask', {"255.255.255.0":"255.255.255.0","255.255.0.0":"255.255.0.0","255.0.0.0":"255.0.0.0"}, '', '-- custom --');
+    		                    </script>
+                            </div>
+                        </div>
+
+                        <div class="cbi-value  hide " style="" id="cbi-network-wan-gateway">
+                            <label id="cbi-network-wan-gateway-tel" class="text-info control-label" for="cbid.network.wan.gateway"><%:Default Gateway%>&nbsp; 	&nbsp;</label>
+                            <div class="controls">
+                                <input autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.wan.gateway" id="cbid.network.wan.gateway" value="">
+                            </div>
+                        </div>
+
+                        <div class="cbi-value  hide " style="" id="cbi-network-wan-dns">
+                            <label id="cbi-network-wan-dns-tel" class="text-info control-label" for="cbid.network.wan.dns"><%:DNS Servers%>&nbsp; 	&nbsp;</label>
+                            <div class="controls">
+                                <input autocomplete="off" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.wan.dns" id="cbid.network.wan.dns" value="">
+                            </div>
+                        </div>
+                        <!-- Network: PPPoE -->
+                        <div class="cbi-value  hide " style="" id="cbi-network-wan-username">
+                            <label id="cbi-network-wan-username-tel" class="text-info control-label" for="cbid.network.wan.username"><%:Username%>&nbsp; 	&nbsp;</label>
+                            <div class="controls">
+                                <input autocomplete="off" type="text" class="ace-tooltip" data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.wan.username" id="cbid.network.wan.username" value="">
+                            </div>
+                        </div>
+
+                        <div class="cbi-value  hide " style="" id="cbi-network-wan-password">
+                            <label id="cbi-network-wan-password-tel" class="text-info control-label" for="cbid.network.wan.password"><%:Password%>&nbsp; 	&nbsp;</label>
+                            <div class="controls">
+                                <input autocomplete="new-password" type="password" class="cbi-input-password ace-tooltip " data-rel="tooltip" onchange="cbi_d_update(this.id)" name="cbid.network.wan.password" id="cbid.network.wan.password" value="">
+                            </div>
+                        </div>
+                        <div id="network_div_error" class="alert alert-error" style="display:none; margin-top:10px">
+                            <i class="icon-exclamation-sign"></i>&nbsp;
+                            <span id="network_error_txt"></span>
+                        </div>
+                        <!--  Network END -->
+                      </footer>
+                    </div>
+
+                    <!-- Setup capwap section -->
+                    <div class="panel panel-default" id="wiz_section_capwap" style="display:none">
+                      <hr>
+                      <header class="panel-heading">
+                        <h4 class="panel-title">
+                          <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#post3">
+                             <%:CAPWAP Setup%>
+                          </a>
+                        </h4>
+                      </header>
+                      <footer id="post3" class="panel-collapse collapse">
+                        <div class="cbi-value">
+                          <label class="control-label" for="mode_capwap"><%:Mode%></label>
+                          <div class="controls">
+                            <select id="mode_capwap" name="mode_capwap" style="width:275px" >
+                              <option value="0"><%:None%></option>
+                              <option value="1" selected="selected"><%:Auto%></option>
+                              <option value="2"><%:Manual%></option>
+                            </select>
+                            <div class="help-text" id="mode_capwap_auto">(<%:In auto configuration, Broadcast Discovery, Multicast Discovery, DNS SRV Discovery and DHCP Option Discovery are enabled.%>)</div>
+                          </div>
+                          <div id="mode_capwap_manual" style="display:none">
+                            <div class="cbi-value">
+                              <label class="control-label"><%:DNS SRV Discovery%></label>
+                              <div class="controls">
+                                <input class="ace-tooltip ace-switch ace-switch-3" name="dns_srv" id="dns_srv" type="checkbox">
+                                <label class="lbl" for="dns_srv"></label>
+                              </div>
+                            </div>
+                            <div class="cbi-value" style="display:none">
+                              <label class="control-label" for="srv_suffix"><%:Domain Name Suffix%></label>
+                              <div class="controls">
+                                  <input name="srv_suffix" id="srv_suffix" type="text" ></input>
+                              </div>
+                            </div>
+                            <div class="cbi-value">
+                              <label class="control-label" ><%:Static Discovery%></label>
+                              <div class="controls">
+                                <input class="ace-tooltip ace-switch ace-switch-3" name="unicast" id="unicast" type="checkbox">
+                                <label class="lbl" for="unicast"></label>
+                              </div>
+                            </div>
+                            <button class="btn btn-info btn-add btn-small" onclick="{ addCAPWAPRow(); return false;}"  value=""  title="Add" id="btn_add">
+                              <i class=" icon-plus icon-only"></i>&nbsp;<%:Add new%>
+                            </button>
+                            <span id="alert_up_max" style="color:red; display:none">
+                              &nbsp;&nbsp;<%=luci.i18n.translatef("The allowed max number is %d.", max_count) %>
+                            </span>
+                            <table id="table_capwap_ac" class="table table-bordered table-hover">
+                                <thead>
+                                    <tr class="cbi-section-table-titles">
+                                        <th class="cbi-section-table-cell" style="width:100px"><%:AC Address%></th>
+                                        <th class="cbi-section-table-cell" style="width:100px"><%:Remark%></th>
+                                        <th class="cbi-section-table-cell" style="width:50px">&nbsp;</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                              <%
+                                  --local acs = acn.vlans(uci)
+                                  local uci = acn.cursor()
+                                  local acs = {}
+
+                                  uci:foreach('acn', 'capwap_ac',
+                                      function(s)
+                                      local list = {}
+
+                                      list['cfgCFG_ID'] = s['.name']
+                                      list['ip'] = s['ip']
+                                      list['remark'] = s['remark']
+
+                                      acs[#acs+1] = list
+                                  end)
+
+
+                                  local num_acs = #acs
+
+                                  for i, list in ipairs(acs) do
+                                      local cfgCFG_ID = list['cfgCFG_ID']
+                                      local capwap_ip = list['ip']
+                                      local capwap_remark = list['remark']
+                                  %>
+                                  <tr class="cbi-section-table-row" id="cbi-acn-<%=cfgCFG_ID%>" data-lan="">
+                                      <td class="cbi-value-field">
+                                          <div id="cbi-acn-<%=cfgCFG_ID%>-ip">
+                                              <input style="width:100px" title="" autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.acn.<%=cfgCFG_ID%>.ip" id="cbid.acn.<%=cfgCFG_ID%>.ip" value="<%=capwap_ip%>">
+                                          </div>
+                                      </td>
+                                      <td>
+                                          <div id="cbi-acn-<%=cfgCFG_ID%>-remark">
+                                              <input style="width:100px" title="" autocomplete="off" type="text" class="ace-tooltip" onchange="cbi_d_update(this.id)" name="cbid.acn.<%=cfgCFG_ID%>.remark" id="cbid.acn.<%=cfgCFG_ID%>.remark" value="<%=capwap_remark%>">
+                                          </div>
+                                      </td>
+                                      <td class="cbi-section-table-cell" style="width:50px">
+                                          <input type="hidden" name="acn.del.acn.<%=cfgCFG_ID%>" id="acn.del.acn.<%=cfgCFG_ID%>" value="0">
+                                          <button class="btn btn-mini <% if not site_entity then print('btn-danger') else print('ace-tooltip disabled') end %>" value="<%=cfgCFG_ID%>" onclick="removeCAPWAPRow(this.id); return false;" id="cbi.rts.acn.<%=cfgCFG_ID%>" alt="Delete"><i class="icon-trash"></i></button>
+                                      </td>
+                                  </tr>
+                                  <%
+                                  end
+                                  %>
+                                </tbody>
+                            </table>
+
+                            <% if num_acs == 0 then %>
+
+                            <div id="row_empty" style="font-style:italic" class="grey"><%:No data available for this list%></div>
+
+                            <% end %>
+                          </div>
+                        </div>
+                      </footer>
+                    </div>
+
+<!-- force to change password -->
+                    <div class="panel panel-default hide" id="wiz_section_pwd">
+                      <hr>
+                      <header class="panel-heading">
+                        <h4 class="panel-title">
+                          <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#post6">
+                             <%:Change Your Password%>
+                          </a>
+                        </h4>
+                      </header>
+                      <footer id="post6" class="panel-collapse collapse in" style="height:auto">
+                        <div>
+                          <%:Please change the default password on first login.%>
+                        </div>
+                        <div class="cbi-value">
+                            <label class="text-info control-label"><%:Username%></label>
+                            <div class="controls">
+                                <input type="hidden" id="username" name="username">
+                                <span class="lbl lbl-mode" id="_username"><%:admin%></span>
+                            </div>
+                            <label class="text-info control-label"><%:New password%></label>
+                            <div class="controls">
+                                <input name="user_pwd" id="user_pwd" type="password" ></input>
+                                <i class="icon-eye-open" style="cursor:pointer" onclick="var e = document.getElementById('user_pwd'); e.type = (e.type=='password') ? 'text' : 'password';" ></i>
+                            </div>
+                            <label class="text-info control-label"><%:Confirm password%></label>
+                            <div class="controls">
+                                <input name="user_pwd_comfirm" id="user_pwd_comfirm" type="password" ></input>
+                                <i class="icon-eye-open" style="cursor:pointer" onclick="var e = document.getElementById('user_pwd_comfirm'); e.type = (e.type=='password') ? 'text' : 'password';" ></i>
+                            </div>
+                        </div>
+                      </footer>
+                    </div>
+
+
+<!-- Country section -->
+<% if not fcc_locked and not thai_locked and not jp_locked and not in_locked and not br_locked then %>
+                    <div class="panel panel-default" id="wiz_section_country">
+                      <hr>
+                      <header class="panel-heading">
+                        <h4 class="panel-title">
+                          <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#post7">
+                             <%:Select Your Country%>
+                          </a>
+                        </h4>
+                      </header>
+                      <footer id="post7" class="panel-collapse collapse">
+                        <div>
+                          <%:Please select your location. This setting will be used to determine your country's regulatory rules. This selection can only be changed if you reset to defaults.%>
+                        </div>
+                        <div class="cbi-value">
+                          <select id="country_list" name="country_list"> </select>   
+                        </div>
+                      </footer>
+                    </div>
+<% end %>
+              </div>
+
+                <div id="div_error" class="alert alert-error" style="display:none">
+                    <i class="icon-exclamation-sign"></i>&nbsp;
+                    <span id="error_txt"></span></div>
+                </div>
+            </div>
+            <hr>
+            <div id="wiz_btn_bar" class="modal-footer">
+                <a id="wiz_done_btn" class="btn" ><%:Done%></a>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<div id="wizard_dialog_finished" class="modal hide fade in" style="display: none; height:auto;" data-backdrop="static" data-keyboard="true" >
+  <div class="modal-body">
+    <div>
+      <h4><%:Setup Done%></h4>
+      <span id="restart_msg" class="hide"><%:Restarting services, this may take a few minutes...%></span>
+    </div>
+  </div>
+</div>
+<div id="wizard_cloud_registered" class="modal hide fade in" style="display: none; height:auto;" data-backdrop="static" data-keyboard="true" >
+  <div class="modal-body">
+    <div>
+      <span id="regitered_msg" class=""><%:Please try again.%></span>
+      <br><br>
+      <button onclick="on_click_redirct(this.value);" class="btn btn-info btn-small hide" value="<%:register_again%>" id="redirect_btn_regis">
+          <i class="icon-circle-arrow-right"></i> <%:Go to easy setup page%>
+      </button>
+      <button onclick="on_click_redirct(this.value);" class="btn btn-info btn-small hide" value="<%:dashboard%>" id="redirect_btn_dash">
+          <i class="icon-circle-arrow-right"></i> <%:Go to Dashboard%>
+      </button>
+      <br>
+      <br>
+      <button onclick="on_click_redirct(this.value);" class="btn btn-info btn-small hide" value="<%:cloud%>" id="redirect_btn_cloud">
+          <i class="icon-circle-arrow-right"></i> <%:Go to ecCLOUD to check the device status%>
+      </button>
+    </div>
+  </div>
+</div>
+
+<%+footer%>

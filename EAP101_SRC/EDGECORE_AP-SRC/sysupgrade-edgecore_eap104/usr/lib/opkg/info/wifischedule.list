@@ -1,0 +1,4 @@
+/etc/rc.d/S43wifischedule
+/etc/config/wifi_schedule
+/etc/init.d/wifischedule
+/usr/bin/wifi_schedule.sh

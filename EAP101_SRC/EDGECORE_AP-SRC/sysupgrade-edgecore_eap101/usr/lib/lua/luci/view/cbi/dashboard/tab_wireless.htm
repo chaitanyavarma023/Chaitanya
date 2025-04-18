@@ -1,0 +1,44 @@
+<%
+local acn = require "luci.acn.util"
+local uci = acn.cursor()
+%>
+
+<div id="tab_wireless" class="tab-pane">
+
+<% for i=0, #radios -1 do
+    if i >= num_radios then
+        break
+    end
+    local radio = radios[i+1]
+    local acn_radio = product.radio(i)
+    local freq = acn_radio.freq
+    local radio_device = acn_radio.device
+
+    local uci_mode = uci:get("wireless", radio_device, "mode")
+ %>
+
+   <% if i > 0 then %>
+    <div class="row-fluid" style="border-bottom:1px solid #E2E2E2;height:10px;padding-top: 20px;">&nbsp; </div>
+   <% end %>
+
+    <% luci.template.render('cbi/dashboard/radio_header', {i = i, radio = radio, freq=freq, up=radio.status }) %>
+
+    <%
+    if radio.vap_is_created then
+        local _mode = radio.networks[radio.up_idx].mode
+        local _wds = uci:get("wireless", radio_device, "wds") or 0
+        local _ptp = uci:get("wireless", radio_device, "ptp") or 0
+        --If client radio is disabled, mode shows up as sta instead of client...
+        if _mode == 'client' or _mode == 'sta' or _mode == 'ad-hoc' or _mode == 'master (vlan)' then
+            luci.template.render('cbi/dashboard/client_radio', {i=i, radio = radio, acn = acn, acn_status = acn_status, freq = freq, wds = _wds, ptp = _ptp})
+        -- If ap radio is disabled, mode shows up as ap instead of master...
+        elseif _mode == 'master' or _mode == 'ap' then
+            luci.template.render('cbi/dashboard/ap_radio', {i = i, radio = radio, acn = acn, acn_status = acn_status, ptp = _ptp})
+        end
+    else %>
+
+  <span><%:No VAP is created.%></span>
+<%  end
+end %>
+
+</div>

@@ -1,0 +1,49 @@
+<div id="wifi_frequency_modal" class="modal hide fade in" style="display: none;" data-backdrop="static" data-keyboard="true">
+    <div class="modal-header">   
+        <span class="pull-right">
+            <button type="button" class="close" style="float:none" data-dismiss="modal" aria-hidden="true" id="close_frequency_window">&times;</button>
+        </span>
+
+        <h3 class="green"><%:Wireless Frequency%></h3>
+        <div id="wifi_frequency_error_msg_placeholder" autocomplete="off" class="alert alert-error hide"><i class="icon-remove"></i>&nbsp;<span id="wifi_frequency_error_msg"></span></div>
+    </div>
+
+    <div style="padding:15px">
+        <div style="min-height:200px;max-height:300px;overflow-y:scroll;width:100%">
+
+            <table id="table_channel" class="table table-striped table-bordered table-hover tablesorter">
+                <thead>
+                    <tr class="cbi-section-table-titles">
+                        <th class="cbi-section-table-cell" style="width:20px">
+                          <input type="checkbox" id="select_all" name="select_all" value="all" style="position:static;opacity:initial">
+                        </th>
+                        <th class="cbi-section-table-cell"><%:Frequency, MHz (Channel)%></th>
+                        <th class="cbi-section-table-cell"><%:Transmit Power, dBm%></th>
+                        <!--<th class="cbi-section-table-cell">EIRP Limit, dBm</th>-->
+                        <th class="cbi-section-table-cell"><%:DFS required%></th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        
+            <span id="spinner_scan_container" class="hide" style="font-size:14pt; font-color:light-gray;">
+                <i class="icon-spinner icon-spin" id="spinner_scan"></i> Loading...
+            </span>
+        
+            <div id="row_empty" style="font-style:italic" class="grey hide">
+                <%:No data available for this list%>
+            </div>
+
+        </div>
+        <div class="cbi-section-create cbi-tblsection-create">
+            <div class="modal-footer">
+                <button id="btn_wifi_frequency" class="btn btn-info btn-small" style="margin-right:10px">
+                    <%:Save%>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    

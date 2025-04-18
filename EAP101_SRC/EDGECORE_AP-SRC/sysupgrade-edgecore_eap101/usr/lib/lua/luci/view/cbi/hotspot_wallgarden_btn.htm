@@ -1,0 +1,7 @@
+<%+cbi/valueheader%>
+<% local network = self.iface or section %>
+<input type="button" id= "cbi-<%=self.config%>-<%=network%>-wallgardenbtn" class="btn btn-small btn-info" value="<%:Walled Garden%>" onclick="{$('#hotspot-wallgarden-<%=self.config%>-<%=network%>').modal('show');}" <% if self.is_controlled_by_cloud then write('disabled=disabled') end %> />
+<div class="help-tip">
+<i class="icon-question-sign" data-trigger="hover" data-html="true" data-placement="right" data-rel="tooltip" data-original-title="These values will be appended to the global Walled Garden values from the Hotspot configuration page."></i>
+</div>
+<%+cbi/valuefooter%>

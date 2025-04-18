@@ -1,0 +1,74 @@
+
+<tr>
+<% 
+local acn = require "luci.acn.util"
+local uci = acn.cursor()
+
+local ping_watchdog_status = uci:get("ping_watchdog", "settings", "enabled") or '0'
+local ping_watchdog_running = luci.util.exec("crontab -l | grep ping_watchdog.lua")
+
+local fail_count = luci.util.exec("cat /var/run/ping_watchdog")
+-- if no such file
+if fail_count=="" then fail_count = "0" end
+-------------
+
+local max_fail_count = uci:get("ping_watchdog", "settings", "count")
+
+local pw_message = "The ping watchdog service is currently disabled. Go to <a href='" 
+            .. luci.dispatcher.build_url('admin','system','services') 
+            .. "'>services</a> to enable it."
+local pw_icon_class = " "
+
+if ping_watchdog_status == '1' then
+    
+    if ping_watchdog_running then
+        pw_icon_class = ""
+        pw_alert_class = "padding-bottom-5 green"
+        pw_message = "The ping watchdog service is running."
+    else
+        pw_icon_class = "icon-thumbs-down"
+        pw_alert_class = "alert alert-error error-msg-visible"
+        pw_message = "The ping watchdog service is enabled but not running."
+    end
+end
+
+%>
+
+<!-- expandable footable button -->
+<td></td>
+
+<!-- NAME -->
+<td class="service-name">
+    <a href="<%=luci.dispatcher.build_url('admin/system/services')%>"><%:Ping Watchdog%></a>
+</td>
+
+<!-- STATUS -->
+<td>
+    <% if ping_watchdog_status == '1' then 
+    %>
+        <span style="color:#69aa46"><i class="icon-ok-circle"></i> &nbsp;</span><%:Enabled%>
+    <%else%>
+       <i class="icon-ban-circle"></i>&nbsp; Disabled
+    <% end %>
+</td>
+
+
+<!-- STATUS MESSAGE + Info -->
+
+<!-- if fail_count and tonumber(fail_count) > 0 then -->
+<!-- end -->
+<td>
+    <% if ping_watchdog_status == '1' then 
+    %>
+        <div >
+            <%=pw_message%>
+        <% if fail_count and tonumber(fail_count)>0 then %>
+        <span style="color:red;"><%=fail_count .. " of the " .. max_fail_count .. " ping probes failed! This device will reboot if all " .. max_fail_count .. " ping probes fail."%></span>
+        <% end %>
+        </div>
+    <%else%>
+        <%=pw_message%>
+    <% end %>
+
+</td>
+</tr>

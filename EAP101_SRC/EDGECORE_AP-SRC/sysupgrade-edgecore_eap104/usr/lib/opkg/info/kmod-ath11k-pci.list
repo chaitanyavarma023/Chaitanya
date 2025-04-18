@@ -1,0 +1,2 @@
+/etc/modules.d/ath11k-pci
+/lib/modules/4.4.60/ath11k_pci.ko

@@ -1,0 +1,8 @@
+/etc/freeradius3/mods-enabled/attr_filter
+/usr/lib/freeradius3/rlm_attr_filter.so
+/etc/freeradius3/mods-config/attr_filter/access_challenge
+/etc/freeradius3/mods-config/attr_filter/pre-proxy
+/etc/freeradius3/mods-config/attr_filter/access_reject
+/etc/freeradius3/mods-config/attr_filter/post-proxy
+/etc/freeradius3/mods-available/attr_filter
+/etc/freeradius3/mods-config/attr_filter/accounting_response

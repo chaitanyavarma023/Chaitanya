@@ -1,0 +1,9 @@
+eap inner-eap {
+	default_eap_type = mschapv2
+	timer_expire     = 60
+
+	max_sessions = 2048
+
+	mschapv2 {
+	}
+}

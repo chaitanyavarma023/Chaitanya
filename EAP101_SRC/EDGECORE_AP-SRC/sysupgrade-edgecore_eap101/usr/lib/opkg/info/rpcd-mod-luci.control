@@ -1,0 +1,12 @@
+Package: rpcd-mod-luci
+Version: 20201107
+Depends: libc, rpcd, libubox20210819, libubus20210809, libnl-tiny1
+Source: /home/build9/20241220-105015_EAP101/eap101-tip-tmp/feeds/ec-private/luci/libs/rpcd-mod-luci
+SourceName: rpcd-mod-luci
+License: Apache-2.0
+Section: libs
+SourceDateEpoch: 1638761405
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7
+Installed-Size: 12576
+Description:  Provides LuCI backend ubus RPC operations.
